@@ -1,8 +1,15 @@
 import { defineStore } from 'pinia';
+import api from '@/services/apiServices';
 
 const STORAGE_PREFIX = 'uptlab.activityHistory';
 const MAX_EVENTS = 200;
 const INITIAL_USER_ID = resolveInitialUserId();
+const DEFAULT_INCLUDES = ['causer', 'subject'];
+
+const LOGIN_ACTIONS = ['users.login', 'users.logout'];
+const DEFAULT_ACTION_FILTERS = [...LOGIN_ACTIONS];
+const REQUEST_KEYWORDS = ['request', 'permintaan', 'order', 'orders'];
+const PAYMENT_KEYWORDS = ['payment', 'pembayaran', 'invoice', 'billing'];
 
 function resolveInitialUserId() {
   if (typeof window === 'undefined') return null;
@@ -52,8 +59,60 @@ function normalizeEvent(entry = {}) {
   };
 }
 
+function normalizeFromApi(entry = {}) {
+  const createdAt = entry.created_at || entry.createdAt || null;
+  const action = entry.action || '';
+  const description = entry.description || '';
+  const causer = entry.causer || {};
+  const subject = entry.subject || {};
+
+  const type = mapActionToType(action);
+  if (!type) return null;
+
+  const title =
+    description ||
+    (type === 'login'
+      ? 'Aktivitas login'
+      : type === 'payment'
+      ? 'Aktivitas pembayaran'
+      : 'Aktivitas permintaan');
+
+  return normalizeEvent({
+    id: entry.id,
+    type,
+    title,
+    description:
+      description ||
+      [causer.name, subject.name].filter(Boolean).join(' - ') ||
+      action,
+    status: 'success',
+    referenceId: entry.subject_id || entry.causer_id || null,
+    metadata: {
+      action,
+      causerType: entry.causer_type || null,
+      subjectType: entry.subject_type || null,
+      causerName: causer.name || causer.email || null,
+      subjectName: subject.name || subject.email || null,
+    },
+    userId: entry.causer_id || null,
+    createdAt: createdAt || new Date().toISOString(),
+  });
+}
+
+function mapActionToType(action = '') {
+  if (!action) return null;
+  const lower = String(action).toLowerCase();
+  if (LOGIN_ACTIONS.includes(lower) || lower.includes('login')) return 'login';
+  if (PAYMENT_KEYWORDS.some((kw) => lower.includes(kw))) return 'payment';
+  if (REQUEST_KEYWORDS.some((kw) => lower.includes(kw))) return 'request';
+  return null;
+}
+
 export const useActivityStore = defineStore('activity', {
   state: () => ({
+    activities: [],
+    apiLoading: false,
+    apiError: null,
     activeUserId: INITIAL_USER_ID,
     events:
       typeof window !== 'undefined'
@@ -83,6 +142,73 @@ export const useActivityStore = defineStore('activity', {
   },
 
   actions: {
+    buildQuery(params = {}) {
+      const query = new URLSearchParams();
+      const page =
+        Number(params.page ?? params.currentPage ?? 1) || 1;
+      const perPage =
+        Number(params.perPage ?? params.per_page ?? 50) || 50;
+      query.set('page', Math.max(1, page));
+      query.set('per_page', Math.max(1, perPage));
+
+      const includes =
+        params.include ?? params.includes ?? DEFAULT_INCLUDES;
+      (Array.isArray(includes) ? includes : DEFAULT_INCLUDES)
+        .filter(Boolean)
+        .forEach((include) => query.append('include', include));
+
+      // Batasi action penting di server jika disediakan dari caller
+      const actionFilters = params.actions ?? DEFAULT_ACTION_FILTERS;
+      if (Array.isArray(actionFilters) && actionFilters.length) {
+        actionFilters.forEach((act) => {
+          if (act) query.append('filter', `action==${act}`);
+        });
+      }
+
+      // Urutkan terbaru
+      query.append('sort', '-created_at');
+      return query;
+    },
+
+    async fetchImportant(params = {}) {
+      this.apiLoading = true;
+      this.apiError = null;
+      try {
+        const query = this.buildQuery(params);
+        const endpoint = `/api/v1/activities?${query.toString()}`;
+        const res = await api.get(endpoint);
+        const payload = res.data?.data ?? {};
+        const items = Array.isArray(payload.items) ? payload.items : [];
+
+        const normalized = items
+          .map((item) => normalizeFromApi(item))
+          .filter(Boolean);
+
+        this.activities = normalized;
+        this.events = normalized;
+        this.persist();
+
+        return { ok: true, data: normalized };
+      } catch (err) {
+        this.apiError =
+          err.response?.data?.message ||
+          err.message ||
+          'Gagal mengambil aktivitas penting.';
+        return {
+          ok: false,
+          message: this.apiError,
+          errors: err.response?.data?.errors || null,
+          status: err.response?.status || err.response?.data?.code || null,
+        };
+      } finally {
+        this.apiLoading = false;
+      }
+    },
+
+    async fetchAll(params = {}) {
+      return this.fetchImportant(params);
+    },
+
     hydrate() {
       if (typeof window === 'undefined') return;
       this.events = safeParse(

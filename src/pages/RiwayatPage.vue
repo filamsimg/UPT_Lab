@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="space-y-6">
     <header class="flex flex-col gap-2">
       <p class="text-sm uppercase tracking-wide text-gray-500">Monitoring</p>
@@ -68,6 +68,23 @@
             Bersihkan
           </button>
         </div>
+      </div>
+
+      <div
+        v-if="showErrorBanner"
+        class="mx-4 mt-3 flex items-start justify-between gap-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700"
+      >
+        <span>
+          {{ apiError }}
+          · menampilkan data tersimpan. Coba klik Segarkan atau cek backend.
+        </span>
+        <button
+          type="button"
+          class="text-xs font-semibold text-amber-800 hover:text-amber-900"
+          @click="dismissError"
+        >
+          Tutup
+        </button>
       </div>
 
       <div v-if="!hasEvents" class="flex flex-col items-center gap-3 px-6 py-16 text-center text-gray-500">
@@ -170,12 +187,19 @@ const typeConfig = {
 const activityStore = useActivityStore()
 const openConfirm = useConfirmDialog()
 const activeFilter = ref('all')
+const errorDismissed = ref(false)
 
-onMounted(() => {
+onMounted(async () => {
   activityStore.hydrate()
+  await activityStore.fetchImportant?.({
+    perPage: 50,
+    include: ['causer', 'subject'],
+  })
 })
 
 const stats = computed(() => activityStore.stats)
+const apiError = computed(() => activityStore.apiError)
+const showErrorBanner = computed(() => apiError.value && !errorDismissed.value)
 
 const hasEvents = computed(() => activityStore.events.length > 0)
 
@@ -201,8 +225,19 @@ const groupedEvents = computed(() => {
     }))
 })
 
-function refreshEvents() {
-  activityStore.hydrate()
+async function refreshEvents() {
+  errorDismissed.value = false
+  await activityStore.fetchImportant?.({
+    perPage: 50,
+    include: ['causer', 'subject'],
+  })
+  if (!activityStore.events.length) {
+    activityStore.hydrate()
+  }
+}
+
+function dismissError() {
+  errorDismissed.value = true
 }
 
 async function clearHistory() {
@@ -254,4 +289,3 @@ function formatTime(value) {
   return new Intl.DateTimeFormat('id-ID', { hour: '2-digit', minute: '2-digit' }).format(date)
 }
 </script>
-
