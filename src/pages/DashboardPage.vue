@@ -120,7 +120,7 @@
                 :to="{ path: '/kaji-ulang', query: { orderId: order.id } }"
                 class="mt-4 inline-flex items-center text-xs font-semibold text-primary hover:text-primaryDark"
               >
-                Lihat Detail →
+                Lihat Detail 
               </router-link>
             </article>
           </div>
@@ -348,4 +348,3 @@ const visibleActivities = computed(() =>
   color: #075985;
 }
 </style>
-

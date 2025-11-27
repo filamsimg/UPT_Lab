@@ -34,9 +34,9 @@ export function buildPermintaanPrintHtml(row, type = 'request', options = {}) {
   const styles = `
     <style>
       @page { margin: 6mm 12mm 16mm; }
-      body { font-family: 'Times New Roman', 'Times', serif; margin: 0; color: #000000; }
+      body { font-family: 'Times New Roman', 'Times', serif; font-size: 12px; margin: 0; color: #000000; }
       .page { padding: 6px 6px 0; }
-      .letterhead { display: flex; gap: 16px; align-items: center; padding-bottom: 12px; border-bottom: 2px solid #e5e7eb; margin-bottom: 16px; }
+      .letterhead { display: flex; gap: 16px; align-items: center; padding-bottom: 12px; border-bottom: 2px solid #000000; margin-bottom: 16px; }
       .letterhead img { width: 72px; height: 72px; object-fit: contain; }
       .letterhead h1 { margin: 0; font-size: 18px; text-transform: uppercase; letter-spacing: 1px; }
       .letterhead p { margin: 2px 0; font-size: 12px; color: #000000; }
@@ -44,10 +44,10 @@ export function buildPermintaanPrintHtml(row, type = 'request', options = {}) {
       table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 12px; }
       .info-table td { padding: 4px 6px; vertical-align: top; }
       .info-table td:first-child { width: 32%; color: #000000; font-weight: 600; }
-      .items-table th, .items-table td { border: 1px solid #d1d5db; padding: 8px; text-align: left; }
-      .items-table th { background: #f3f4f6; text-transform: uppercase; font-size: 11px; color: #000000; }
-      .totals { margin-top: 12px; width: 50%; float: right; border: 1px solid #d1d5db; border-collapse: collapse; }
-      .totals td { padding: 8px; border: 1px solid #d1d5db; }
+      .items-table th, .items-table td { border: 1px solid #000000; padding: 8px; text-align: left; }
+      .items-table th { background: #ffffff; text-transform: uppercase; font-size: 11px; color: #000000; }
+      .totals { margin-top: 12px; width: 50%; float: right; border: 1px solid #000000; border-collapse: collapse; }
+      .totals td { padding: 8px; border: 1px solid #000000; }
       .totals td:first-child { background: #f9fafb; font-weight: 600; width: 60%; }
       .notes { clear: both; margin-top: 32px; font-size: 12px; }
       .signature { margin-top: 48px; display: flex; justify-content: flex-end; font-size: 12px; }
@@ -117,9 +117,9 @@ export function buildKajiUlangPrintHtml(order = {}, options = {}) {
   const styles = `
     <style>
       @page { margin: 6mm 12mm 16mm; }
-      body { font-family: 'Times New Roman', 'Times', serif; margin: 0; color: #000000; }
+      body { font-family: 'Times New Roman', 'Times', serif; font-size: 12px; margin: 0; color: #000000; }
       .page { padding: 6px 6px 18px; }
-      .letterhead { display: flex; gap: 16px; align-items: center; padding-bottom: 12px; border-bottom: 2px solid #e5e7eb; margin-bottom: 16px; }
+      .letterhead { display: flex; gap: 16px; align-items: center; padding-bottom: 12px; border-bottom: 2px solid #000000; margin-bottom: 16px; }
       .letterhead img { width: 72px; height: 72px; object-fit: contain; }
       .letterhead h1 { margin: 0; font-size: 18px; text-transform: uppercase; letter-spacing: 1px; }
       .letterhead p { margin: 2px 0; font-size: 12px; color: #000000; }
@@ -127,13 +127,13 @@ export function buildKajiUlangPrintHtml(order = {}, options = {}) {
       table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 12px; }
       .info-table td { padding: 4px 6px; vertical-align: top; }
       .info-table td:first-child { width: 32%; color: #000000; font-weight: 600; }
-      .items-table th, .items-table td { border: 1px solid #d1d5db; padding: 8px; text-align: left; }
-      .items-table th { background: #f3f4f6; text-transform: uppercase; font-size: 11px; color: #000000; }
-      .decision { margin-top: 20px; border: 1px solid #d1d5db; border-radius: 8px; padding: 12px; background: #f8fafc; font-size: 12px; }
+      .items-table th, .items-table td { border: 1px solid #000000; padding: 8px; text-align: left; }
+      .items-table th { background: #ffffff; text-transform: uppercase; font-size: 11px; color: #000000; }
+      .decision { margin-top: 20px; border: 1px solid #000000; border-radius: 0; padding: 12px; background: #ffffff; font-size: 12px; }
       .decision strong { color: #000000; }
       .notes { margin-top: 16px; font-size: 12px; }
-      .evaluation-table th, .evaluation-table td { border: 1px solid #d1d5db; padding: 6px; text-align: left; }
-      .evaluation-table th { background: #f3f4f6; text-transform: uppercase; font-size: 11px; color: #000000; }
+      .evaluation-table th, .evaluation-table td { border: 1px solid #000000; padding: 6px; text-align: left; }
+      .evaluation-table th { background: #ffffff; text-transform: uppercase; font-size: 11px; color: #000000; }
       .signature { margin: 16px auto 0; display: flex; justify-content: space-between; gap: 24px; font-size: 12px; }
       .signature div { flex: 1; text-align: center; }
     </style>
@@ -173,6 +173,134 @@ export function buildKajiUlangPrintHtml(order = {}, options = {}) {
           ${itemsTable}
           ${evaluationTable}
           ${decisionSection}
+        ${signature}
+        </div>
+      </body>
+    </html>
+  `;
+}
+
+export function buildValidasiPrintHtml(order = {}, options = {}) {
+  const header = { ...DEFAULT_HEADER, ...(options.header || {}) };
+  const logoSrc = options.logoSrc || logoDefault;
+  const title =
+    typeof options.title === 'string' && options.title.trim()
+      ? options.title
+      : 'Form Validasi Pengujian';
+
+  const styles = `
+    <style>
+      @page { margin: 6mm 12mm 16mm; }
+      html, body { height: 100%; margin: 0; padding: 0; }
+      body { font-family: 'Times New Roman', 'Times', serif; font-size: 12px; margin: 0; color: #000000; }
+      .page { min-height: 100vh; padding: 6px 6px 14px; display: flex; flex-direction: column; box-sizing: border-box; }
+      .letterhead { display: flex; gap: 16px; align-items: center; padding-bottom: 12px; border-bottom: 2px solid #e5e7eb; margin-bottom: 16px; }
+      .letterhead img { width: 72px; height: 72px; object-fit: contain; }
+      .letterhead h1 { margin: 0; font-size: 18px; text-transform: uppercase; letter-spacing: 1px; }
+      .letterhead p { margin: 2px 0; font-size: 12px; color: #000000; }
+      h2 { margin: 0 0 12px; font-size: 18px; text-transform: uppercase; letter-spacing: 0.08em; color: #000000; }
+      .info-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 8px; }
+      .info-table td { padding: 6px 8px; vertical-align: top; }
+      .info-table td:first-child { width: 32%; font-weight: 600; }
+      .items-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 16px; }
+      .items-table th, .items-table td { border: 1px solid #000000; padding: 8px; text-align: left; }
+      .items-table th { background: #ffffff; text-transform: uppercase; font-size: 11px; }
+      .content { flex: 1 1 auto; display: flex; flex-direction: column; }
+      .signature { margin-top: auto; padding-top: 40px; display: flex; justify-content: space-between; align-items: flex-end; text-align: center; font-size: 12px; column-gap: 20px; }
+      .signature-column { width: 45%; }
+      .signature-column p { margin: 4px 0; }
+      .signature-line { margin: 36px auto 8px; width: 160px; border-bottom: 1px solid #000000; height: 1px; }
+    </style>
+  `;
+
+  const letterhead = `
+    <header class="letterhead">
+      <img src="${logoSrc}" alt="Logo Dinas Kabupaten Tegal" />
+      <div>
+        <h1>${toLineMarkup(header.title)}</h1>
+        <p>${toLineMarkup(header.subtitle)}</p>
+        <p>${sanitize(header.address)}</p>
+        <p>${sanitize(header.contact)}</p>
+      </div>
+    </header>
+  `;
+
+  const infoTable = `
+    <table class="info-table">
+      ${buildInfoRow('ID Order', order.id || order.requestId || '-')}
+      ${buildInfoRow('No Order', order.orderNo || '-')}
+      ${buildInfoRow('Tanggal', formatFullDate(order.date || order.entryDate))}
+      ${buildInfoRow('Komoditi / Benda Uji', resolveCommodity(order))}
+    </table>
+  `;
+
+  const items = Array.isArray(order.testItems) ? order.testItems : [];
+  const itemsTable = `
+    <table class="items-table">
+      <thead>
+        <tr>
+          <th style="width:8%;">No</th>
+          <th style="width:26%;">Jenis Pengujian</th>
+          <th style="width:14%;">Jumlah Sampel</th>
+          <th style="width:20%;">Kode Sampel</th>
+          <th style="width:18%;">Metode Uji</th>
+          <th style="width:14%;">Waktu Pengambilan</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${
+          items.length
+            ? items
+                .map(
+                  (item, idx) => `
+                  <tr>
+                    <td>${idx + 1}</td>
+                    <td>${sanitize(item.testName || item.name || '-')}</td>
+                    <td>${sanitize(item.quantity || 0)}</td>
+                    <td>${sanitize(formatSampleCode(order, item, idx))}</td>
+                    <td>${sanitize(item.method || item.methodName || item.testMethod || '-')}</td>
+                    <td>${sanitize(item.collectionTime || item.collectionDate || '-')}</td>
+                  </tr>
+                `
+                )
+                .join('')
+            : `<tr><td colspan="6" style="text-align:center;">Tidak ada data pengujian</td></tr>`
+        }
+      </tbody>
+    </table>
+  `;
+
+   const signature = `
+    <div class="signature">
+      <div class="signature-column">
+        <p>Manajer Teknis</p>
+        <br /><br /><br />
+        <p><strong>${sanitize(order.kajiUlangValidatedBy || '________________')}</strong></p>
+      </div>
+      <div class="signature-column">
+        <p>Penerima Sampel Uji</p>
+        <br /><br /><br />
+        <p><strong>${sanitize(order.sampleReceiver || '________________')}</strong></p>
+      </div>
+    </div>
+  `;
+
+  return `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="UTF-8" />
+        <title>${sanitize(title)}</title>
+        ${styles}
+      </head>
+      <body>
+        <div class="page">
+          ${letterhead}
+          <div class="content">
+            <h2>${sanitize(title)}</h2>
+            ${infoTable}
+            ${itemsTable}
+          </div>
           ${signature}
         </div>
       </body>
@@ -308,6 +436,25 @@ export function formatCurrency(value) {
 
 function formatNumber(value) {
   return Number(value || 0).toLocaleString('id-ID');
+}
+
+function buildInfoRow(label, value) {
+  return `
+    <tr>
+      <td>${sanitize(label)}</td>
+      <td>${sanitize(value || '-')}</td>
+    </tr>
+  `;
+}
+
+function resolveCommodity(order = {}) {
+  return (
+    order.commodity ||
+    order.objectName ||
+    order.testItems?.[0]?.objectName ||
+    order.testType ||
+    '-'
+  );
 }
 
 export function formatFullDate(value) {
@@ -540,14 +687,28 @@ function formatSampleCode(order, item, index) {
   const orderSegment = order.orderNumber
     ? String(order.orderNumber).padStart(3, '0')
     : '--';
-  const testCode =
-    (item.testCode && String(item.testCode).trim()) ||
-    (item.testId ? String(item.testId).split('-')[0] : `ITEM-${index + 1}`);
+  const testCode = getTestCode(item, index);
   const sampleSegment =
     (item.sampleNo && String(item.sampleNo).trim()) ||
     (item.sampleCode && String(item.sampleCode).trim()) ||
     '--';
   return `${monthYear}.${orderSegment}/${testCode}/${sampleSegment}`;
+}
+
+function getTestCode(item = {}, index = 0) {
+  if (item.testCode) {
+    const [code] = String(item.testCode).split('-');
+    return code || `ITEM-${index + 1}`;
+  }
+  if (item.code) {
+    const [code] = String(item.code).split('-');
+    return code || `ITEM-${index + 1}`;
+  }
+  if (item.testId) {
+    const [code] = String(item.testId).split('-');
+    return code || `ITEM-${index + 1}`;
+  }
+  return `ITEM-${index + 1}`;
 }
 
 function formatMonthYear(value) {
