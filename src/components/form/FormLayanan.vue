@@ -40,8 +40,14 @@
             v-model="form.category"
             class="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primaryLight focus:border-primaryLight outline-none"
           >
-            <option value="" disabled>Pilih Jenis</option>
-            <option v-for="c in categories" :key="c" :value="c">{{ c }}</option>
+            <option value="" disabled>Pilih jenis</option>
+            <option
+              v-for="option in categoryOptions"
+              :key="option.value"
+              :value="option.value"
+            >
+              {{ option.label }}
+            </option>
           </select>
         </div>
 
@@ -94,7 +100,13 @@
             class="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primaryLight focus:border-primaryLight outline-none"
           >
             <option value="" disabled>Pilih Metode</option>
-            <option v-for="m in methods" :key="m" :value="m">{{ m }}</option>
+            <option
+              v-for="m in methods"
+              :key="m.id || m"
+              :value="m.id || m"
+            >
+              {{ m.name || m }}
+            </option>
           </select>
         </div>
 
@@ -106,7 +118,13 @@
             class="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primaryLight focus:border-primaryLight outline-none"
           >
             <option value="" disabled>Pilih Mesin</option>
-            <option v-for="m in machines" :key="m" :value="m">{{ m }}</option>
+            <option
+              v-for="m in machines"
+              :key="m.id || m"
+              :value="m.id || m"
+            >
+              {{ m.name || m }}
+            </option>
           </select>
         </div>
       </div>
@@ -134,9 +152,9 @@
 import { reactive, watch, computed } from 'vue'
 
 const props = defineProps({
-  categories: Array,
-  methods: Array,
-  machines: Array,
+  categories: { type: Array, default: () => [] },
+  methods: { type: Array, default: () => [] },
+  machines: { type: Array, default: () => [] },
   editData: Object, 
 })
 
@@ -153,6 +171,17 @@ const form = reactive({
   equipment: '',
 })
 
+const categoryOptions = computed(() => {
+  const options = props.categories?.length
+    ? props.categories
+    : ['Testing', 'Machining']
+  return options.map((item) =>
+    typeof item === 'object'
+      ? { value: item.value ?? item.label ?? '', label: item.label ?? item.value ?? '' }
+      : { value: item, label: item }
+  ).filter((item) => item.value)
+})
+
 // Cek apakah sedang mode edit
 const isEdit = computed(() => !!props.editData)
 
@@ -161,7 +190,16 @@ watch(
   () => props.editData,
   (val) => {
     if (val) {
-      Object.assign(form, val)
+      Object.assign(form, {
+        id: val.id ?? null,
+        category: val.serviceType || val.category || val.serviceCategory || '',
+        code: val.serviceCode || val.code || '',
+        name: val.name || val.testCategory || '',
+        unit: val.unit || '',
+        price: val.price ?? 0,
+        method: val.methodId || val.method_id || val.method?.id || '',
+        equipment: val.machineId || val.machine_id || val.machine?.id || '',
+      })
     } else {
       resetForm()
     }
@@ -183,12 +221,29 @@ function resetForm() {
 }
 
 function handleSubmit() {
-  if (!form.category || !form.name) {
-    alert('Mohon lengkapi data pengujian!')
+  if (!form.category || !form.code || !form.method || !form.equipment) {
+    alert('Mohon lengkapi data layanan (jenis, kode, metode, dan mesin).')
     return
   }
-  emit('save', { ...form, isEdit: isEdit.value })
+  emit('save', {
+    ...form,
+    isEdit: isEdit.value,
+    service_type: form.category,
+    service_code: form.code,
+    method_id: form.method,
+    machine_id: form.equipment,
+    serviceType: form.category,
+    serviceCode: form.code,
+    methodId: form.method,
+    machineId: form.equipment,
+    price: toNumber(form.price, 0),
+  })
   resetForm()
+}
+
+function toNumber(value, fallback = 0) {
+  const parsed = Number(value)
+  return Number.isFinite(parsed) ? parsed : fallback
 }
 </script>
 

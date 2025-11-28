@@ -16,48 +16,122 @@
       <div
         class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
       >
-        <h3 class="text-lg font-semibold text-surfaceDark">Daftar Layanan</h3>
+        <div>
+          <h3 class="text-lg font-semibold text-surfaceDark">Daftar Layanan</h3>
+          <p class="text-sm text-gray-500">
+          </p>
+        </div>
         <div class="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap">
+          <div class="relative w-full sm:w-72">
+            <MagnifyingGlassIcon
+              class="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400"
+            />
+            <input
+              v-model="searchTerm"
+              type="search"
+              placeholder="Cari layanan, kode, metode, atau mesin..."
+              class="w-full rounded-md border border-gray-200 bg-white py-2 pl-10 pr-3 text-sm text-gray-700 outline-none transition focus:border-primary focus:ring-1 focus:ring-primary/40"
+            />
+          </div>
+          <button
+            class="inline-flex w-full items-center justify-center gap-2 rounded-md border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-600 transition hover:bg-gray-100 sm:w-auto"
+            @click="refreshTests"
+          >
+            <ArrowPathIcon
+              :class="['h-5 w-5', testStore.loading ? 'animate-spin text-primary' : 'text-gray-500']"
+            />
+            Muat Ulang
+          </button>
           <button
             class="w-full rounded-md bg-gradient-to-r from-primaryLight to-primaryDark px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-90 sm:w-auto"
-            @click="showModal = true"
+            @click="openCreate"
           >
             + Tambah Pengujian
           </button>
         </div>
       </div>
 
-      <!-- ✅ DataTable Pengujian -->
-      <DataTable
-        :columns="testColumns"
-        :rows="filteredTests"
-        :pageSize="10"
-        :filterable="false"
-        scroll-body-on-mobile
-        body-scroll-height="55vh"
-        class="rounded-md"
-      >
-        <template #price="{ value }">
-          Rp {{ value.toLocaleString('id-ID') }}
-        </template>
+      <p v-if="testStore.error" class="mb-3 text-sm text-red-600">
+        {{ testStore.error }}
+      </p>
 
-        <template #actions="{ row }">
-          <div class="flex justify-left gap-2">
+      <div
+        v-if="testStore.loading"
+        class="flex items-center justify-center gap-3 py-10 text-sm text-gray-500"
+      >
+        <ArrowPathIcon class="h-5 w-5 animate-spin text-primary" />
+        Memuat data layanan...
+      </div>
+      <div v-else>
+        <DataTable
+          :columns="testColumns"
+          :rows="rows"
+          :pageSize="10"
+          :filterable="false"
+          :showPagination="false"
+          :no-data-text="noDataText"
+          scroll-body-on-mobile
+          body-scroll-height="55vh"
+          class="rounded-md"
+        >
+          <template #serviceCategoryLabel="{ value }">
+            <span class="text-sm font-medium text-gray-700">
+              {{ value || '-' }}
+            </span>
+          </template>
+
+          <template #price="{ value }">
+            <span class="font-semibold text-surfaceDark">
+              Rp {{ formatCurrency(value) }}
+            </span>
+          </template>
+
+          <template #actions="{ row }">
+            <div class="flex justify-left gap-2">
+              <button
+                class="p-1.5 rounded-md hover:bg-blue-50 text-primary hover:text-primaryDark transition"
+                @click="editTest(row)"
+              >
+                <PencilIcon class="w-5 h-5 inline" />
+              </button>
+              <button
+                class="p-1.5 rounded-md hover:bg-red-50 text-danger hover:text-red-700 transition"
+                @click="removeTest(row.id)"
+              >
+                <TrashIcon class="w-5 h-5 inline" />
+              </button>
+            </div>
+          </template>
+        </DataTable>
+
+        <div
+          class="flex flex-col gap-3 border-t border-gray-100 pt-4 text-sm text-gray-700 sm:flex-row sm:items-center sm:justify-between"
+        >
+          <p>
+            Halaman
+            <span class="font-semibold text-gray-800">{{ pagination.currentPage }}</span>
+            dari
+            <span class="font-semibold text-gray-800">{{ pagination.lastPage }}</span>
+            ({{ rows.length }} layanan ditampilkan)
+          </p>
+          <div class="flex items-center gap-2">
             <button
-              class="p-1.5 rounded-md hover:bg-blue-50 text-primary hover:text-primaryDark transition"
-              @click="editTest(row)"
+              class="rounded-md border border-gray-200 px-3 py-1 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-60"
+              :disabled="!pagination.hasPrevPage"
+              @click="changePage(pagination.currentPage - 1)"
             >
-              <PencilIcon class="w-5 h-5 inline" />
+              Sebelumnya
             </button>
             <button
-              class="p-1.5 rounded-md hover:bg-red-50 text-danger hover:text-red-700 transition"
-              @click="removeTest(row.id)"
+              class="rounded-md border border-gray-200 px-3 py-1 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-60"
+              :disabled="!pagination.hasNextPage"
+              @click="changePage(pagination.currentPage + 1)"
             >
-              <TrashIcon class="w-5 h-5 inline" />
+              Berikutnya
             </button>
           </div>
-        </template>
-      </DataTable>
+        </div>
+      </div>
     </div>
 
     <!-- === MODAL FORM TAMBAH / EDIT === -->
@@ -67,7 +141,7 @@
       :methods="methods"
       :machines="machines"
       :editData="editData"
-      @close="showModal = false"
+      @close="closeModal"
       @save="handleSaveTest"
     />
 
@@ -96,6 +170,8 @@
         :columns="machineColumns"
         :rows="machineItems"
         :filterable="false"
+        :showPagination="true"
+        :pageSize="10"
         scroll-body-on-mobile
         body-scroll-height="40vh"
         class="rounded-md"
@@ -138,6 +214,8 @@
         :columns="methodColumns"
         :rows="methodItems"
         :filterable="false"
+        :showPagination="true"
+        :pageSize="10"
         scroll-body-on-mobile
         body-scroll-height="40vh"
         class="rounded-md"
@@ -158,123 +236,173 @@
 </template>
 
 <script setup>
-import { computed, ref, onMounted } from 'vue';
-import { useTestStore } from '@/stores/useTestStore';
-import FormLayanan from '@/components/form/FormLayanan.vue';
-import { PencilIcon, TrashIcon } from '@heroicons/vue/24/outline';
-import DataTable from '../components/common/DataTable.vue';
+import { computed, ref, onMounted, watch } from 'vue'
+import { ArrowPathIcon, MagnifyingGlassIcon, PencilIcon, TrashIcon } from '@heroicons/vue/24/outline'
+import DataTable from '@/components/common/DataTable.vue'
+import FormLayanan from '@/components/form/FormLayanan.vue'
+import { useTestStore } from '@/stores/useTestStore'
 
-const testStore = useTestStore();
+const testStore = useTestStore()
 
-const categories = ['Machining', 'Pengujian'];
-const tests = computed(() => testStore.tests);
-const machines = computed(() => testStore.machines);
-const methods = computed(() => testStore.methods);
+const categories = [
+  { value: 'Testing', label: 'Pengujian' },
+  { value: 'Machining', label: 'Machining' },
+]
 
-const selectedCategory = ref('');
-const showModal = ref(false);
-const editData = ref(null);
+const tests = computed(() => testStore.tests)
+const machines = computed(() => testStore.machines)
+const methods = computed(() => testStore.methods)
 
-// === Columns ===
+const showModal = ref(false)
+const editData = ref(null)
+const searchTerm = ref('')
+const initialized = ref(false)
+let debounceTimer = null
+
 const testColumns = [
-  { field: 'serviceCategory', title: 'Jenis Layanan', isSortable: true },
+  { field: 'serviceCategoryLabel', title: 'Jenis Layanan', slotName: 'serviceCategoryLabel', isSortable: true },
   { field: 'code', title: 'Kode', isSortable: true },
-  { field: 'testCategory', title: 'Jenis Pengujian', isSortable: true },
+  { field: 'name', title: 'Nama Pengujian', isSortable: true },
   { field: 'unit', title: 'Satuan' },
   { field: 'price', title: 'Tarif', slotName: 'price', isSortable: true },
-  { field: 'method', title: 'Metode Uji' },
-  { field: 'equipment', title: 'Mesin Uji' },
+  { field: 'methodName', title: 'Metode Uji' },
+  { field: 'machineName', title: 'Mesin Uji' },
   { field: 'actions', title: 'Aksi', slotName: 'actions', sortable: false },
-];
+]
 
 const machineColumns = [
-  {
-    field: 'index',
-    title: 'No',
-    className: 'w-20 text-left',
-  },
-  { field: 'MachineName', title: 'Nama Mesin' },
-  {
-    field: 'actions',
-    title: 'Aksi',
-    className: 'w-20 text-left',
-    slotName: 'actions',
-    sortable: false,
-  },
-];
+  { field: 'index', title: 'No', className: 'w-20 text-left' },
+  { field: 'name', title: 'Nama Mesin' },
+  { field: 'description', title: 'Deskripsi', className: 'hidden sm:table-cell' },
+  { field: 'actions', title: 'Aksi', className: 'w-20 text-left', slotName: 'actions', sortable: false },
+]
 
 const methodColumns = [
-  {
-    field: 'index',
-    title: 'No',
-    className: 'w-20 text-left',
-  },
-  { field: 'MethodName', title: 'Nama Metode' },
-  {
-    field: 'actions',
-    title: 'Aksi',
-    className: 'w-20 text-left',
-    slotName: 'actions',
-    sortable: false,
-  },
-];
+  { field: 'index', title: 'No', className: 'w-20 text-left' },
+  { field: 'name', title: 'Nama Metode' },
+  { field: 'description', title: 'Deskripsi', className: 'hidden sm:table-cell' },
+  { field: 'actions', title: 'Aksi', className: 'w-20 text-left', slotName: 'actions', sortable: false },
+]
 
-// === Computed Items ===
-const filteredTests = computed(() =>
-  selectedCategory.value
-    ? tests.value.filter((t) => t.category === selectedCategory.value)
-    : tests.value
-);
+const rows = computed(() =>
+  (tests.value || []).map((item) => ({
+    ...item,
+    name: item.name || item.testCategory || item.methodName || item.code,
+    methodName: item.methodName || item.method?.name || '',
+    machineName: item.machineName || item.machine?.name || '',
+    serviceCategoryLabel:
+      item.serviceCategoryLabel ||
+      (item.serviceType === 'Testing' ? 'Pengujian' : item.serviceType) ||
+      'Layanan',
+  }))
+)
 
 const machineItems = computed(() =>
-  machines.value.map((m, i) => ({ index: i + 1, MachineName: m }))
-);
-const methodItems = computed(() =>
-  methods.value.map((m, i) => ({ index: i + 1, MethodName: m }))
-);
+  machines.value.map((m, i) => ({
+    index: i + 1,
+    name: m.name || m,
+    description: m.description || '',
+  }))
+)
 
-// === Actions ===
+const methodItems = computed(() =>
+  methods.value.map((m, i) => ({
+    index: i + 1,
+    name: m.name || m,
+    description: m.description || '',
+  }))
+)
+
+const pagination = computed(() => testStore.pagination)
+
+const noDataText = computed(() =>
+  searchTerm.value
+    ? 'Layanan tidak ditemukan untuk kata kunci tersebut.'
+    : 'Belum ada layanan yang terdaftar.'
+)
+
+watch(searchTerm, (value) => {
+  testStore.setSearch(value)
+  if (!initialized.value) return
+  clearTimeout(debounceTimer)
+  debounceTimer = setTimeout(() => {
+    testStore.fetchTests({ page: 1, search: value })
+  }, 400)
+})
+
+onMounted(async () => {
+  await testStore.fetchAll()
+  initialized.value = true
+})
+
+function formatCurrency(value) {
+  return Number(value || 0).toLocaleString('id-ID')
+}
+
+function openCreate() {
+  editData.value = null
+  showModal.value = true
+}
+
 function editTest(test) {
-  editData.value = { ...test };
-  showModal.value = true;
+  editData.value = { ...test }
+  showModal.value = true
 }
 
 async function handleSaveTest(payload) {
-  if (payload.isEdit) await testStore.updateTest(payload);
-  else await testStore.addTest(payload);
-  showModal.value = false;
-  editData.value = null;
+  if (payload.isEdit) await testStore.updateTest(payload)
+  else await testStore.addTest(payload)
+  showModal.value = false
+  editData.value = null
+  await refreshTests()
 }
 
-function removeTest(id) {
-  testStore.removeTest(id);
+async function removeTest(id) {
+  if (!id) return
+  await testStore.removeTest(id)
+}
+
+async function refreshTests() {
+  await testStore.fetchTests({
+    page: pagination.value.currentPage,
+    search: searchTerm.value,
+  })
+}
+
+async function changePage(page) {
+  if (page < 1) return
+  await testStore.fetchTests({
+    page,
+    search: searchTerm.value,
+  })
 }
 
 // === Mesin ===
-const newMachine = ref('');
-function addMachine() {
-  if (!newMachine.value.trim()) return;
-  testStore.addMachine(newMachine.value);
-  newMachine.value = '';
+const newMachine = ref('')
+async function addMachine() {
+  if (!newMachine.value.trim()) return
+  await testStore.addMachine(newMachine.value)
+  newMachine.value = ''
 }
 function removeMachine(idx) {
-  testStore.removeMachine(idx);
+  testStore.removeMachine(idx)
 }
 
 // === Metode ===
-const newMethod = ref('');
-function addMethod() {
-  if (!newMethod.value.trim()) return;
-  testStore.addMethod(newMethod.value);
-  newMethod.value = '';
+const newMethod = ref('')
+async function addMethod() {
+  if (!newMethod.value.trim()) return
+  await testStore.addMethod(newMethod.value)
+  newMethod.value = ''
 }
 function removeMethod(idx) {
-  testStore.removeMethod(idx);
+  testStore.removeMethod(idx)
 }
 
-onMounted(() => {
-  testStore.fetchAll();
-});
+function closeModal() {
+  showModal.value = false
+  editData.value = null
+}
 </script>
 
 <style scoped>
