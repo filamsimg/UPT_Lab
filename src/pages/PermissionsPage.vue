@@ -85,7 +85,7 @@
             <input
               v-model="searchTerm"
               type="search"
-              placeholder="Cari permission berdasarkan nama..."
+              placeholder="Cari permission berdasarkan nama atau deskripsi..."
               class="w-full rounded-md border border-gray-200 bg-white py-2 pl-10 pr-3 text-sm text-gray-700 outline-none transition focus:border-primary focus:ring-1 focus:ring-primary/40"
             />
           </div>
@@ -111,9 +111,9 @@
           :showPagination="false"
           :no-data-text="noDataText"
         >
-          <template #id="{ value }">
-            <span class="font-mono text-xs text-gray-700 break-all">
-              {{ value }}
+          <template #description="{ value }">
+            <span class="text-sm text-gray-700">
+              {{ value || '-' }}
             </span>
           </template>
 
@@ -170,7 +170,7 @@ const canViewPermissions = computed(() => hasPermission('permissions.index'));
 
 const columns = [
   { field: 'name', title: 'Nama Permission' },
-  { field: 'id', title: 'ID', slotName: 'id' },
+  { field: 'description', title: 'Deskripsi', slotName: 'description' },
 ];
 
 const searchTerm = ref('');

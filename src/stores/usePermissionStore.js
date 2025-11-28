@@ -99,11 +99,17 @@ export const usePermissionStore = defineStore('permission', {
         }
 
         if (hasSearch) {
-          // Backend pencarian masih berbasis ID, jadi filter nama dilakukan di sisi klien.
+          // Backend pencarian masih berbasis ID, jadi filter nama/deskripsi dilakukan di sisi klien.
           const keyword = searchTerm.toLowerCase();
-          const filtered = items.filter((permission) =>
-            permission.name?.toLowerCase().includes(keyword)
-          );
+          const filtered = items.filter((permission) => {
+            const nameMatch = permission.name
+              ?.toLowerCase()
+              .includes(keyword);
+            const descriptionMatch = permission.description
+              ?.toLowerCase()
+              .includes(keyword);
+            return nameMatch || descriptionMatch;
+          });
           this.permissions = filtered;
           this.pagination = {
             currentPage: 1,
