@@ -524,7 +524,7 @@ const baseMenu = [
     label: 'Monitoring',
     icon: ClockIcon,
     children: [
-      { label: 'Riwayat Aktivitas', path: '/riwayat', icon: ClockIcon },
+      { label: 'Riwayat Aktivitas', path: '/activity', icon: ClockIcon },
     ],
   },
   {

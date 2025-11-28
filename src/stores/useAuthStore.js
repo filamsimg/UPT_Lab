@@ -491,7 +491,7 @@ export const useAuthStore = defineStore('auth', {
         activityStore.setActiveUser(latestUser?.id ?? null)
         notificationStore.setActiveUser(latestUser?.id ?? null)
         activityStore.addEvent({
-          type: 'profile',
+          type: 'login',
           title: 'Profil diperbarui',
           description: `${latestUser?.name || 'Pengguna'} memperbarui profil`,
           status: 'success',
@@ -532,7 +532,7 @@ export const useAuthStore = defineStore('auth', {
         const res = await api.patch('/api/v1/users/me/password', body)
         const activityStore = useActivityStore()
         activityStore.addEvent({
-          type: 'profile',
+          type: 'login',
           title: 'Password diperbarui',
           description: `${this.currentUser?.name || 'Pengguna'} mengganti password`,
           status: 'success',

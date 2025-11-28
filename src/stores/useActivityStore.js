@@ -1,15 +1,38 @@
 import { defineStore } from 'pinia';
 import api from '@/services/apiServices';
+import { isSuperAdminUser } from '@/composables/auth/useAuthorization';
 
 const STORAGE_PREFIX = 'uptlab.activityHistory';
 const MAX_EVENTS = 200;
-const INITIAL_USER_ID = resolveInitialUserId();
 const DEFAULT_INCLUDES = ['causer', 'subject'];
+const INITIAL_USER_ID = resolveInitialUserId();
 
-const LOGIN_ACTIONS = ['users.login', 'users.logout'];
-const DEFAULT_ACTION_FILTERS = [...LOGIN_ACTIONS];
-const REQUEST_KEYWORDS = ['request', 'permintaan', 'order', 'orders'];
-const PAYMENT_KEYWORDS = ['payment', 'pembayaran', 'invoice', 'billing'];
+const ACTION_LABELS = {
+  'users.register': 'Registrasi Pengguna',
+  'users.reset_password': 'Reset Password',
+  'users.verify_email': 'Verifikasi Email',
+  'users.login': 'Login',
+  'users.logout': 'Logout',
+  'users.me': 'Profil Saya',
+  'users.update_me_profile': 'Perbarui Profil',
+  'users.update_me_password': 'Perbarui Password',
+  'users.index': 'Lihat Pengguna',
+  'users.show': 'Detail Pengguna',
+  'users.store': 'Tambah Pengguna',
+  'users.update': 'Perbarui Pengguna',
+  'users.toggle_activation': 'Aktif / Nonaktif Pengguna',
+  'users.destroy': 'Hapus Pengguna',
+  'permissions.index': 'Lihat Permission',
+  'roles.index': 'Lihat Role',
+  'roles.show': 'Detail Role',
+  'roles.store': 'Tambah Role',
+  'roles.update': 'Perbarui Role',
+  'roles.set_default': 'Atur Role Default',
+  'roles.destroy': 'Hapus Role',
+  'codes.create_user_register_invitation': 'Kirim Kode Undangan',
+  'codes.create_user_email_verification': 'Kirim Kode Verifikasi Email',
+  'codes.create_user_reset_password': 'Kirim Kode Reset Password',
+};
 
 function resolveInitialUserId() {
   if (typeof window === 'undefined') return null;
@@ -40,89 +63,215 @@ function createId() {
   return `act-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
-function getStorageKey(userId) {
+function storageKey(userId) {
   const suffix = userId ? String(userId) : 'guest';
   return `${STORAGE_PREFIX}.${suffix}`;
 }
 
-function normalizeEvent(entry = {}) {
+function toIsoString(value) {
+  if (!value) return new Date().toISOString();
+  if (value instanceof Date) return value.toISOString();
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return new Date().toISOString();
+  return date.toISOString();
+}
+
+function humanizeAction(action) {
+  if (!action) return 'Aktivitas';
+  if (ACTION_LABELS[action]) return ACTION_LABELS[action];
+  const cleaned = action.replace(/\./g, ' / ').replace(/_/g, ' ');
+  return cleaned
+    .split(' ')
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ')
+    .replace(/\s\/\s/g, ' · ');
+}
+
+function deriveType(action, fallback = 'system') {
+  const value = typeof action === 'string' ? action.toLowerCase() : '';
+  if (!value) return fallback;
+  if (
+    value.includes('login') ||
+    value.includes('logout') ||
+    value.includes('password') ||
+    value.includes('verify') ||
+    value.includes('register')
+  ) {
+    return 'login';
+  }
+  if (value.includes('payment') || value.includes('pay') || value.includes('bayar')) {
+    return 'payment';
+  }
+  if (value.includes('request') || value.includes('order') || value.includes('permintaan')) {
+    return 'request';
+  }
+  return fallback;
+}
+
+function normalizeActivity(entry = {}, context = {}) {
+  const action = entry.action || entry.metadata?.action || entry.type || '';
+  const type = deriveType(action, entry.type || 'system');
+  const causer = entry.causer || entry.metadata?.causer || null;
+  const subject = entry.subject || entry.metadata?.subject || null;
+  const causerId =
+    entry.causer_id ?? entry.user_id ?? entry.userId ?? context.activeUserId ?? null;
+  const subjectId = entry.subject_id ?? entry.referenceId ?? null;
+  const createdAt = toIsoString(entry.created_at || entry.createdAt || entry.timestamp);
+  const ipAddress =
+    entry.causer_ip_address ??
+    entry.metadata?.causer_ip_address ??
+    entry.metadata?.properties?.causer_ip_address ??
+    entry.properties?.causer_ip_address ??
+    entry.metadata?.ip ??
+    entry.properties?.ip ??
+    null;
+
+  const causerName =
+    entry.metadata?.causerName ||
+    causer?.name ||
+    causer?.email ||
+    entry.causer_name ||
+    entry.causer_email ||
+    causerId ||
+    '';
+  const subjectName =
+    entry.metadata?.subjectName ||
+    subject?.name ||
+    subject?.email ||
+    entry.subject_name ||
+    entry.subject_email ||
+    entry.referenceId ||
+    subjectId ||
+    '';
+
   return {
     id: entry.id || createId(),
-    type: entry.type || 'system',
-    title: entry.title || 'Aktivitas',
-    description: entry.description || '-',
+    type,
+    title: entry.title || humanizeAction(action),
+    description: entry.description || '',
     status: entry.status || 'info',
-    referenceId: entry.referenceId || null,
-    metadata: entry.metadata || {},
-    userId: entry.userId || null,
-    createdAt: entry.createdAt || new Date().toISOString(),
+    referenceId: subjectId,
+    userId: causerId,
+    metadata: {
+      ...entry.metadata,
+      causerName,
+      subjectName,
+      causer,
+      subject,
+      causer_ip_address: ipAddress,
+      ip: ipAddress,
+      action,
+      properties: entry.properties ?? entry.metadata?.properties ?? null,
+    },
+    createdAt,
   };
 }
 
-function normalizeFromApi(entry = {}) {
-  const createdAt = entry.created_at || entry.createdAt || null;
-  const action = entry.action || '';
-  const description = entry.description || '';
-  const causer = entry.causer || {};
-  const subject = entry.subject || {};
+function mergeEvents(nextEvents = [], currentEvents = []) {
+  const map = new Map();
+  [...nextEvents, ...currentEvents].forEach((item) => {
+    map.set(item.id, item);
+  });
+  return Array.from(map.values())
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+    .slice(0, MAX_EVENTS);
+}
 
-  const type = mapActionToType(action);
-  if (!type) return null;
-
-  const title =
-    description ||
-    (type === 'login'
-      ? 'Aktivitas login'
-      : type === 'payment'
-      ? 'Aktivitas pembayaran'
-      : 'Aktivitas permintaan');
-
-  return normalizeEvent({
-    id: entry.id,
-    type,
-    title,
-    description:
-      description ||
-      [causer.name, subject.name].filter(Boolean).join(' - ') ||
-      action,
-    status: 'success',
-    referenceId: entry.subject_id || entry.causer_id || null,
-    metadata: {
-      action,
-      causerType: entry.causer_type || null,
-      subjectType: entry.subject_type || null,
-      causerName: causer.name || causer.email || null,
-      subjectName: subject.name || subject.email || null,
-    },
-    userId: entry.causer_id || null,
-    createdAt: createdAt || new Date().toISOString(),
+function filterSuperAdmin(entries = [], viewerIsSuperAdmin = false) {
+  if (viewerIsSuperAdmin) return entries;
+  return entries.filter((item) => {
+    const causer = item?.metadata?.causer;
+    const subject = item?.metadata?.subject;
+    if (causer && isSuperAdminUser(causer)) return false;
+    if (subject && isSuperAdminUser(subject)) return false;
+    return true;
   });
 }
 
-function mapActionToType(action = '') {
-  if (!action) return null;
-  const lower = String(action).toLowerCase();
-  if (LOGIN_ACTIONS.includes(lower) || lower.includes('login')) return 'login';
-  if (PAYMENT_KEYWORDS.some((kw) => lower.includes(kw))) return 'payment';
-  if (REQUEST_KEYWORDS.some((kw) => lower.includes(kw))) return 'request';
-  return null;
+function normalizePagination(payload = {}, fallback = {}) {
+  return {
+    currentPage: payload.current_page ?? payload.currentPage ?? fallback.currentPage ?? 1,
+    perPage: payload.per_page ?? payload.perPage ?? fallback.perPage ?? 10,
+    lastPage: payload.last_page ?? payload.lastPage ?? fallback.lastPage ?? 1,
+    hasNextPage: payload.has_next_page ?? fallback.hasNextPage ?? false,
+    hasPrevPage: payload.has_prev_page ?? fallback.hasPrevPage ?? false,
+    totalItems: payload.total_items ?? payload.total ?? fallback.totalItems ?? 0,
+  };
+}
+
+function buildDateRangeFilter({ dateFrom, dateTo }) {
+  if (!dateFrom && !dateTo) return null;
+  const from = (dateFrom || dateTo || '').toString().slice(0, 10);
+  const to = (dateTo || dateFrom || '').toString().slice(0, 10);
+  if (!from && !to) return null;
+  return `created_atBETWEEN${from || to},${to || from}`;
+}
+
+function buildQueryParams(options = {}) {
+  const query = new URLSearchParams();
+  const page = options.page ?? 1;
+  const perPage = options.perPage ?? 50;
+  query.set('page', page);
+  query.set('per_page', perPage);
+
+  const includes =
+    Array.isArray(options.include) && options.include.length
+      ? options.include
+      : DEFAULT_INCLUDES;
+  includes.filter(Boolean).forEach((inc) => query.append('include', inc));
+
+  const filters = [];
+  const allowAll = options.viewerIsSuperAdmin || options.canViewAll;
+  const scope = allowAll ? options.scope || 'all' : 'mine';
+  const viewerId = options.viewerId ?? options.viewer?.id ?? options.activeUserId ?? null;
+
+  if (scope !== 'all') {
+    if (viewerId) filters.push(`causer_id==${viewerId}`);
+  } else if (options.filterUserId) {
+    filters.push(`causer_id==${options.filterUserId}`);
+  }
+
+  const dateFilter = buildDateRangeFilter(options);
+  if (dateFilter) filters.push(dateFilter);
+
+  (options.filters || []).forEach((filter) => {
+    if (filter) filters.push(filter);
+  });
+
+  filters.forEach((filter) => query.append('filter', filter));
+
+  const sort = options.sort ?? '-created_at';
+  if (Array.isArray(sort)) {
+    sort.filter(Boolean).forEach((value) => query.append('sort', value));
+  } else if (sort) {
+    query.append('sort', sort);
+  }
+
+  const search = typeof options.search === 'string' ? options.search.trim() : '';
+  if (search) query.set('search', search);
+
+  return query;
 }
 
 export const useActivityStore = defineStore('activity', {
   state: () => ({
-    activities: [],
-    apiLoading: false,
-    apiError: null,
     activeUserId: INITIAL_USER_ID,
     events:
       typeof window !== 'undefined'
-        ? safeParse(
-            window.localStorage?.getItem(
-              getStorageKey(INITIAL_USER_ID)
-            ) || '[]'
-          )
+        ? safeParse(window.localStorage?.getItem(storageKey(INITIAL_USER_ID)) || '[]')
         : [],
     loading: false,
+    apiError: '',
+    apiStatus: null,
+    pagination: {
+      currentPage: 1,
+      perPage: 50,
+      lastPage: 1,
+      hasNextPage: false,
+      hasPrevPage: false,
+      totalItems: 0,
+    },
   }),
 
   getters: {
@@ -142,77 +291,11 @@ export const useActivityStore = defineStore('activity', {
   },
 
   actions: {
-    buildQuery(params = {}) {
-      const query = new URLSearchParams();
-      const page =
-        Number(params.page ?? params.currentPage ?? 1) || 1;
-      const perPage =
-        Number(params.perPage ?? params.per_page ?? 50) || 50;
-      query.set('page', Math.max(1, page));
-      query.set('per_page', Math.max(1, perPage));
-
-      const includes =
-        params.include ?? params.includes ?? DEFAULT_INCLUDES;
-      (Array.isArray(includes) ? includes : DEFAULT_INCLUDES)
-        .filter(Boolean)
-        .forEach((include) => query.append('include', include));
-
-      // Batasi action penting di server jika disediakan dari caller
-      const actionFilters = params.actions ?? DEFAULT_ACTION_FILTERS;
-      if (Array.isArray(actionFilters) && actionFilters.length) {
-        actionFilters.forEach((act) => {
-          if (act) query.append('filter', `action==${act}`);
-        });
-      }
-
-      // Urutkan terbaru
-      query.append('sort', '-created_at');
-      return query;
-    },
-
-    async fetchImportant(params = {}) {
-      this.apiLoading = true;
-      this.apiError = null;
-      try {
-        const query = this.buildQuery(params);
-        const endpoint = `/api/v1/activities?${query.toString()}`;
-        const res = await api.get(endpoint);
-        const payload = res.data?.data ?? {};
-        const items = Array.isArray(payload.items) ? payload.items : [];
-
-        const normalized = items
-          .map((item) => normalizeFromApi(item))
-          .filter(Boolean);
-
-        this.activities = normalized;
-        this.events = normalized;
-        this.persist();
-
-        return { ok: true, data: normalized };
-      } catch (err) {
-        this.apiError =
-          err.response?.data?.message ||
-          err.message ||
-          'Gagal mengambil aktivitas penting.';
-        return {
-          ok: false,
-          message: this.apiError,
-          errors: err.response?.data?.errors || null,
-          status: err.response?.status || err.response?.data?.code || null,
-        };
-      } finally {
-        this.apiLoading = false;
-      }
-    },
-
-    async fetchAll(params = {}) {
-      return this.fetchImportant(params);
-    },
-
     hydrate() {
       if (typeof window === 'undefined') return;
       this.events = safeParse(
-        window.localStorage?.getItem(getStorageKey(this.activeUserId)) || '[]'
+        window.localStorage?.getItem(storageKey(this.activeUserId)) || '[]',
+        []
       );
     },
 
@@ -225,46 +308,91 @@ export const useActivityStore = defineStore('activity', {
 
     persist() {
       if (typeof window === 'undefined') return;
-      window.localStorage?.setItem(
-        getStorageKey(this.activeUserId),
-        JSON.stringify(this.events)
-      );
+      window.localStorage?.setItem(storageKey(this.activeUserId), JSON.stringify(this.events));
     },
 
     addEvent(payload = {}) {
-      const event = normalizeEvent({
+      const entry = normalizeActivity({
         ...payload,
         userId: this.activeUserId ?? payload.userId ?? null,
       });
-      this.events = [event, ...this.events]
-        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-        .slice(0, MAX_EVENTS);
+      this.events = mergeEvents([entry], this.events);
       this.persist();
-      return event;
+      return entry;
     },
 
     importEvents(list = []) {
       const normalized = list.map((item) =>
-        normalizeEvent({
-          ...item,
-          userId: this.activeUserId ?? item.userId ?? null,
-        })
+        normalizeActivity(item, { activeUserId: this.activeUserId })
       );
-      const combined = [...normalized, ...this.events];
-      const uniqueMap = new Map();
-      combined.forEach((item) => {
-        uniqueMap.set(item.id, item);
-      });
-      this.events = Array.from(uniqueMap.values())
-        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-        .slice(0, MAX_EVENTS);
+      this.events = mergeEvents(normalized, this.events);
       this.persist();
     },
 
     clear() {
       this.events = [];
       if (typeof window !== 'undefined') {
-        window.localStorage?.removeItem(getStorageKey(this.activeUserId));
+        window.localStorage?.removeItem(storageKey(this.activeUserId));
+      }
+    },
+
+    async fetchAll(options = {}) {
+      return this.fetchActivities({ ...options, scope: options.scope || 'all' });
+    },
+
+    async fetchImportant(options = {}) {
+      const mergedOptions = { perPage: 50, sort: '-created_at', ...options };
+      return this.fetchActivities(mergedOptions);
+    },
+
+    async fetchActivities(options = {}) {
+      this.loading = true;
+      this.apiError = '';
+      this.apiStatus = null;
+      const viewerId = options.viewerId ?? options.viewer?.id ?? this.activeUserId;
+      const viewerIsSuperAdmin =
+        options.viewerIsSuperAdmin ?? isSuperAdminUser(options.viewer) ?? false;
+      const effectiveOptions = { ...options, viewerId, viewerIsSuperAdmin };
+
+      try {
+        const query = buildQueryParams({
+          ...effectiveOptions,
+          activeUserId: this.activeUserId,
+        });
+        const endpoint = `/api/v1/activities?${query.toString()}`;
+        const res = await api.get(endpoint);
+        const payload = res.data?.data ?? res.data ?? {};
+        const items = Array.isArray(payload.items) ? payload.items : [];
+        const normalized = items.map((item) =>
+          normalizeActivity(item, { activeUserId: this.activeUserId })
+        );
+        const visible = filterSuperAdmin(normalized, viewerIsSuperAdmin);
+        this.events = visible;
+        this.pagination = normalizePagination(payload, this.pagination);
+        this.apiStatus = res.status ?? payload.code ?? 200;
+        this.persist();
+        return { ok: true, items: visible, pagination: this.pagination };
+      } catch (err) {
+        const isNetworkError = err.code === 'ERR_NETWORK' || (!err.response && err.request);
+        this.apiStatus =
+          err.response?.status ||
+          err.response?.data?.code ||
+          (isNetworkError ? 'NETWORK_ERROR' : null);
+        this.apiError =
+          (isNetworkError
+            ? 'Tidak dapat terhubung ke server aktivitas. Pastikan BE berjalan atau cek koneksi.'
+            : err.response?.data?.message) ||
+          err.message ||
+          'Gagal memuat aktivitas.';
+        return {
+          ok: false,
+          message: this.apiError,
+          errors: err.response?.data?.errors || null,
+          status: this.apiStatus,
+          network: isNetworkError,
+        };
+      } finally {
+        this.loading = false;
       }
     },
   },

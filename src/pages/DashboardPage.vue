@@ -194,7 +194,7 @@
           <div class="space-y-3 md:hidden">
             <article
               v-for="activity in visibleActivities"
-              :key="activity.id || activity.timestamp || activity.orderNo"
+              :key="activity.id || activity.timestamp || activity.reference"
               class="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm"
             >
               <p class="text-xs uppercase tracking-wide text-gray-500">Tanggal</p>
@@ -203,16 +203,20 @@
               </p>
               <dl class="mt-3 space-y-1.5 text-sm text-gray-600">
                 <div class="flex justify-between gap-4">
-                  <dt class="font-medium text-gray-500">User</dt>
-                  <dd class="text-right">{{ activity.userName }}</dd>
+                  <dt class="font-medium text-gray-500">Causer</dt>
+                  <dd class="text-right">{{ activity.causer }}</dd>
                 </div>
                 <div>
                   <dt class="font-medium text-gray-500">Aksi</dt>
                   <dd class="text-sm text-surfaceDark">{{ activity.action }}</dd>
                 </div>
                 <div class="flex justify-between gap-4 text-sm">
-                  <dt class="font-medium text-gray-500">Order</dt>
-                  <dd class="text-right font-semibold">{{ activity.orderNo }}</dd>
+                  <dt class="font-medium text-gray-500">Subject</dt>
+                  <dd class="text-right font-semibold">{{ activity.subject }}</dd>
+                </div>
+                <div v-if="activity.ip" class="flex justify-between gap-4 text-xs text-gray-500">
+                  <dt class="font-medium">IP</dt>
+                  <dd class="text-right font-semibold">{{ activity.ip }}</dd>
                 </div>
               </dl>
             </article>
@@ -224,21 +228,25 @@
               <thead class="bg-gray-50 text-gray-700 uppercase text-xs">
                 <tr>
                   <th class="px-4 py-3">Tanggal</th>
-                  <th class="px-4 py-3">Pengguna</th>
+                  <th class="px-4 py-3">Causer</th>
                   <th class="px-4 py-3">Aksi</th>
-                  <th class="px-4 py-3">Order</th>
+                  <th class="px-4 py-3">Subject / Ref</th>
+                  <th class="px-4 py-3">IP</th>
                 </tr>
               </thead>
               <tbody>
                 <tr
                   v-for="activity in visibleActivities"
-                  :key="activity.id || activity.timestamp || activity.orderNo"
+                  :key="activity.id || activity.timestamp || activity.reference"
                   class="border-b last:border-b-0"
                 >
                   <td class="px-4 py-3">{{ activity.date }}</td>
-                  <td class="px-4 py-3">{{ activity.userName }}</td>
-                  <td class="px-4 py-3">{{ activity.action }}</td>
-                  <td class="px-4 py-3">{{ activity.orderNo }}</td>
+                  <td class="px-4 py-3">{{ activity.causer }}</td>
+                  <td class="px-4 py-3">
+                    <span class="font-semibold text-surfaceDark">{{ activity.action }}</span>
+                  </td>
+                  <td class="px-4 py-3">{{ activity.subject || '-' }}</td>
+                  <td class="px-4 py-3">{{ activity.ip || '-' }}</td>
                 </tr>
               </tbody>
             </table>
@@ -254,7 +262,8 @@ import { reactive, computed, ref, onMounted } from 'vue';
 import { useKajiUlangStore } from '@/stores/useKajiUlangStore';
 import { useCustomerStore } from '@/stores/useCustomerStore';
 import { useActivityStore } from '@/stores/useActivityStore';
-import { useUserStore } from '@/stores/useUserStore';
+import { useAuthStore } from '@/stores/useAuthStore';
+import { useAuthorization } from '@/composables/auth/useAuthorization';
 import StatCard from '@/components/common/StatCard.vue';
 import Badge from '@/components/common/Badge.vue';
 
@@ -262,17 +271,37 @@ import Badge from '@/components/common/Badge.vue';
 const orderStore = useKajiUlangStore();
 const customerStore = useCustomerStore();
 const activityStore = useActivityStore();
-const userStore = useUserStore();
+const authStore = useAuthStore();
+const { hasAnyPermission, isSuperAdmin } = useAuthorization();
 const isLoading = ref(true);
+const canViewAllActivity = computed(() =>
+  isSuperAdmin.value ||
+    hasAnyPermission(
+      'activity.index',
+      'activities.index',
+      'activity.show',
+      'activities.show',
+      'activities.view_all',
+      'activities.*'
+    )
+);
+const activityScope = computed(() => (canViewAllActivity.value ? 'all' : 'mine'));
 
 // === Fetch data on mount ===
 onMounted(async () => {
   try {
+    activityStore.setActiveUser(authStore.currentUser?.id ?? null);
     await Promise.all([
       orderStore.fetchAll?.(),
       customerStore.fetchAll?.(),
-      activityStore.fetchAll?.(),
-      userStore.fetchAll?.(),
+      activityStore.fetchAll?.({
+        scope: activityScope.value,
+        viewer: authStore.currentUser,
+        viewerId: authStore.currentUser?.id,
+        viewerIsSuperAdmin: isSuperAdmin.value,
+        canViewAll: canViewAllActivity.value,
+        include: ['causer', 'subject'],
+      }),
     ]);
   } finally {
     isLoading.value = false;
@@ -324,23 +353,43 @@ const visibleOrders = computed(() =>
 );
 
 // === Recent Activities ===
-const recentActivities = computed(() =>
-  (activityStore.activities || []).map((a) => {
-    const user = userStore.users?.find((u) => u.id === a.userId) ?? null;
-    const order = orderStore.orders?.find((o) => o.id === a.orderId) ?? null;
+const recentActivities = computed(() => {
+  const list = (activityStore.events || []).map((a) => {
+    const ts = a.createdAt ? new Date(a.createdAt) : null;
+    const causer =
+      a.metadata?.causerName ||
+      a.metadata?.causer?.email ||
+      a.userId ||
+      '-';
+    const subject =
+      a.metadata?.subjectName || a.referenceId || a.metadata?.referenceId || '-';
+    const ip =
+      a.metadata?.properties?.causer_ip_address ||
+      a.metadata?.ip ||
+      a.metadata?.causer_ip_address ||
+      '';
     return {
       id: a.id,
-      date: a.timestamp ? new Date(a.timestamp).toLocaleString('id-ID') : '-',
-      userName: user?.name || '-',
-      action: a.action || '-',
-      orderNo: order?.orderNo || '-',
+      date: ts
+        ? new Intl.DateTimeFormat('id-ID', {
+            dateStyle: 'medium',
+            timeStyle: 'short',
+          }).format(ts)
+        : '-',
+      causer,
+      subject,
+      action: a.title || a.metadata?.action || a.type || '-',
+      reference: a.referenceId || null,
+      ip,
+      createdAt: ts,
     };
-  })
-);
+  });
+  return list
+    .sort((a, b) => (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0))
+    .slice(0, rowsPerPage);
+});
 
-const visibleActivities = computed(() =>
-  recentActivities.value.slice(0, rowsPerPage)
-);
+const visibleActivities = computed(() => recentActivities.value);
 </script>
 
 <style scoped>

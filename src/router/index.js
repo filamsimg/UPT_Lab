@@ -1,6 +1,9 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import { useAuthStore } from '../stores/useAuthStore';
-import { buildPermissionSet, isSuperAdminUser } from '@/composables/auth/useAuthorization';
+import {
+  buildPermissionSet,
+  isSuperAdminUser,
+} from '@/composables/auth/useAuthorization';
 import { tokenStorage } from '@/utils/storage/tokenStorage';
 import DashboardPage from '../pages/DashboardPage.vue';
 
@@ -22,7 +25,7 @@ const UsersPage = () => import('../pages/UsersPage.vue');
 const RolesPage = () => import('../pages/RolesPage.vue');
 const PermissionsPage = () => import('../pages/PermissionsPage.vue');
 const ProfilePage = () => import('../pages/ProfilePage.vue');
-const RiwayatPage = () => import('../pages/RiwayatPage.vue');
+const ActivityPage = () => import('../pages/ActivityPage.vue');
 const KodeUndanganPage = () => import('../pages/KodeUndanganPage.vue');
 
 const routes = [
@@ -58,7 +61,7 @@ const routes = [
   { path: '/layanan', component: LayananPage },
   { path: '/laporan-keuangan', component: KeuanganPage },
   { path: '/laporan', component: LaporanPage },
-  { path: '/riwayat', component: RiwayatPage },
+  { path: '/activity', component: ActivityPage },
   {
     path: '/users',
     component: UsersPage,
