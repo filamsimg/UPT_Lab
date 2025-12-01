@@ -6,6 +6,7 @@ const STORAGE_PREFIX = 'uptlab.activityHistory';
 const MAX_EVENTS = 200;
 const DEFAULT_INCLUDES = ['causer', 'subject'];
 const INITIAL_USER_ID = resolveInitialUserId();
+const HIDDEN_VIEW_ACTIONS = [/\.index$/i, /\.show$/i];
 
 const ACTION_LABELS = {
   'users.register': 'Registrasi Pengguna',
@@ -107,6 +108,19 @@ function deriveType(action, fallback = 'system') {
     return 'request';
   }
   return fallback;
+}
+
+function shouldHideFromFrontend(entry) {
+  const action =
+    typeof entry === 'string'
+      ? entry
+      : entry?.metadata?.action || entry?.action || entry?.type || '';
+  if (!action) return false;
+  return HIDDEN_VIEW_ACTIONS.some((pattern) => pattern.test(action));
+}
+
+function filterVisibleActivities(list = []) {
+  return list.filter((item) => !shouldHideFromFrontend(item));
 }
 
 function normalizeActivity(entry = {}, context = {}) {
@@ -293,9 +307,8 @@ export const useActivityStore = defineStore('activity', {
   actions: {
     hydrate() {
       if (typeof window === 'undefined') return;
-      this.events = safeParse(
-        window.localStorage?.getItem(storageKey(this.activeUserId)) || '[]',
-        []
+      this.events = filterVisibleActivities(
+        safeParse(window.localStorage?.getItem(storageKey(this.activeUserId)) || '[]', [])
       );
     },
 
@@ -308,6 +321,7 @@ export const useActivityStore = defineStore('activity', {
 
     persist() {
       if (typeof window === 'undefined') return;
+      this.events = filterVisibleActivities(this.events);
       window.localStorage?.setItem(storageKey(this.activeUserId), JSON.stringify(this.events));
     },
 
@@ -316,16 +330,17 @@ export const useActivityStore = defineStore('activity', {
         ...payload,
         userId: this.activeUserId ?? payload.userId ?? null,
       });
+      if (shouldHideFromFrontend(entry)) return null;
       this.events = mergeEvents([entry], this.events);
       this.persist();
       return entry;
     },
 
     importEvents(list = []) {
-      const normalized = list.map((item) =>
-        normalizeActivity(item, { activeUserId: this.activeUserId })
-      );
-      this.events = mergeEvents(normalized, this.events);
+      const normalized = list
+        .map((item) => normalizeActivity(item, { activeUserId: this.activeUserId }))
+        .filter((item) => !shouldHideFromFrontend(item));
+      this.events = filterVisibleActivities(mergeEvents(normalized, this.events));
       this.persist();
     },
 
@@ -367,11 +382,12 @@ export const useActivityStore = defineStore('activity', {
           normalizeActivity(item, { activeUserId: this.activeUserId })
         );
         const visible = filterSuperAdmin(normalized, viewerIsSuperAdmin);
-        this.events = visible;
+        const filtered = filterVisibleActivities(visible);
+        this.events = filtered;
         this.pagination = normalizePagination(payload, this.pagination);
         this.apiStatus = res.status ?? payload.code ?? 200;
         this.persist();
-        return { ok: true, items: visible, pagination: this.pagination };
+        return { ok: true, items: filtered, pagination: this.pagination };
       } catch (err) {
         const isNetworkError = err.code === 'ERR_NETWORK' || (!err.response && err.request);
         this.apiStatus =
