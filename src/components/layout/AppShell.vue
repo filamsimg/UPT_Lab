@@ -61,7 +61,7 @@
           <!-- Grouped Menu -->
           <li v-for="group in groupedMenu" :key="group.label" class="mb-2">
             <button
-              class="flex items-center justify-between w-[calc(100%-1rem)] px-3 py-3 rounded-md mx-2 hover:bg-primaryLight hover:text-white transition-all duration-200 text-left"
+              class="flex items-center justify-between w-full px-3 py-3 rounded-md mx-2 hover:bg-primaryLight hover:text-white transition-all duration-200 text-left"
               :class="{
                 'bg-gradient-to-r from-primaryLight to-primaryDark text-white':
                   openGroup === group.label,
@@ -97,7 +97,7 @@
                   <router-link
                     :to="child.path"
                     :title="collapsed ? child.label : ''"
-                    class="flex items-center gap-3 p-3 rounded-md hover:bg-primaryLight hover:text-white mx-2 mb-2 transition-all duration-200 text-left"
+                    class="flex items-center gap-3 p-3 rounded-md hover:bg-primaryLight hover:text-white mx-2 mb-2 transition-all duration-200 text-left w-full"
                     :class="{
                       'bg-gradient-to-r from-primaryLight to-primaryDark text-white':
                         route.path === child.path,
