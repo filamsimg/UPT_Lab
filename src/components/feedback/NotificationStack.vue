@@ -2,7 +2,7 @@
   <transition-group
     tag="div"
     name="toast"
-    class="pointer-events-none fixed inset-x-0 top-4 z-[1100] flex flex-col items-center gap-3 px-4 sm:items-end"
+    class="pointer-events-none fixed inset-x-0 top-16 sm:top-18 z-[1100] flex flex-col items-center gap-3 px-4 sm:items-end"
   >
     <article
       v-for="item in items"
