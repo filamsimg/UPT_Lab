@@ -368,7 +368,7 @@ const showMobileSidebar = ref(false);
 const openGroup = ref(null);
 const route = useRoute();
 const authStore = useAuthStore();
-const { hasPermission } = useAuthorization();
+const { hasPermission, hasAnyPermission } = useAuthorization();
 const {
   state: confirmState,
   confirm: resolveConfirmDialog,
@@ -497,7 +497,17 @@ const baseMenu = [
     label: 'Layanan & Tarif',
     icon: Cog6ToothIcon,
     children: [
-      { label: 'Daftar Layanan', path: '/layanan', icon: Cog6ToothIcon },
+      {
+        label: 'Daftar Layanan',
+        path: '/layanan',
+        icon: Cog6ToothIcon,
+        requiredPermissions: [
+          'material_test_services.index',
+          'material_test_services.*',
+          'services.index',
+          'tests.index',
+        ],
+      },
     ],
   },
   {
@@ -563,8 +573,11 @@ const groupedMenu = computed(() =>
   baseMenu
     .map((group) => {
       const allowedChildren = group.children.filter((child) => {
-        if (!child.requiredPermission) return true;
-        return hasPermission(child.requiredPermission);
+        if (Array.isArray(child.requiredPermissions)) {
+          return hasAnyPermission(...child.requiredPermissions);
+        }
+        if (child.requiredPermission) return hasPermission(child.requiredPermission);
+        return true;
       });
       return { ...group, children: allowedChildren };
     })
