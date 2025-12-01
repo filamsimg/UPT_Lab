@@ -669,10 +669,7 @@ function printFromPreview(type) {
 
 function printDocument(row, type = 'request') {
   if (!row) return;
-  const title =
-    type === 'invoice'
-      ? 'Invoice Pembayaran Permintaan'
-      : 'Form Permintaan Pengujian';
+  const title = type === 'invoice' ? 'Invoice Pembayaran' : 'Permintaan Pengujian';
   const html = buildPermintaanPrintHtml(row, type, {
     logoSrc: logoDinas,
     title,
