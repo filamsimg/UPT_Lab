@@ -286,6 +286,19 @@ const authStore = useAuthStore()
 const activeFilter = ref('all')
 const errorDismissed = ref(false)
 const { hasAnyPermission, isSuperAdmin } = useAuthorization()
+
+const normalizeRoleName = (value = '') =>
+  String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, '_')
+
+const isCustomer = computed(() =>
+  (authStore.currentUser?.roles || []).some((role) =>
+    ['customer', 'pelanggan'].includes(normalizeRoleName(role?.slug || role?.code || role?.name))
+  )
+)
+
 const filterUserId = ref('')
 const dateFrom = ref('')
 const dateTo = ref('')
@@ -294,6 +307,7 @@ const toastMessage = ref('')
 let toastTimer = null
 
 const canViewAllActivity = computed(() => {
+  if (isCustomer.value) return false
   return (
     isSuperAdmin.value ||
     hasAnyPermission(
