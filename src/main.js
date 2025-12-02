@@ -20,7 +20,7 @@ app.use(router);
 router.isReady().then(async () => {
   // Use the already-installed Pinia instance; the store will be available.
   const authStore = useAuthStore();
-  await authStore.init();
+  await authStore.init({ skipIfNoSession: true }); // jangan spam error di mode tamu
 
   app.mount('#app');
 });

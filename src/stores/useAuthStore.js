@@ -3,7 +3,6 @@ import { defineStore } from 'pinia'
 import api from '@/services/apiServices'
 import { useActivityStore } from '@/stores/useActivityStore'
 import { useNotificationStore } from '@/stores/useNotificationStore'
-import { tokenStorage } from '@/utils/storage/tokenStorage'
 
 const isString = (value) => typeof value === 'string'
 
@@ -102,12 +101,30 @@ const buildPasswordFormData = (payload = {}) => {
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
-    currentUser: JSON.parse(localStorage.getItem('currentUser') || 'null'),
-    token: tokenStorage.get(),
+    currentUser: null,
+    authToken: null, // in-memory token (fallback jika backend belum set cookie sesi)
     loading: false,
+    initTried: false,
   }),
 
   actions: {
+    sanitizeUser(raw = null) {
+      if (!raw || typeof raw !== 'object') return raw
+      // Buang field sensitif bila backend masih mengirim
+      // eslint-disable-next-line no-unused-vars
+      const { password, password_hash, passwordHash, ...rest } = raw
+      return rest
+    },
+
+    setAuthToken(token) {
+      this.authToken = token || null
+      if (this.authToken) {
+        api.defaults.headers.common.Authorization = `Bearer ${this.authToken}`
+      } else {
+        delete api.defaults.headers.common.Authorization
+      }
+    },
+
     async register(payload = {}) {
       try {
         this.loading = true
@@ -176,15 +193,12 @@ export const useAuthStore = defineStore('auth', {
 
         const res = await api.post('/api/v1/users/login', formData)
 
-        const { token, user } = res.data.data
+        const { user, token } = res.data.data
 
-        this.token = token
-        this.currentUser = user
+        this.setAuthToken(token)
+        this.currentUser = this.sanitizeUser(user)
 
-        tokenStorage.set(token)
-        localStorage.setItem('currentUser', JSON.stringify(user))
-
-        let hydratedUser = user
+        let hydratedUser = this.currentUser
         try {
           const refreshed = await this.fetchProfile({ force: true })
           if (refreshed) hydratedUser = refreshed
@@ -427,18 +441,7 @@ export const useAuthStore = defineStore('auth', {
       }
     },
 
-    async fetchProfile({ force = false, include } = {}) {
-      const activeToken = this.token || tokenStorage.get()
-      this.token = activeToken
-      if (!activeToken) {
-        this.currentUser = null
-        const activityStore = useActivityStore()
-        const notificationStore = useNotificationStore()
-        activityStore.setActiveUser(null)
-        notificationStore.setActiveUser(null)
-        return null
-      }
-
+    async fetchProfile({ force = false, include, skipAuthRedirect = false } = {}) {
       if (!force && this.currentUser) {
         return this.currentUser
       }
@@ -446,18 +449,25 @@ export const useAuthStore = defineStore('auth', {
       try {
         this.loading = true
         const url = buildProfileUrl(include)
-        const res = await api.get(url)
+        const res = await api.get(url, { skipAuthRedirect })
         const payload = res.data?.data ?? res.data
         const user = payload?.user ?? payload
-        this.currentUser = user
-        localStorage.setItem('currentUser', JSON.stringify(user))
+        this.currentUser = this.sanitizeUser(user)
         const activityStore = useActivityStore()
         const notificationStore = useNotificationStore()
         activityStore.setActiveUser(user?.id ?? null)
         notificationStore.setActiveUser(user?.id ?? null)
         return user
+      } catch (err) {
+        this.currentUser = null
+        const activityStore = useActivityStore()
+        const notificationStore = useNotificationStore()
+        activityStore.setActiveUser(null)
+        notificationStore.setActiveUser(null)
+        throw err
       } finally {
         this.loading = false
+        this.initTried = true
       }
     },
 
@@ -475,8 +485,7 @@ export const useAuthStore = defineStore('auth', {
         const res = await api.put('/api/v1/users/me', body)
         const responsePayload = res.data?.data ?? res.data
         const updatedUser = responsePayload?.user ?? responsePayload
-        this.currentUser = updatedUser
-        localStorage.setItem('currentUser', JSON.stringify(updatedUser))
+        this.currentUser = this.sanitizeUser(updatedUser)
 
         let latestUser = updatedUser
         try {
@@ -558,35 +567,39 @@ export const useAuthStore = defineStore('auth', {
       }
     },
 
-    async init() {
-      if (this.token) {
-        try {
-          await this.fetchProfile({ force: true })
-        } catch (err) {
-          console.warn('Token invalid, logout otomatis')
-          this.logout()
+    async init({ skipIfNoSession = true } = {}) {
+      if (this.initTried) return
+      // Jika tidak ada token in-memory dan mode skip aktif, lewati fetch profil
+      if (skipIfNoSession && !this.authToken) {
+        this.initTried = true
+        return
+      }
+      try {
+        await this.fetchProfile({ force: true, skipAuthRedirect: true })
+      } catch (err) {
+        if (!skipIfNoSession) {
+          console.warn('Sesi tidak valid atau belum login', err)
         }
-      } else {
         const activityStore = useActivityStore()
         const notificationStore = useNotificationStore()
         activityStore.setActiveUser(null)
         notificationStore.setActiveUser(null)
+      } finally {
+        this.initTried = true
       }
     },
 
     async logout() {
       const lastUser = this.currentUser
+      const activityStore = useActivityStore()
+      const notificationStore = useNotificationStore()
       try {
         await api.delete('/api/v1/users/logout')
       } catch {}
       this.currentUser = null
-      this.token = null
-      tokenStorage.clear()
-      localStorage.removeItem('currentUser')
+      this.setAuthToken(null)
 
       if (lastUser) {
-        const activityStore = useActivityStore()
-        const notificationStore = useNotificationStore()
         activityStore.setActiveUser(lastUser.id ?? null)
         activityStore.addEvent({
           type: 'login',
@@ -595,9 +608,9 @@ export const useAuthStore = defineStore('auth', {
           status: 'info',
           metadata: { email: lastUser.email },
         })
-        activityStore.setActiveUser(null)
-        notificationStore.setActiveUser(null)
       }
+      activityStore.setActiveUser(null)
+      notificationStore.setActiveUser(null)
     },
   },
 })

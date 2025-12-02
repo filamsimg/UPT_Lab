@@ -4,7 +4,6 @@ import {
   buildPermissionSet,
   isSuperAdminUser,
 } from '@/composables/auth/useAuthorization';
-import { tokenStorage } from '@/utils/storage/tokenStorage';
 import DashboardPage from '../pages/DashboardPage.vue';
 
 // Lazy-load pages
@@ -90,23 +89,27 @@ const router = createRouter({
 });
 
 // === NAVIGATION GUARD ===
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, from, next) => {
   const authStore = useAuthStore();
 
   // Izinkan halaman dengan layout khusus tanpa autentikasi
   const publicLayouts = ['auth', 'print', 'public'];
-  if (publicLayouts.includes(to.meta.layout)) {
+  const isPublic = to.matched.some((record) =>
+    publicLayouts.includes(record.meta?.layout)
+  );
+  if (isPublic) {
     return next();
   }
 
-  const token = authStore.token || tokenStorage.get();
-  if (!authStore.currentUser && token && !authStore.loading) {
-    authStore.init().catch((err) => {
+  if (!authStore.currentUser && !authStore.loading) {
+    try {
+      await authStore.init();
+    } catch (err) {
       console.warn('Gagal sinkronisasi pengguna saat navigasi', err);
-    });
+    }
   }
 
-  if (!authStore.currentUser && !token) {
+  if (!authStore.currentUser) {
     return next('/login');
   }
 

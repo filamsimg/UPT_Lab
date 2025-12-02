@@ -1,7 +1,7 @@
 // src/services/apiServices.js
 import axios from 'axios';
 import router from '@/router';
-import { tokenStorage } from '@/utils/storage/tokenStorage';
+import { useAuthStore } from '@/stores/useAuthStore';
 
 const rawApiUrl = import.meta.env.VITE_API_URL?.trim();
 const isDev = import.meta.env.DEV;
@@ -27,13 +27,15 @@ const resolvedBaseURL = resolveBaseURL();
 const api = axios.create({
   baseURL: resolvedBaseURL || undefined,
   timeout: 10000, // optional (10 detik)
+  withCredentials: true, // kirim cookie sesi httpOnly
 });
 
 // === Interceptor: request ===
-// Menyisipkan token otomatis sebelum kirim request
+// Jika backend tidak set cookie sesi, fallback pakai token in-memory dari store
 api.interceptors.request.use(
   (config) => {
-    const token = tokenStorage.get();
+    const authStore = useAuthStore();
+    const token = authStore?.authToken;
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -50,11 +52,7 @@ api.interceptors.response.use(
     const status = error.response?.status;
     const config = error.config || {};
     if (status === 401 && !config.skipAuthRedirect) {
-      // Token invalid / expired -> logout dan arahkan ke login
-      tokenStorage.clear();
-      localStorage.removeItem('currentUser');
-      delete axios.defaults.headers.common.Authorization;
-
+      // Sesi invalid / expired -> arahkan ke login
       if (router.currentRoute.value.path !== '/login') {
         router.push('/login');
       }
