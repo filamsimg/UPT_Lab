@@ -105,15 +105,35 @@
         </DataTable>
 
         <div
-          class="flex flex-col gap-3 border-t border-gray-100 pt-4 text-sm text-gray-700 sm:flex-row sm:items-center sm:justify-between"
+          class="flex flex-wrap items-center justify-between gap-3 border-t border-gray-100 pt-4 text-sm text-gray-700"
         >
-          <p>
-            Halaman
-            <span class="font-semibold text-gray-800">{{ pagination.currentPage }}</span>
-            dari
-            <span class="font-semibold text-gray-800">{{ pagination.lastPage }}</span>
-            ({{ rows.length }} layanan ditampilkan)
-          </p>
+          <div class="flex flex-wrap items-center gap-4">
+            <label class="flex items-center gap-2 text-sm text-gray-600">
+              <span>Tampilkan</span>
+              <select
+                v-model.number="perPageSelection"
+                class="rounded-md border border-gray-200 bg-white px-2 py-1 text-sm text-gray-700 outline-none transition focus:border-primary focus:ring-1 focus:ring-primary/30"
+                @change="changePerPage(perPageSelection)"
+              >
+                <option
+                  v-for="option in perPageOptions"
+                  :key="option"
+                  :value="option"
+                >
+                  {{ option }}
+                </option>
+              </select>
+              <span>baris</span>
+            </label>
+            <p class="text-sm text-gray-500">
+              Menampilkan
+              <span class="font-medium text-gray-700">{{ startEntry }}</span>
+              -
+              <span class="font-medium text-gray-700">{{ endEntry }}</span>
+              dari
+              <span class="font-medium text-gray-700">{{ totalItems }}</span>
+            </p>
+          </div>
           <div class="flex items-center gap-2">
             <button
               class="rounded-md border border-gray-200 px-3 py-1 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-60"
@@ -122,6 +142,12 @@
             >
               Sebelumnya
             </button>
+            <span class="text-sm text-gray-500">
+              Halaman
+              <span class="font-semibold text-gray-800">{{ pagination.currentPage }}</span>
+              dari
+              <span class="font-semibold text-gray-800">{{ pagination.lastPage }}</span>
+            </span>
             <button
               class="rounded-md border border-gray-200 px-3 py-1 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-60"
               :disabled="!pagination.hasNextPage"
@@ -258,6 +284,8 @@ const editData = ref(null)
 const searchTerm = ref('')
 const initialized = ref(false)
 let debounceTimer = null
+const perPageOptions = [10, 25, 50, 100]
+const perPageSelection = ref(testStore.pagination?.perPage || perPageOptions[0])
 
 const testColumns = [
   { field: 'serviceCategoryLabel', title: 'Jenis Layanan', slotName: 'serviceCategoryLabel', isSortable: true },
@@ -314,6 +342,19 @@ const methodItems = computed(() =>
 )
 
 const pagination = computed(() => testStore.pagination)
+const currentPerPage = computed(() => normalizePerPage(perPageSelection.value || pagination.value.perPage))
+const totalItems = computed(() => {
+  const total = Number(pagination.value?.totalItems)
+  return Number.isFinite(total) ? total : rows.value.length
+})
+const startEntry = computed(() => {
+  if (!totalItems.value) return 0
+  return (pagination.value.currentPage - 1) * currentPerPage.value + 1
+})
+const endEntry = computed(() => {
+  if (!totalItems.value) return 0
+  return Math.min(pagination.value.currentPage * currentPerPage.value, totalItems.value)
+})
 
 const noDataText = computed(() =>
   searchTerm.value
@@ -326,9 +367,17 @@ watch(searchTerm, (value) => {
   if (!initialized.value) return
   clearTimeout(debounceTimer)
   debounceTimer = setTimeout(() => {
-    testStore.fetchTests({ page: 1, search: value })
+    testStore.fetchTests({ page: 1, search: value, perPage: currentPerPage.value })
   }, 400)
 })
+
+watch(
+  () => pagination.value.perPage,
+  (perPage) => {
+    perPageSelection.value = normalizePerPage(perPage)
+  },
+  { immediate: true }
+)
 
 onMounted(async () => {
   await testStore.fetchAll()
@@ -366,6 +415,7 @@ async function refreshTests() {
   await testStore.fetchTests({
     page: pagination.value.currentPage,
     search: searchTerm.value,
+    perPage: currentPerPage.value,
   })
 }
 
@@ -374,7 +424,24 @@ async function changePage(page) {
   await testStore.fetchTests({
     page,
     search: searchTerm.value,
+    perPage: currentPerPage.value,
   })
+}
+
+async function changePerPage(perPage) {
+  const normalized = normalizePerPage(perPage)
+  if (normalized === normalizePerPage(pagination.value.perPage)) return
+  perPageSelection.value = normalized
+  await testStore.fetchTests({
+    page: 1,
+    search: searchTerm.value,
+    perPage: normalized,
+  })
+}
+
+function normalizePerPage(value) {
+  const parsed = Number(value)
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : perPageOptions[0]
 }
 
 // === Mesin ===

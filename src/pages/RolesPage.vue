@@ -217,19 +217,35 @@
         </DataTable>
 
         <div
-          class="flex flex-col gap-3 border-t border-gray-100 px-4 py-4 text-sm text-gray-600 sm:flex-row sm:items-center sm:justify-between"
+          class="flex flex-wrap items-center justify-between gap-3 border-t border-gray-100 px-4 py-4 text-sm text-gray-600"
         >
-          <p>
-            Halaman
-            <span class="font-semibold text-gray-800">{{
-              roleStore.pagination.currentPage
-            }}</span>
-            dari
-            <span class="font-semibold text-gray-800">{{
-              roleStore.pagination.lastPage
-            }}</span>
-            ({{ rows.length }} role ditampilkan)
-          </p>
+          <div class="flex flex-wrap items-center gap-4">
+            <label class="flex items-center gap-2 text-sm text-gray-600">
+              <span>Tampilkan</span>
+              <select
+                v-model.number="perPageSelection"
+                class="rounded-md border border-gray-200 bg-white px-2 py-1 text-sm text-gray-700 outline-none transition focus:border-primary focus:ring-1 focus:ring-primary/30"
+                @change="changePerPage(perPageSelection)"
+              >
+                <option
+                  v-for="option in perPageOptions"
+                  :key="option"
+                  :value="option"
+                >
+                  {{ option }}
+                </option>
+              </select>
+              <span>baris</span>
+            </label>
+            <p class="text-sm text-gray-500">
+              Menampilkan
+              <span class="font-medium text-gray-700">{{ startEntry }}</span>
+              -
+              <span class="font-medium text-gray-700">{{ endEntry }}</span>
+              dari
+              <span class="font-medium text-gray-700">{{ totalItems }}</span>
+            </p>
+          </div>
           <div class="flex items-center gap-2">
             <button
               class="rounded-md border border-gray-200 px-3 py-1 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-60"
@@ -238,6 +254,12 @@
             >
               Sebelumnya
             </button>
+            <span class="text-sm text-gray-500">
+              Halaman
+              <span class="font-semibold text-gray-800">{{ roleStore.pagination.currentPage }}</span>
+              dari
+              <span class="font-semibold text-gray-800">{{ roleStore.pagination.lastPage }}</span>
+            </span>
             <button
               class="rounded-md border border-gray-200 px-3 py-1 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-60"
               :disabled="!roleStore.pagination.hasNextPage"
@@ -353,6 +375,8 @@ let debounceTimer = null;
 const defaultWarning = ref('');
 const defaultSuccess = ref('');
 const DEFAULT_ELIGIBLE_NAMES = ['customer'];
+const perPageOptions = [10, 25, 50, 100];
+const perPageSelection = ref(roleStore.pagination?.perPage || perPageOptions[0]);
 
 function clearActionMessage() {}
 
@@ -386,6 +410,22 @@ const topRoleLabel = computed(() => {
   return `${nameLabel} (${top.userCount} pengguna)`;
 });
 
+const totalItems = computed(() => {
+  const total = Number(roleStore.pagination?.totalItems);
+  return Number.isFinite(total) ? total : rows.value.length;
+});
+const currentPerPage = computed(() =>
+  normalizePerPage(perPageSelection.value || roleStore.pagination.perPage)
+);
+const startEntry = computed(() => {
+  if (!totalItems.value) return 0;
+  return (roleStore.pagination.currentPage - 1) * currentPerPage.value + 1;
+});
+const endEntry = computed(() => {
+  if (!totalItems.value) return 0;
+  return Math.min(roleStore.pagination.currentPage * currentPerPage.value, totalItems.value);
+});
+
 watch(searchTerm, (value) => {
   clearActionMessage();
   if (!canViewRoles.value) return;
@@ -393,16 +433,24 @@ watch(searchTerm, (value) => {
   if (!initialized.value) return;
   clearTimeout(debounceTimer);
   debounceTimer = setTimeout(() => {
-    roleStore.fetchRoles({ page: 1, search: value });
+    roleStore.fetchRoles({ page: 1, search: value, perPage: currentPerPage.value });
   }, 400);
 });
+
+watch(
+  () => roleStore.pagination.perPage,
+  (perPage) => {
+    perPageSelection.value = normalizePerPage(perPage);
+  },
+  { immediate: true }
+);
 
 onMounted(async () => {
   clearActionMessage();
   if (!canViewRoles.value) return;
   await Promise.all([
     permissionStore.fetchPermissions({ perPage: 200 }),
-    roleStore.fetchRoles(),
+    roleStore.fetchRoles({ perPage: currentPerPage.value }),
   ]);
   initialized.value = true;
 });
@@ -439,13 +487,18 @@ async function refreshRoles() {
   await roleStore.fetchRoles({
     page: roleStore.pagination.currentPage,
     search: roleStore.search,
+    perPage: currentPerPage.value,
   });
 }
 
 async function changePage(page) {
   clearActionMessage();
   if (!canViewRoles.value) return;
-  await roleStore.changePage(page);
+  await roleStore.fetchRoles({
+    page,
+    search: roleStore.search,
+    perPage: currentPerPage.value,
+  });
 }
 
 function openCreateForm() {
@@ -588,6 +641,22 @@ async function handleSetDefault(role) {
       err.message ||
       'Gagal menetapkan role default.';
   }
+}
+
+async function changePerPage(perPage) {
+  const normalized = normalizePerPage(perPage);
+  if (normalized === normalizePerPage(roleStore.pagination.perPage)) return;
+  perPageSelection.value = normalized;
+  await roleStore.fetchRoles({
+    page: 1,
+    search: roleStore.search,
+    perPage: normalized,
+  });
+}
+
+function normalizePerPage(value) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : perPageOptions[0];
 }
 </script>
 

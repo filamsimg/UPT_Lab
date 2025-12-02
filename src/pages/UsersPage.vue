@@ -217,13 +217,33 @@
         </DataTable>
 
         <div class="flex flex-col gap-3 border-t border-gray-100 px-4 py-4 text-sm text-gray-600 sm:flex-row sm:items-center sm:justify-between">
-          <p>
-            Halaman
-            <span class="font-semibold text-gray-800">{{ userStore.pagination.currentPage }}</span>
-            dari
-            <span class="font-semibold text-gray-800">{{ userStore.pagination.lastPage }}</span>
-            ({{ rows.length }} pengguna ditampilkan)
-          </p>
+          <div class="flex flex-wrap items-center gap-4">
+            <label class="flex items-center gap-2 text-sm text-gray-600">
+              <span>Tampilkan</span>
+              <select
+                v-model.number="perPageSelection"
+                class="rounded-md border border-gray-200 bg-white px-2 py-1 text-sm text-gray-700 outline-none transition focus:border-primary focus:ring-1 focus:ring-primary/30"
+                @change="changePerPage(perPageSelection)"
+              >
+                <option
+                  v-for="option in perPageOptions"
+                  :key="option"
+                  :value="option"
+                >
+                  {{ option }}
+                </option>
+              </select>
+              <span>baris</span>
+            </label>
+            <p class="text-sm text-gray-500">
+              Menampilkan
+              <span class="font-medium text-gray-700">{{ startEntry }}</span>
+              -
+              <span class="font-medium text-gray-700">{{ endEntry }}</span>
+              dari
+              <span class="font-medium text-gray-700">{{ totalItems }}</span>
+            </p>
+          </div>
           <div class="flex items-center gap-2">
             <button
               class="rounded-md border border-gray-200 px-3 py-1 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-60"
@@ -232,6 +252,12 @@
             >
               Sebelumnya
             </button>
+            <span class="text-sm text-gray-500">
+              Halaman
+              <span class="font-semibold text-gray-800">{{ userStore.pagination.currentPage }}</span>
+              dari
+              <span class="font-semibold text-gray-800">{{ userStore.pagination.lastPage }}</span>
+            </span>
             <button
               class="rounded-md border border-gray-200 px-3 py-1 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-60"
               :disabled="!userStore.pagination.hasNextPage"
@@ -325,6 +351,8 @@ const isEdit = ref(false);
 const initialized = ref(false);
 let debounceTimer = null;
 const togglingUserId = ref(null);
+const perPageOptions = [10, 25, 50, 100];
+const perPageSelection = ref(userStore.pagination?.perPage || perPageOptions[0]);
 
 const rows = computed(() =>
   userStore.users.map((user) => ({
@@ -361,6 +389,25 @@ const lastRefreshedLabel = computed(() => {
   return formatDate(lastRefreshedAt.value);
 });
 
+const totalItems = computed(() => {
+  const total = Number(userStore.pagination?.totalItems);
+  return Number.isFinite(total) ? total : rows.value.length;
+});
+const currentPerPage = computed(() =>
+  normalizePerPage(perPageSelection.value || userStore.pagination.perPage)
+);
+const startEntry = computed(() => {
+  if (!totalItems.value) return 0;
+  return (userStore.pagination.currentPage - 1) * currentPerPage.value + 1;
+});
+const endEntry = computed(() => {
+  if (!totalItems.value) return 0;
+  return Math.min(
+    userStore.pagination.currentPage * currentPerPage.value,
+    totalItems.value
+  );
+});
+
 watch(
   searchTerm,
   (value) => {
@@ -369,7 +416,7 @@ watch(
     if (!initialized.value) return;
     clearTimeout(debounceTimer);
     debounceTimer = setTimeout(() => {
-      userStore.fetchUsers({ page: 1, search: value });
+      userStore.fetchUsers({ page: 1, search: value, perPage: currentPerPage.value });
     }, 400);
   }
 );
@@ -380,7 +427,7 @@ watch(
     if (!canViewUsers.value) return;
     userStore.setRoleFilter(value);
     if (!initialized.value) return;
-    userStore.fetchUsers({ page: 1, roleId: value });
+    userStore.fetchUsers({ page: 1, roleId: value, perPage: currentPerPage.value });
   }
 );
 
@@ -394,13 +441,25 @@ watch(
     userStore.fetchUsers({
       page: 1,
       status: mapped,
+      perPage: currentPerPage.value,
     });
   }
 );
 
+watch(
+  () => userStore.pagination.perPage,
+  (perPage) => {
+    perPageSelection.value = normalizePerPage(perPage);
+  },
+  { immediate: true }
+);
+
 onMounted(async () => {
   if (!canViewUsers.value) return;
-  await Promise.all([roleStore.fetchRoles({ perPage: 100 }), userStore.fetchUsers()]);
+  await Promise.all([
+    roleStore.fetchRoles({ perPage: 100 }),
+    userStore.fetchUsers({ perPage: currentPerPage.value }),
+  ]);
   lastRefreshedAt.value = new Date();
   initialized.value = true;
 });
@@ -422,14 +481,40 @@ async function refreshUsers() {
     search: userStore.filters.search,
     roleId: userStore.filters.roleId,
     status: userStore.filters.status,
+    perPage: currentPerPage.value,
   });
   lastRefreshedAt.value = new Date();
 }
 
 async function changePage(page) {
   if (!canViewUsers.value) return;
-  await userStore.changePage(page);
+  await userStore.fetchUsers({
+    page,
+    search: userStore.filters.search,
+    roleId: userStore.filters.roleId,
+    status: userStore.filters.status,
+    perPage: currentPerPage.value,
+  });
   lastRefreshedAt.value = new Date();
+}
+
+async function changePerPage(perPage) {
+  const normalized = normalizePerPage(perPage);
+  if (normalized === normalizePerPage(userStore.pagination.perPage)) return;
+  perPageSelection.value = normalized;
+  await userStore.fetchUsers({
+    page: 1,
+    search: userStore.filters.search,
+    roleId: userStore.filters.roleId,
+    status: userStore.filters.status,
+    perPage: normalized,
+  });
+  lastRefreshedAt.value = new Date();
+}
+
+function normalizePerPage(value) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : perPageOptions[0];
 }
 
 function openCreateForm() {
@@ -559,6 +644,7 @@ async function handleToggleStatus(user) {
       search: userStore.filters.search,
       roleId: userStore.filters.roleId,
       status: userStore.filters.status,
+      perPage: currentPerPage.value,
     });
   } finally {
     togglingUserId.value = null;

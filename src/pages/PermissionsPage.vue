@@ -120,19 +120,35 @@
         </DataTable>
 
         <div
-          class="flex flex-col gap-3 border-t border-gray-100 px-4 py-4 text-sm text-gray-600 sm:flex-row sm:items-center sm:justify-between"
+          class="flex flex-wrap items-center justify-between gap-3 border-t border-gray-100 px-4 py-4 text-sm text-gray-600"
         >
-          <p>
-            Halaman
-            <span class="font-semibold text-gray-800">{{
-              permissionStore.pagination.currentPage
-            }}</span>
-            dari
-            <span class="font-semibold text-gray-800">{{
-              permissionStore.pagination.lastPage
-            }}</span>
-            ({{ rows.length }} permission ditampilkan)
-          </p>
+          <div class="flex flex-wrap items-center gap-4">
+            <label class="flex items-center gap-2 text-sm text-gray-600">
+              <span>Tampilkan</span>
+              <select
+                v-model.number="perPageSelection"
+                class="rounded-md border border-gray-200 bg-white px-2 py-1 text-sm text-gray-700 outline-none transition focus:border-primary focus:ring-1 focus:ring-primary/30"
+                @change="changePerPage(perPageSelection)"
+              >
+                <option
+                  v-for="option in perPageOptions"
+                  :key="option"
+                  :value="option"
+                >
+                  {{ option }}
+                </option>
+              </select>
+              <span>baris</span>
+            </label>
+            <p class="text-sm text-gray-500">
+              Menampilkan
+              <span class="font-medium text-gray-700">{{ startEntry }}</span>
+              -
+              <span class="font-medium text-gray-700">{{ endEntry }}</span>
+              dari
+              <span class="font-medium text-gray-700">{{ totalItems }}</span>
+            </p>
+          </div>
           <div class="flex items-center gap-2">
             <button
               class="rounded-md border border-gray-200 px-3 py-1 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-60"
@@ -141,6 +157,12 @@
             >
               Sebelumnya
             </button>
+            <span class="text-sm text-gray-500">
+              Halaman
+              <span class="font-semibold text-gray-800">{{ permissionStore.pagination.currentPage }}</span>
+              dari
+              <span class="font-semibold text-gray-800">{{ permissionStore.pagination.lastPage }}</span>
+            </span>
             <button
               class="rounded-md border border-gray-200 px-3 py-1 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-60"
               :disabled="!permissionStore.pagination.hasNextPage"
@@ -177,6 +199,8 @@ const searchTerm = ref('');
 const initialized = ref(false);
 const lastRefreshedAt = ref(null);
 let debounceTimer = null;
+const perPageOptions = [10, 25, 50, 100];
+const perPageSelection = ref(permissionStore.pagination?.perPage || perPageOptions[0]);
 
 const rows = computed(() => permissionStore.permissions);
 
@@ -196,6 +220,22 @@ const lastRefreshedLabel = computed(() => {
   return formatDate(lastRefreshedAt.value);
 });
 
+const totalItems = computed(() => {
+  const total = Number(permissionStore.pagination?.totalItems);
+  return Number.isFinite(total) ? total : rows.value.length;
+});
+const currentPerPage = computed(() =>
+  normalizePerPage(perPageSelection.value || permissionStore.pagination.perPage)
+);
+const startEntry = computed(() => {
+  if (!totalItems.value) return 0;
+  return (permissionStore.pagination.currentPage - 1) * currentPerPage.value + 1;
+});
+const endEntry = computed(() => {
+  if (!totalItems.value) return 0;
+  return Math.min(permissionStore.pagination.currentPage * currentPerPage.value, totalItems.value);
+});
+
 watch(searchTerm, (value) => {
   if (!canViewPermissions.value) return;
   permissionStore.setSearch(value);
@@ -205,13 +245,22 @@ watch(searchTerm, (value) => {
     permissionStore.fetchPermissions({
       page: 1,
       search: value,
+      perPage: currentPerPage.value,
     });
   }, 400);
 });
 
+watch(
+  () => permissionStore.pagination.perPage,
+  (perPage) => {
+    perPageSelection.value = normalizePerPage(perPage);
+  },
+  { immediate: true }
+);
+
 onMounted(async () => {
   if (!canViewPermissions.value) return;
-  await permissionStore.fetchPermissions();
+  await permissionStore.fetchPermissions({ perPage: currentPerPage.value });
   lastRefreshedAt.value = new Date();
   initialized.value = true;
 });
@@ -231,14 +280,36 @@ async function refreshPermissions() {
   await permissionStore.fetchPermissions({
     page: permissionStore.pagination.currentPage,
     search: permissionStore.search,
+    perPage: currentPerPage.value,
   });
   lastRefreshedAt.value = new Date();
 }
 
 async function changePage(page) {
   if (!canViewPermissions.value) return;
-  await permissionStore.changePage(page);
+  await permissionStore.fetchPermissions({
+    page,
+    search: permissionStore.search,
+    perPage: currentPerPage.value,
+  });
   lastRefreshedAt.value = new Date();
+}
+
+async function changePerPage(perPage) {
+  const normalized = normalizePerPage(perPage);
+  if (normalized === normalizePerPage(permissionStore.pagination.perPage)) return;
+  perPageSelection.value = normalized;
+  await permissionStore.fetchPermissions({
+    page: 1,
+    search: permissionStore.search,
+    perPage: normalized,
+  });
+  lastRefreshedAt.value = new Date();
+}
+
+function normalizePerPage(value) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : perPageOptions[0];
 }
 </script>
 
