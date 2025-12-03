@@ -2,9 +2,13 @@
   <div class="space-y-3">
     <!-- Header -->
     <header
+      v-if="!showModal"
       class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
     >
       <div>
+        <p class="text-xs font-semibold uppercase tracking-wide text-primaryLight">
+        Pengujian
+      </p>
         <h2 class="text-xl font-semibold text-surfaceDark sm:text-2xl">
           Daftar Permintaan
         </h2>
@@ -24,8 +28,18 @@
       </div>
     </header>
 
-    <!-- Datatable -->
+    <!-- Form section (non-modal) -->
+    <section v-if="showModal">
+      <FormPermintaan
+        :model-value="selectedRequest"
+        :is-edit="isEdit"
+        @submit="handleFormSubmit"
+        @cancel="closeModal"
+      />
+    </section>
+
     <div
+      v-if="!showModal"
       class="rounded-xl border border-gray-200 bg-white p-3 shadow-md sm:p-4"
     >
       <div
@@ -125,45 +139,6 @@
         </DataTable>
       </div>
     </div>
-
-    <!-- Modal -->
-    <transition name="fade">
-      <div
-        v-if="showModal"
-        class="fixed inset-0 bg-black/40 flex justify-center items-center z-50 px-2"
-      >
-        <div
-          class="flex max-h-[90vh] w-[98vw] max-w-5xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
-        >
-          <div class="sticky top-0 z-10 flex items-center justify-between border-b border-gray-100 bg-white px-6 py-4">
-            <div>
-              <p class="text-sm uppercase tracking-wide text-gray-500">
-                {{ isEdit ? 'Edit Permintaan' : 'Tambah Permintaan' }}
-              </p>
-              <h3 class="text-lg font-semibold text-surfaceDark">
-                {{ selectedRequest?.idOrder || 'Permintaan Baru' }}
-              </h3>
-            </div>
-            <button
-              @click="closeModal"
-              class="rounded-md p-1.5 text-gray-500 transition hover:bg-gray-100 hover:text-gray-700"
-            >
-              <span class="sr-only">Tutup</span>
-              <XCircleIcon class="h-6 w-6" />
-            </button>
-          </div>
-
-          <div class="flex-1 overflow-y-auto px-6 pb-6">
-            <FormPermintaan
-              :model-value="selectedRequest"
-              :is-edit="isEdit"
-              @submit="handleFormSubmit"
-              @cancel="closeModal"
-            />
-          </div>
-        </div>
-      </div>
-    </transition>
 
     <FormPayment
       v-if="showPaymentModal"
