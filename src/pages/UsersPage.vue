@@ -141,7 +141,7 @@
                 :key="role.id"
                 class="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primaryDark"
               >
-                {{ role.name }}
+                {{ formatRole(role.name || role.slug || role.code) }}
               </span>
               <span v-if="!value.length" class="text-xs text-gray-400">Tidak ada role</span>
             </div>
@@ -364,10 +364,22 @@ const rows = computed(() =>
   }))
 );
 
+const formatRole = (value = '') => {
+  const normalized = String(value || '')
+    .replace(/[_\-]+/g, ' ')
+    .trim()
+    .toLowerCase();
+  if (!normalized) return '';
+  return normalized
+    .split(' ')
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ');
+};
+
 const roleOptions = computed(() =>
   roleStore.roles.map((role) => ({
     id: role.id,
-    name: role.name,
+    name: formatRole(role.name || role.slug || role.code),
   }))
 );
 
@@ -665,4 +677,3 @@ async function handleToggleStatus(user) {
   opacity: 0;
 }
 </style>
-

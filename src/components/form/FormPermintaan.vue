@@ -49,7 +49,7 @@
 
         <div class="grid gap-3 sm:grid-cols-2">
           <div class="flex flex-col gap-1">
-            <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">Nama Customer</label>
+            <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">Nama Pemohon</label>
             <input
               v-model="form.customerName"
               type="text"

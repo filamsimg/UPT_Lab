@@ -222,11 +222,30 @@ async function handleSubmit() {
     confirmLabel: props.isEdit ? 'Simpan' : 'Tambah',
   });
   if (!confirmed) return;
+  const lockedSuperAdmin =
+    normalizeRoleKey(props.modelValue?.slug || props.modelValue?.code || props.modelValue?.name) === 'super_admin';
+  const rawName = props.modelValue?.name || form.name;
   emit('submit', {
-    name: form.name.trim(),
+    name: lockedSuperAdmin ? rawName : formatRoleName(form.name),
     description: form.description?.trim() || undefined,
     permission_ids: form.permissions,
   });
+}
+
+function normalizeRoleKey(value = '') {
+  return String(value || '').trim().toLowerCase().replace(/\s+/g, '_');
+}
+
+function formatRoleName(raw = '') {
+  const normalized = String(raw || '')
+    .replace(/[_\-]+/g, ' ')
+    .trim()
+    .toLowerCase();
+  if (!normalized) return '';
+  return normalized
+    .split(' ')
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ');
 }
 </script>
 

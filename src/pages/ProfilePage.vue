@@ -300,10 +300,22 @@ const userAvatar = computed(() => {
   return buildInitialAvatar(current?.name || 'SIAPEL User')
 })
 
+const formatRole = (value = '') => {
+  const normalized = String(value || '')
+    .replace(/[_\-]+/g, ' ')
+    .trim()
+    .toLowerCase()
+  if (!normalized) return ''
+  return normalized
+    .split(' ')
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ')
+}
+
 const roleNames = computed(() => {
   if (!Array.isArray(user.value?.roles)) return []
   return user.value.roles
-    .map((role) => role?.name || role?.title || role?.label)
+    .map((role) => formatRole(role?.name || role?.title || role?.label || role?.slug || role?.code))
     .filter(Boolean)
 })
 
