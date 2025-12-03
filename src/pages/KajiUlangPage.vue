@@ -5,6 +5,9 @@
       class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
     >
       <div>
+        <p class="text-xs font-semibold uppercase tracking-wide text-primaryLight">
+        Pengujian
+      </p>
         <h2 class="text-xl font-semibold text-surfaceDark sm:text-2xl">
           Manajemen Kaji Ulang
         </h2>
@@ -57,9 +60,7 @@
         <template #status="{ value }">
           <Badge :status="value" />
         </template>
-        <template #paymentReviewStatus="{ row }">
-          <Badge :status="row.paymentBadgeStatus" />
-        </template>
+        <!-- Kolom review pembayaran dihilangkan; hanya gunakan status -->
         <template #actions="{ row }">
           <div class="flex justify-center gap-2 text-surfaceDark">
             <button
@@ -424,12 +425,6 @@ const columns = [
     className: 'min-w-[150px]',
   },
   {
-    field: 'paymentReviewStatus',
-    title: 'Review Pembayaran',
-    slotName: 'paymentReviewStatus',
-    className: 'min-w-[180px]',
-  },
-  {
     field: 'testType',
     title: 'Jenis Pengujian',
     className: 'hidden lg:table-cell min-w-[160px]',
@@ -444,16 +439,16 @@ const columns = [
 
 const statusOptions = [
   { value: '', label: 'Semua Status' },
+  { value: 'draft', label: 'Draft' },
   { value: 'awaiting_kaji_ulang', label: 'Menunggu Kaji Ulang' },
   { value: 'pending_payment', label: 'Menunggu Pembayaran' },
   { value: 'payment_pending_review', label: 'Menunggu Review Pembayaran' },
-  { value: 'ready_for_kaji_ulang', label: 'Siap Kaji Ulang' },
   { value: 'payment_verified', label: 'Pembayaran Terverifikasi' },
-  { value: 'payment_review_rejected', label: 'Bukti Ditolak' },
-  { value: 'pending_validation', label: 'Menunggu Validasi' },
+  { value: 'payment_review_rejected', label: 'Bukti Pembayaran Ditolak' },
   { value: 'in_testing', label: 'Proses Pengujian' },
   { value: 'completed', label: 'Selesai' },
   { value: 'cancelled', label: 'Dibatalkan' },
+  { value: 'rejected', label: 'Ditolak' },
 ];
 
 const formatOrderNumberForSample = (orderNumber) => {
@@ -509,11 +504,7 @@ const tableRows = computed(() =>
     .filter((order) => order.status !== 'cancelled')
     .map((order) => {
       const sampleCodes = buildSampleCodes(order);
-      const hasInvoice = Boolean(order.paymentInfo);
-      const paymentStatus = order.paymentInfo?.status || 'pending_payment';
-      const paymentBadgeStatus = hasInvoice
-        ? paymentStatus
-        : 'awaiting_kaji_ulang';
+      // Konsolidasi status: gunakan status permintaan sebagai satu sumber
       return {
         id: order.id,
         orderNo: order.orderNo,
@@ -523,16 +514,9 @@ const tableRows = computed(() =>
         customerName: order.customerName || '',
         status: order.status,
         testType: order.testType || '-',
-        paymentReviewStatus: order.paymentInfo?.reviewStatus || null,
-        paymentBadgeStatus,
         paymentInfo: order.paymentInfo,
-        canReviewPayment:
-          order.paymentInfo?.status === 'payment_pending_review',
-        canOpenForm: ![
-          'completed',
-          'in_testing',
-          'payment_verified',
-        ].includes(order.status),
+        canReviewPayment: order.status === 'payment_pending_review',
+        canOpenForm: !['completed', 'in_testing', 'payment_verified'].includes(order.status),
         canDelete: !['in_testing', 'completed'].includes(order.status),
       };
     })

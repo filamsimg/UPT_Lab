@@ -18,29 +18,12 @@ const statusMap = {
     border: 'border border-gray-300',
     label: 'Draft',
   },
-  approved: {
-    bg: 'bg-green-100',
-    text: 'text-green-700',
-    border: 'border border-green-200',
-    label: 'Disetujui',
-  },
+  // approved status tidak dipakai lagi di skema baru
   rejected: {
     bg: 'bg-red-100',
     text: 'text-red-700',
     border: 'border border-red-200',
     label: 'Ditolak',
-  },
-  new: {
-    bg: 'bg-sky-100',
-    text: 'text-sky-700',
-    border: 'border border-sky-200',
-    label: 'Baru',
-  },
-  pending_validation: {
-    bg: 'bg-yellow-100',
-    text: 'text-yellow-800',
-    border: 'border border-yellow-200',
-    label: 'Menunggu Validasi',
   },
   pending_payment: {
     bg: 'bg-amber-100',
@@ -60,12 +43,6 @@ const statusMap = {
     border: 'border border-red-200',
     label: 'Bukti Ditolak',
   },
-  payment_received: {
-    bg: 'bg-emerald-100',
-    text: 'text-emerald-700',
-    border: 'border border-emerald-200',
-    label: 'Pembayaran Berhasil',
-  },
   payment_verified: {
     bg: 'bg-emerald-100',
     text: 'text-emerald-800',
@@ -76,19 +53,13 @@ const statusMap = {
     bg: 'bg-indigo-100',
     text: 'text-indigo-700',
     border: 'border border-indigo-200',
-    label: 'Dalam Uji',
+    label: 'Proses Pengujian',
   },
   completed: {
     bg: 'bg-emerald-100',
     text: 'text-emerald-700',
     border: 'border border-emerald-200',
     label: 'Selesai',
-  },
-  ready_for_kaji_ulang: {
-    bg: 'bg-blue-100',
-    text: 'text-blue-700',
-    border: 'border border-blue-200',
-    label: 'Siap Kaji Ulang',
   },
   awaiting_kaji_ulang: {
     bg: 'bg-sky-100',
