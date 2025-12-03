@@ -4,6 +4,9 @@
       class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
     >
       <div>
+        <p class="text-xs font-semibold uppercase tracking-wide text-primaryLight">
+        Daftar Layanan
+      </p>
         <h2 class="text-xl font-semibold text-surfaceDark sm:text-2xl">Layanan & Tarif</h2>
         <p class="text-sm text-gray-500">
           Kelola daftar layanan pengujian, mesin, dan metode agar tim selalu menggunakan referensi terbaru.
@@ -46,7 +49,7 @@
             class="w-full rounded-md bg-gradient-to-r from-primaryLight to-primaryDark px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-90 sm:w-auto"
             @click="openCreate"
           >
-            + Tambah Pengujian
+            + Tambah Daftar Layanan
           </button>
         </div>
       </div>

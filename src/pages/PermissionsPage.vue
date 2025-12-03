@@ -15,8 +15,11 @@
         class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
       >
       <div>
+        <p class="text-xs font-semibold uppercase tracking-wide text-primaryLight">
+        Manajemen Pengguna
+      </p>
         <h2 class="text-xl font-semibold text-surfaceDark sm:text-2xl">
-          Manajemen Permission
+          Permission
         </h2>
         <p class="text-sm text-gray-500">
           Definisikan izin granular untuk mengontrol fitur yang dapat diakses

@@ -16,7 +16,10 @@
         class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
       >
         <div>
-          <h2 class="text-xl font-semibold text-surfaceDark sm:text-2xl">Manajemen Pengguna</h2>
+          <p class="text-xs font-semibold uppercase tracking-wide text-primaryLight">
+        Manajemen Pengguna
+      </p>
+          <h2 class="text-xl font-semibold text-surfaceDark sm:text-2xl">Pengguna</h2>
           <p class="text-sm text-gray-500">
             Atur akun, role, dan status akses pengguna Sistem Informasi Pelayanan Pengujian.
           </p>

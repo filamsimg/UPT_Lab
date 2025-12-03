@@ -8,7 +8,7 @@
       <!-- Header -->
       <div class="flex justify-between items-center mb-5 border-b pb-2">
         <h3 class="text-xl font-semibold text-primaryDark">
-          {{ isEdit ? 'Edit Pengujian' : 'Tambah Pengujian' }}
+          {{ isEdit ? 'Edit Daftar Layanan' : 'Tambah Daftar Layanan' }}
         </h3>
         <button
           class="text-gray-400 hover:text-gray-700 transition"

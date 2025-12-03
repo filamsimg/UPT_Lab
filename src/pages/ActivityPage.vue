@@ -1,7 +1,9 @@
 ﻿<template>
   <div class="space-y-6">
     <header class="flex flex-col gap-2">
-      <p class="text-sm uppercase tracking-wide text-gray-500">Monitoring</p>
+      <p class="text-xs font-semibold uppercase tracking-wide text-primaryLight">
+        Monitoring
+      </p>
       <h1 class="text-2xl font-semibold text-surfaceDark">Riwayat Aktivitas Sistem</h1>
       <p class="text-sm text-gray-500">
         Lacak status login, pembuatan permintaan, dan update pembayaran terbaru yang terjadi di aplikasi.
