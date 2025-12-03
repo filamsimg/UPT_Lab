@@ -26,9 +26,6 @@ export function isSuperAdminUser(user) {
   if (!user) return false;
   if (user.is_super_admin ?? user.isSuperAdmin) return true;
 
-  const email = typeof user.email === 'string' ? user.email.toLowerCase() : '';
-  if (email?.startsWith('super_admin')) return true;
-
   const roleCandidates = [];
   if (typeof user.role === 'string') roleCandidates.push(user.role);
   if (typeof user.role_name === 'string') roleCandidates.push(user.role_name);
