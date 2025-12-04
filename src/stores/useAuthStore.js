@@ -4,6 +4,44 @@ import api from '@/services/apiServices'
 import { useActivityStore } from '@/stores/useActivityStore'
 import { useNotificationStore } from '@/stores/useNotificationStore'
 
+const TOKEN_STORAGE_KEY = 'uptlab.authToken'
+const USER_STORAGE_KEY = 'currentUser'
+
+const loadStoredToken = () => {
+  if (typeof window === 'undefined') return null
+  return window.localStorage?.getItem(TOKEN_STORAGE_KEY) || null
+}
+
+const persistToken = (token) => {
+  if (typeof window === 'undefined') return
+  if (token) {
+    window.localStorage?.setItem(TOKEN_STORAGE_KEY, token)
+  } else {
+    window.localStorage?.removeItem(TOKEN_STORAGE_KEY)
+  }
+}
+
+const loadStoredUser = () => {
+  if (typeof window === 'undefined') return null
+  const raw = window.localStorage?.getItem(USER_STORAGE_KEY)
+  if (!raw) return null
+  try {
+    return JSON.parse(raw)
+  } catch (err) {
+    console.warn('[AuthStore] gagal parsing user tersimpan', err)
+    return null
+  }
+}
+
+const persistUser = (user) => {
+  if (typeof window === 'undefined') return
+  if (user) {
+    window.localStorage?.setItem(USER_STORAGE_KEY, JSON.stringify(user))
+  } else {
+    window.localStorage?.removeItem(USER_STORAGE_KEY)
+  }
+}
+
 const isString = (value) => typeof value === 'string'
 
 const normalizeString = (value) =>
@@ -101,8 +139,8 @@ const buildPasswordFormData = (payload = {}) => {
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
-    currentUser: null,
-    authToken: null, // in-memory token (fallback jika backend belum set cookie sesi)
+    currentUser: loadStoredUser(),
+    authToken: loadStoredToken(), // in-memory token (fallback jika backend belum set cookie sesi)
     loading: false,
     initTried: false,
   }),
@@ -120,8 +158,10 @@ export const useAuthStore = defineStore('auth', {
       this.authToken = token || null
       if (this.authToken) {
         api.defaults.headers.common.Authorization = `Bearer ${this.authToken}`
+        persistToken(this.authToken)
       } else {
         delete api.defaults.headers.common.Authorization
+        persistToken(null)
       }
     },
 
@@ -197,6 +237,7 @@ export const useAuthStore = defineStore('auth', {
 
         this.setAuthToken(token)
         this.currentUser = this.sanitizeUser(user)
+        persistUser(this.currentUser)
 
         let hydratedUser = this.currentUser
         try {
@@ -453,6 +494,7 @@ export const useAuthStore = defineStore('auth', {
         const payload = res.data?.data ?? res.data
         const user = payload?.user ?? payload
         this.currentUser = this.sanitizeUser(user)
+        persistUser(this.currentUser)
         const activityStore = useActivityStore()
         const notificationStore = useNotificationStore()
         activityStore.setActiveUser(user?.id ?? null)
@@ -460,6 +502,7 @@ export const useAuthStore = defineStore('auth', {
         return user
       } catch (err) {
         this.currentUser = null
+        persistUser(null)
         const activityStore = useActivityStore()
         const notificationStore = useNotificationStore()
         activityStore.setActiveUser(null)
@@ -486,6 +529,7 @@ export const useAuthStore = defineStore('auth', {
         const responsePayload = res.data?.data ?? res.data
         const updatedUser = responsePayload?.user ?? responsePayload
         this.currentUser = this.sanitizeUser(updatedUser)
+        persistUser(this.currentUser)
 
         let latestUser = updatedUser
         try {
@@ -575,6 +619,10 @@ export const useAuthStore = defineStore('auth', {
         return
       }
       try {
+        // Pastikan header Authorization selaras dengan token tersimpan
+        if (this.authToken) {
+          this.setAuthToken(this.authToken)
+        }
         await this.fetchProfile({ force: true, skipAuthRedirect: true })
       } catch (err) {
         if (!skipIfNoSession) {
@@ -598,6 +646,7 @@ export const useAuthStore = defineStore('auth', {
       } catch {}
       this.currentUser = null
       this.setAuthToken(null)
+      persistUser(null)
 
       if (lastUser) {
         activityStore.setActiveUser(lastUser.id ?? null)
