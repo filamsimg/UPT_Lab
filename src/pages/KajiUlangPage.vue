@@ -57,6 +57,15 @@
             formatDateDisplay(value)
           }}</span>
         </template>
+        <template #orderNo="{ value }">
+          <button
+            type="button"
+            class="w-full text-left text-sm text-blue-600 underline hover:text-blue-800"
+            @click="copyId(value)"
+          >
+            {{ value || '-' }}
+          </button>
+        </template>
         <template #status="{ value }">
           <Badge :status="value" />
         </template>
@@ -287,6 +296,7 @@ import { useTestStore } from '@/stores/useTestStore';
 import { useConfirmDialog } from '@/stores/useConfirmDialog';
 import { usePermintaanStore } from '@/stores/usePermintaanStore';
 import { useNotificationCenter } from '@/stores/useNotificationCenter';
+import { copyText } from '@/utils/copyText';
 
 const kajiUlangStore = useKajiUlangStore();
 const testStore = useTestStore();
@@ -955,5 +965,19 @@ function formatFileSize(size) {
   );
   const value = bytes / 1024 ** exponent;
   return `${value.toFixed(exponent === 0 ? 0 : 1)} ${units[exponent]}`;
+}
+
+async function copyId(id) {
+  if (!id) return;
+  const copied = await copyText(id);
+  pushToast({
+    tone: copied ? 'success' : 'error',
+    title: copied ? 'ID disalin' : 'Gagal menyalin',
+    message: copied
+      ? `${id} sudah disalin ke clipboard.`
+      : 'Tidak dapat menyalin ID, coba lagi atau salin manual.',
+    duration: 2500,
+    persist: false,
+  });
 }
 </script>

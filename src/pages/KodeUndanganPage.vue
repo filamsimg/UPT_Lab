@@ -193,10 +193,13 @@ import { ArrowPathIcon, DocumentDuplicateIcon, PlusIcon } from '@heroicons/vue/2
 import { useKodeUndanganStore } from '@/stores/useKodeUndanganStore';
 import { useRoleStore } from '@/stores/useRoleStore';
 import { useAuthorization } from '@/composables/auth/useAuthorization';
+import { useNotificationCenter } from '@/stores/useNotificationCenter';
+import { copyText } from '@/utils/copyText';
 
 const kodeUndanganStore = useKodeUndanganStore();
 const roleStore = useRoleStore();
 const { hasPermission } = useAuthorization();
+const { notify } = useNotificationCenter();
 
 const form = reactive({
   roleId: '',
@@ -263,13 +266,16 @@ async function handleGenerate() {
 async function copyLatestCode() {
   if (!canManageInvites.value) return;
   if (!latestCode.value) return;
-  try {
-    await navigator.clipboard.writeText(latestCode.value.code);
-    successMessage.value = 'Kode berhasil disalin ke clipboard.';
-  } catch (err) {
-    console.error('Gagal menyalin kode:', err);
-    formError.value = 'Gagal menyalin kode, salin secara manual.';
-  }
+  const copied = await copyText(latestCode.value.code);
+  notify({
+    tone: copied ? 'success' : 'error',
+    title: copied ? 'Kode disalin' : 'Gagal menyalin',
+    message: copied
+      ? `${latestCode.value.code} sudah disalin ke clipboard.`
+      : 'Tidak dapat menyalin kode, salin secara manual.',
+    duration: 2500,
+    persist: false,
+  });
 }
 
 function formatDate(value) {

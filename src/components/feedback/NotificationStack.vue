@@ -1,4 +1,4 @@
-<template>
+  <template>
   <transition-group
     tag="div"
     name="toast"

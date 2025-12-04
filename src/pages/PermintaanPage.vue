@@ -71,9 +71,13 @@
           @update:selected="selectedRows = $event"
         >
           <template #idOrder="{ value }">
-            <span class="block text-sm text-gray-700 break-all">
+            <button
+              type="button"
+              class="w-full text-left text-sm text-blue-600 underline hover:text-blue-800"
+              @click="copyId(value)"
+            >
               {{ value || '-' }}
-            </span>
+            </button>
           </template>
           <template #orderNumber="{ row }">
             <span class="text-sm text-gray-700">
@@ -334,6 +338,7 @@ import {
   translateStatus,
 } from '@/utils/printTemplates';
 import logoDinas from '@/assets/LOGO DINAS KAB TEGAL.png';
+import { copyText } from '@/utils/copyText';
 
 const store = usePermintaanStore();
 const testStore = useTestStore();
@@ -635,6 +640,20 @@ function openPreviewModal(row) {
 function closePreviewModal() {
   showPreviewModal.value = false;
   previewRequest.value = null;
+}
+
+async function copyId(id) {
+  if (!id) return;
+  const copied = await copyText(id);
+  notify({
+    tone: copied ? 'success' : 'error',
+    title: copied ? 'ID disalin' : 'Gagal menyalin',
+    message: copied
+      ? `${id} sudah disalin ke clipboard.`
+      : 'Tidak dapat menyalin ID, silakan salin manual.',
+    duration: 3000,
+    persist: false,
+  });
 }
 
 function printFromPreview(type) {

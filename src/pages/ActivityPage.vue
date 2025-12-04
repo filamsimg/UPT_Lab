@@ -236,14 +236,6 @@
       </div>
     </section>
   </div>
-  <transition name="fade">
-    <div
-      v-if="toastMessage"
-      class="fixed bottom-4 right-4 z-50 flex items-center gap-2 rounded-md bg-surfaceDark px-4 py-2 text-sm font-medium text-white shadow-lg"
-    >
-      {{ toastMessage }}
-    </div>
-  </transition>
 </template>
 
 <script setup>
@@ -252,6 +244,8 @@ import { ClockIcon } from '@heroicons/vue/24/outline'
 import { useActivityStore } from '@/stores/useActivityStore'
 import { useAuthStore } from '@/stores/useAuthStore'
 import { useAuthorization } from '@/composables/auth/useAuthorization'
+import { useNotificationCenter } from '@/stores/useNotificationCenter'
+import { copyText } from '@/utils/copyText'
 
 const filters = [
   { value: 'all', label: 'Semua' },
@@ -285,6 +279,7 @@ const typeConfig = {
 
 const activityStore = useActivityStore()
 const authStore = useAuthStore()
+const { notify } = useNotificationCenter()
 const activeFilter = ref('all')
 const errorDismissed = ref(false)
 const { hasAnyPermission, isSuperAdmin } = useAuthorization()
@@ -305,8 +300,6 @@ const filterUserId = ref('')
 const dateFrom = ref('')
 const dateTo = ref('')
 const page = ref(1)
-const toastMessage = ref('')
-let toastTimer = null
 
 const canViewAllActivity = computed(() => {
   if (isCustomer.value) return false
@@ -473,40 +466,18 @@ function displayCauserId(event) {
   )
 }
 
-async function copyText(value = '') {
-  if (!value || value === '-') return;
-  try {
-    if (navigator?.clipboard?.writeText) {
-      await navigator.clipboard.writeText(value);
-      return;
-    }
-  } catch (err) {
-    // fallback below
-  }
-
-  const textarea = document.createElement('textarea');
-  textarea.value = value;
-  textarea.setAttribute('readonly', '');
-  textarea.style.position = 'absolute';
-  textarea.style.left = '-9999px';
-  document.body.appendChild(textarea);
-  textarea.select();
-  document.execCommand('copy');
-  document.body.removeChild(textarea);
-}
-
-function copyCauserId(event) {
-  const id = displayCauserId(event);
-  copyText(id);
-  showToast(`ID disalin: ${id}`);
-}
-
-function showToast(message) {
-  toastMessage.value = message;
-  if (toastTimer) clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => {
-    toastMessage.value = '';
-  }, 1600);
+async function copyCauserId(event) {
+  const id = displayCauserId(event)
+  const copied = await copyText(id)
+  notify({
+    tone: copied ? 'success' : 'error',
+    title: copied ? 'ID disalin' : 'Gagal menyalin',
+    message: copied
+      ? `${id} sudah disalin ke clipboard.`
+      : 'Tidak dapat menyalin ID, salin manual bila perlu.',
+    duration: 2500,
+    persist: false,
+  })
 }
 </script>
 
