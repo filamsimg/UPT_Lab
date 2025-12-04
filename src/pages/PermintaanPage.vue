@@ -73,10 +73,12 @@
           <template #idOrder="{ value }">
             <button
               type="button"
-              class="w-full text-left text-sm text-blue-600 underline hover:text-blue-800"
+              class="inline-flex w-full items-center justify-start gap-1 text-left text-sm text-gray-800 hover:text-gray-900 sm:whitespace-nowrap sm:overflow-hidden sm:text-ellipsis"
               @click="copyId(value)"
+              :title="value || '-'"
             >
-              {{ value || '-' }}
+              <span class="truncate">{{ value || '-' }}</span>
+              <DocumentDuplicateIcon class="h-[1em] w-[1em] shrink-0 text-gray-600" />
             </button>
           </template>
           <template #orderNumber="{ row }">
@@ -324,6 +326,7 @@ import {
   EyeIcon,
   XCircleIcon,
   BanknotesIcon,
+  DocumentDuplicateIcon,
 } from '@heroicons/vue/24/outline';
 import FormPermintaan from '@/components/form/FormPermintaan.vue';
 import FormPayment from '@/components/form/FormPayment.vue';
