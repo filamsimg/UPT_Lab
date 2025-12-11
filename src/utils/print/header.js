@@ -1,5 +1,5 @@
 // Bagian header/kop surat untuk dokumen cetak
-import logoDefault from '@/assets/LOGO DINAS KAB TEGAL.png';
+import logoDefault from '@/assets/LOGO DINAS KAB TEGAL.webp';
 import { sanitize, toLineMarkup } from './content';
 
 export const DEFAULT_HEADER = {

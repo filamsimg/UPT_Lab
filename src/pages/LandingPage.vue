@@ -498,7 +498,7 @@
             :data-reveal-delay="220 + idx * 40"
             data-reveal
           >
-            <div class="h-36 w-full overflow-hidden bg-slate-100">
+            <div class="h-44 w-full overflow-hidden bg-slate-100 sm:h-52">
               <img
                 :src="service.image"
                 :alt="service.title"
@@ -549,7 +549,7 @@
             <img
               :src="card.image"
               :alt="card.title"
-              class="h-40 w-full object-cover"
+              class="h-44 w-full object-contain bg-white p-4 sm:h-48"
             />
             <div class="space-y-2 p-5">
               <p class="text-sm font-semibold text-slate-900">
@@ -576,7 +576,7 @@
             Kontak & Lokasi
           </p>
           <h2 class="text-2xl font-semibold text-slate-900">
-            Hubungi atau kunjungi kami di LIK “Takaru” Dampyak
+            Hubungi atau kunjungi kami di LIK Takaru Dampyak
           </h2>
         </div>
         <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -629,15 +629,25 @@
           <div
             v-for="(item, idx) in galleryItems"
             :key="idx"
-            class="h-28 rounded-xl bg-slate-200"
+            class="group relative h-48 overflow-hidden rounded-xl bg-slate-200"
             :style="{
-              backgroundImage: `url(${item})`,
+              backgroundImage: `url(${item.src})`,
               backgroundSize: 'cover',
               backgroundPosition: 'center',
             }"
             data-reveal
             :data-reveal-delay="240 + idx * 30"
-          ></div>
+          >
+            <div
+              class="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-slate-900/70 via-slate-900/25 to-transparent opacity-0 transition group-hover:opacity-100"
+              aria-hidden="true"
+            ></div>
+            <div
+              class="pointer-events-none absolute inset-x-0 bottom-0 px-3 pb-3 text-left text-sm font-semibold text-white opacity-0 transition group-hover:opacity-100"
+            >
+              {{ item.label }}
+            </div>
+          </div>
         </div>
       </section>
 
@@ -704,16 +714,20 @@ import {
 
 const currentYear = new Date().getFullYear();
 
-// Dummy image paths (ganti dengan aset nyata nanti)
-import bgLogin from '@/assets/bg-login.jpg';
+import bgLogin from '@/assets/bg-login.webp';
+import servicePengujian from '@/assets/pengujian material.webp';
+import servicePermesinan from '@/assets/permesinan.webp';
+import serviceSertifikasi from '@/assets/sertifikasi.webp';
+import akreditasiKan from '@/assets/logo KAN.webp';
+import akreditasiTuk from '@/assets/logo TUK.webp';
 
 const images = {
   profile: bgLogin,
-  service1: bgLogin,
-  service2: bgLogin,
-  service3: bgLogin,
-  accreditation1: bgLogin,
-  accreditation2: bgLogin,
+  service1: servicePengujian,
+  service2: servicePermesinan,
+  service3: serviceSertifikasi,
+  accreditation1: akreditasiKan,
+  accreditation2: akreditasiTuk,
   contact1: bgLogin,
   contact2: bgLogin,
   contact3: bgLogin,
@@ -780,7 +794,7 @@ const contactCards = [
     title: 'Informasi Kontak',
     image: images.contact1,
     lines: [
-      'Jl. Raya Dampyak KM.4, Komplek LIK “Takaru”',
+      'Jl. Raya Dampyak KM.4, Komplek LIK Takaru',
       'Dampyak, Kec. Kramat, Kab. Tegal',
       'Telepon: (0283) 357437',
       'Email: labperindtgl@gmail.com',
@@ -809,7 +823,30 @@ const contactCards = [
   },
 ];
 
-const galleryItems = Array.from({ length: 6 }).map(() => bgLogin);
+const toTitleCase = (value = '') =>
+  value
+    .split(' ')
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ');
+
+const formatGalleryLabel = (path = '') => {
+  const filename = path.split('/').pop() || '';
+  const withoutExt = filename.replace(/\.[^.]+$/, '');
+  const normalized = withoutExt.replace(/[-_]+/g, ' ').replace(/\s+/g, ' ').trim();
+  return toTitleCase(normalized);
+};
+
+const galleryImports = import.meta.glob('@/assets/kegiatan/*.webp', {
+  eager: true,
+  import: 'default',
+});
+const galleryItems = Object.keys(galleryImports)
+  .sort()
+  .map((key) => ({
+    src: galleryImports[key],
+    label: formatGalleryLabel(key),
+  }));
 
 const heroBackgroundStyle = {
   backgroundImage:
