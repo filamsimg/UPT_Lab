@@ -32,7 +32,7 @@
                   <tr>
                     <th class="px-3 py-2 text-center">No</th>
                     <th class="px-3 py-2 text-left">Jenis Pengujian</th>
-                    <th class="px-3 py-2 text-left">Nama Objek Uji</th>
+                    <th class="px-3 py-2 text-left">Nama Sampel</th>
                     <th class="px-3 py-2 text-right">Biaya Satuan</th>
                     <th class="px-3 py-2 text-right">Jumlah</th>
                     <th class="px-3 py-2 text-right">Subtotal</th>
@@ -378,5 +378,4 @@ function handleClose() {
   emit('close');
 }
 </script>
-
 

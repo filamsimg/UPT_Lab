@@ -318,7 +318,7 @@ const methodColumns = [
 const rows = computed(() =>
   (tests.value || []).map((item) => ({
     ...item,
-    name: item.name || item.testCategory || item.methodName || item.code,
+    name: item.name || '',
     methodName: item.methodName || item.method?.name || '',
     machineName: item.machineName || item.machine?.name || '',
     serviceCategoryLabel:

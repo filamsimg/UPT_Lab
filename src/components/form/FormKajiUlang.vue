@@ -120,7 +120,7 @@
                   <th class="px-4 py-3 text-left font-semibold">No</th>
                   <th class="px-4 py-3 text-left font-semibold">Nama Pengujian</th>
                   <th class="px-4 py-3 text-left font-semibold">No Sampel</th>
-                  <th class="px-4 py-3 text-left font-semibold">Objek Uji</th>
+                  <th class="px-4 py-3 text-left font-semibold">Nama Sampel</th>
                   <th class="px-4 py-3 text-right font-semibold">Tarif (Rp)</th>
                   <th class="px-4 py-3 text-right font-semibold">Jumlah</th>
                   <th class="px-4 py-3 text-right font-semibold">Subtotal</th>

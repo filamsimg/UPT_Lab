@@ -318,8 +318,11 @@
 
 <script setup>
 import { ref, onMounted, computed } from 'vue';
-import { usePermintaanStore } from '@/stores/usePermintaanStore';
+import { useOrderStore } from '@/stores/useOrderStore';
 import { useTestStore } from '@/stores/useTestStore';
+import { useAuthorization } from '@/composables/auth/useAuthorization';
+import { useAuthStore } from '@/stores/useAuthStore';
+import { useRouter } from 'vue-router';
 import {
   PencilIcon,
   TrashIcon,
@@ -340,11 +343,14 @@ import {
   formatFullDate,
   translateStatus,
 } from '@/utils/printTemplates';
-import logoDinas from '@/assets/LOGO DINAS KAB TEGAL.png';
+import logoDinas from '@/assets/LOGO DINAS KAB TEGAL.webp';
 import { copyText } from '@/utils/copyText';
 
-const store = usePermintaanStore();
+const orderStore = useOrderStore();
 const testStore = useTestStore();
+const authStore = useAuthStore();
+const { hasPermission } = useAuthorization();
+const router = useRouter();
 const showModal = ref(false);
 const showPaymentModal = ref(false);
 const showPreviewModal = ref(false);
@@ -358,8 +364,23 @@ const { notify } = useNotificationCenter();
 const sampleShipmentMessage =
   'Bukti pembayaran telah dikirim. Admin akan mereview sebelum melanjutkan proses pengujian.';
 
+const isCustomer = computed(() =>
+  (authStore.currentUser?.roles || []).some((role) => {
+    const name = typeof role === 'string' ? role : role?.name || role?.slug || role?.code;
+    return name && name.toLowerCase().includes('customer');
+  })
+);
+
+const canViewServices = computed(() =>
+  !isCustomer.value || hasPermission('material_test_services.index')
+);
+
 onMounted(() => {
-  store.fetchAll();
+  if (!canViewServices.value) {
+    router.replace('/dashboard');
+    return;
+  }
+  orderStore.fetchAll();
   if (!testStore.tests.length) {
     testStore.fetchAll();
   }
@@ -426,10 +447,27 @@ const requestStatusOptions = [
 ];
 
 const tableRows = computed(() =>
-  (store.requestList ?? []).map((row, index) => ({
-    ...row,
-    __rowKey: row.idOrder ? `${row.idOrder}-${index}` : `row-${index}`,
-  }))
+  (orderStore.orders ?? []).map((order, index) => {
+    const idOrder = order.orderNo || order.id || `row-${index}`;
+    return {
+      ...order,
+      idOrder,
+      orderNumber: order.orderNumber ?? null,
+      entryDate: order.entryDate || order.createdAt || '',
+      phoneNumber: order.customerPhone || order.phoneNumber || '',
+      customerName: order.customerName || '',
+      address: order.address || order.customerAddress || '',
+      jobCategory: order.jobCategory || order.workCategoryName || '',
+      workPackage:
+        order.workPackageName ||
+        order.workPackage ||
+        order.workPackageId ||
+        '',
+      testItems: order.testItems || [],
+      paymentInfo: order.paymentInfo || null,
+      __rowKey: `${idOrder}-${index}`,
+    };
+  })
 );
 
 const previewTotals = computed(() => {
@@ -527,11 +565,10 @@ async function handleFormSubmit(payload) {
   let savedData = null;
 
   if (isEdit.value) {
-    await store.updateRequest(data.idOrder, data);
-    savedData =
-      store.requestList.find((req) => req.idOrder === data.idOrder) || data;
+    const { data: updated } = await orderStore.updateOrder(data.idOrder, data);
+    savedData = updated || data;
   } else {
-    const { data: created } = await store.addRequest(data);
+    const { data: created } = await orderStore.createOrder(data);
     savedData = created || data;
   }
 
@@ -559,7 +596,7 @@ async function deleteRequest(item) {
     variant: 'danger',
   });
   if (!ok) return;
-  await store.deleteRequest(item.idOrder);
+  await orderStore.deleteOrder(item.idOrder);
 }
 
 async function deleteSelected() {
@@ -572,7 +609,7 @@ async function deleteSelected() {
   });
   if (!ok) return;
   for (const row of selectedRows.value) {
-    await store.deleteRequest(row.idOrder);
+    await orderStore.deleteOrder(row.idOrder);
   }
   selectedRows.value = [];
 }
@@ -616,7 +653,7 @@ async function handlePaymentSaved(detail) {
     status: paymentStatus,
     reviewStatus: detail.reviewStatus || 'pending',
   };
-  await store.updateRequest(detail.orderId, {
+  await orderStore.updateOrder(detail.orderId, {
     status: paymentStatus,
     paymentInfo,
   });

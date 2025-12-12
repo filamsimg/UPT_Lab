@@ -280,7 +280,7 @@
 </template>
 
 <script setup>
-import { reactive, ref, computed } from 'vue';
+import { reactive, ref, computed, onMounted } from 'vue';
 import DataTable from '@/components/common/DataTable.vue';
 import Badge from '@/components/common/Badge.vue';
 import FormKajiUlang from '@/components/form/FormKajiUlang.vue';
@@ -292,19 +292,19 @@ import {
   PrinterIcon,
   DocumentDuplicateIcon,
 } from '@heroicons/vue/24/outline';
-import logoDinas from '@/assets/LOGO DINAS KAB TEGAL.png';
+import logoDinas from '@/assets/LOGO DINAS KAB TEGAL.webp';
 import { buildKajiUlangPrintHtml } from '@/utils/printTemplates';
 import { useKajiUlangStore } from '@/stores/useKajiUlangStore';
 import { useTestStore } from '@/stores/useTestStore';
 import { useConfirmDialog } from '@/stores/useConfirmDialog';
-import { usePermintaanStore } from '@/stores/usePermintaanStore';
+import { useOrderStore } from '@/stores/useOrderStore';
 import { useNotificationCenter } from '@/stores/useNotificationCenter';
 import { copyText } from '@/utils/copyText';
 
 const kajiUlangStore = useKajiUlangStore();
 const testStore = useTestStore();
 const openConfirm = useConfirmDialog();
-const permintaanStore = usePermintaanStore();
+const orderStore = useOrderStore();
 const { notify } = useNotificationCenter();
 const pushToast = (options = {}) =>
   notify({
@@ -537,6 +537,15 @@ const tableRows = computed(() =>
 
 const tests = computed(() => testStore.tests || []);
 
+onMounted(async () => {
+  const { data } = await orderStore.fetchAll();
+  (data || []).forEach((order) => {
+    kajiUlangStore.upsertFromRequest(order, {
+      paymentDetail: order.paymentInfo || null,
+    });
+  });
+});
+
 function setReviewRows(rows) {
   const source =
     Array.isArray(rows) && rows.length ? rows : makeDefaultReviewRows();
@@ -676,7 +685,7 @@ async function approvePaymentEvidence() {
     note: reviewNote.value,
   });
   if (updated) {
-    await permintaanStore.updateRequest(updated.orderNo, {
+    await orderStore.updateOrder(updated.orderNo, {
       status: 'payment_verified',
       paymentInfo: updated.paymentInfo,
     });
@@ -704,7 +713,7 @@ async function rejectPaymentEvidence() {
     note: reviewNote.value,
   });
   if (updated) {
-    await permintaanStore.updateRequest(updated.orderNo, {
+    await orderStore.updateOrder(updated.orderNo, {
       status: 'payment_review_rejected',
       paymentInfo: updated.paymentInfo,
     });
@@ -732,26 +741,15 @@ async function lookupOrder(orderNo) {
       null;
 
     if (!order) {
-      let request =
-        permintaanStore.requestList.find(
-          (r) => r.idOrder?.toLowerCase() === lower
-        ) || null;
-
-      if (!request) {
-        const { ok, data, error } = await permintaanStore.checkOrderStatus(
-          query
-        );
-        if (ok && data) {
-          request = data;
-        } else {
-          lookupError.value = error || 'Data permintaan tidak ditemukan.';
-          return;
-        }
+      const { ok, data, error } = await orderStore.fetchById(query);
+      if (ok && data) {
+        order = kajiUlangStore.upsertFromRequest(data, {
+          paymentDetail: data.paymentInfo || null,
+        });
+      } else {
+        lookupError.value = error || 'Data permintaan tidak ditemukan.';
+        return;
       }
-
-      order = kajiUlangStore.upsertFromRequest(request, {
-        paymentDetail: request.paymentInfo || null,
-      });
     }
 
     if (!order) {
@@ -869,7 +867,7 @@ async function approveReview() {
     });
   }
   try {
-    await permintaanStore.updateRequest(form.orderNo, {
+    await orderStore.updateOrder(form.orderNo, {
       status: invoiceDetail.status,
       paymentInfo: invoiceDetail,
     });

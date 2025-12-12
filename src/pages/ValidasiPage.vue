@@ -138,7 +138,7 @@
 import { computed, defineComponent, h, ref } from 'vue';
 import { useKajiUlangStore } from '@/stores/useKajiUlangStore';
 import { buildValidasiPrintHtml } from '@/utils/printTemplates';
-import logoDinas from '@/assets/LOGO DINAS KAB TEGAL.png';
+import logoDinas from '@/assets/LOGO DINAS KAB TEGAL.webp';
 
 const orderStore = useKajiUlangStore();
 const searchTerm = ref('');

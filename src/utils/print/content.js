@@ -198,7 +198,7 @@ function buildItemsTable(row) {
         <tr>
           <th>No</th>
           <th>Jenis Pengujian</th>
-          <th>Objek Uji</th>
+          <th>Nama Sampel</th>
           <th>Qty</th>
           <th>Tarif (Rp)</th>
           <th>Subtotal (Rp)</th>
@@ -264,13 +264,13 @@ function buildNotes(type) {
       </section>
     `;
   }
-  return `
-    <section class="notes">
-      <strong>Catatan:</strong>
-      <p>Form permintaan ini menjadi dasar pelaksanaan pengujian. Pastikan data pengujian dan objek uji telah sesuai dengan kebutuhan lapangan.</p>
-    </section>
-  `;
-}
+    return `
+      <section class="notes">
+        <strong>Catatan:</strong>
+        <p>Form permintaan ini menjadi dasar pelaksanaan pengujian. Pastikan data pengujian dan nama sampel telah sesuai dengan kebutuhan lapangan.</p>
+      </section>
+    `;
+  }
 
 export function buildPermintaanBody(row, type, titleMarkup) {
   const infoTable = buildInfoTable(row, type);
@@ -354,7 +354,7 @@ function buildKajiUlangItemsTable(order) {
         <tr>
           <th>No</th>
           <th>Nama Pengujian</th>
-          <th>Objek Uji</th>
+          <th>Nama Sampel</th>
           <th>Jumlah</th>
           <th>Tarif (Rp)</th>
           <th>Kode Sampel</th>

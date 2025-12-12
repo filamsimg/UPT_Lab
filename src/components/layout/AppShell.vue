@@ -369,6 +369,8 @@ const openGroup = ref(null);
 const route = useRoute();
 const authStore = useAuthStore();
 const { hasPermission, hasAnyPermission } = useAuthorization();
+const hasAllPermissions = (...names) =>
+  names.every((perm) => hasPermission(perm));
 const {
   state: confirmState,
   confirm: resolveConfirmDialog,
@@ -489,6 +491,7 @@ const baseMenu = [
         label: 'Permintaan',
         path: '/permintaan',
         icon: ClipboardDocumentListIcon,
+        requiredPermissions: ['material_test_services.index'],
       },
       { label: 'Kaji Ulang', path: '/kaji-ulang', icon: CheckCircleIcon },
     ],
@@ -501,11 +504,12 @@ const baseMenu = [
         label: 'Daftar Layanan',
         path: '/layanan',
         icon: Cog6ToothIcon,
-        requiredPermissions: [
+        requiredPermissionsAll: [
           'material_test_services.index',
-          'material_test_services.*',
-          'services.index',
-          'tests.index',
+          'material_test_services.show',
+          'material_test_services.store',
+          'material_test_services.update',
+          'material_test_services.destroy',
         ],
       },
     ],
@@ -573,6 +577,9 @@ const groupedMenu = computed(() =>
   baseMenu
     .map((group) => {
       const allowedChildren = group.children.filter((child) => {
+        if (Array.isArray(child.requiredPermissionsAll)) {
+          return hasAllPermissions(...child.requiredPermissionsAll);
+        }
         if (Array.isArray(child.requiredPermissions)) {
           return hasAnyPermission(...child.requiredPermissions);
         }
@@ -630,4 +637,3 @@ aside::-webkit-scrollbar {
   transform: translateY(-5px);
 }
 </style>
-

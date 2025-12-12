@@ -26,37 +26,28 @@
       <section class="space-y-4 rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
         <div class="grid gap-3 sm:grid-cols-2">
           <div class="flex flex-col gap-1">
-            <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">ID Order</label>
-            <input
-              v-model="form.idOrder"
-              type="text"
-              readonly
-              class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-100"
-              placeholder="Akan diisi otomatis setelah permintaan disimpan"
-            />
-          </div>
-          <div class="flex flex-col gap-1">
-            <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">No. Order</label>
-            <input
-              :value="orderNumberDisplay"
-              type="text"
-              readonly
-              class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-800 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-100"
-              placeholder="Otomatis setelah simpan"
-            />
-          </div>
-        </div>
-
-        <div class="grid gap-3 sm:grid-cols-2">
-          <div class="flex flex-col gap-1">
             <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">Nama Pemohon</label>
             <input
               v-model="form.customerName"
               type="text"
               class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-100"
               placeholder="Nama pemohon"
+              :readonly="isCustomerUser && !canManageCustomerData"
             />
           </div>
+          <div class="flex flex-col gap-1">
+            <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">Email Customer</label>
+            <input
+              v-model="form.customerEmail"
+              type="email"
+              class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-100"
+              placeholder="Email customer"
+              :readonly="isCustomerUser && !canManageCustomerData"
+            />
+          </div>
+        </div>
+
+        <div class="grid gap-3 sm:grid-cols-1">
           <div class="flex flex-col gap-1">
             <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">Sertifikasi / Laporan Atas Nama</label>
             <input
@@ -76,6 +67,7 @@
               type="text"
               class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-100"
               placeholder="No kontak"
+              :readonly="isCustomerUser && !canManageCustomerData"
             />
           </div>
           <div class="flex flex-col gap-1">
@@ -84,12 +76,16 @@
               v-model="form.jobCategory"
               class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-100"
             >
-              <option disabled value="">Pilih kategori</option>
-              <option>Pendidikan</option>
-              <option>IKM</option>
-              <option>Industri</option>
-              <option>Lainnya</option>
+              <option value="">Pilih kategori</option>
+              <option
+                v-for="cat in workCategoryOptions"
+                :key="cat.value"
+                :value="cat.label"
+              >
+                {{ cat.label }}
+              </option>
             </select>
+            
           </div>
         </div>
 
@@ -100,7 +96,11 @@
             rows="2"
             class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-100"
             placeholder="Alamat lengkap"
+            :readonly="Boolean(form.addressId) || (isCustomerUser && !canManageCustomerData)"
           ></textarea>
+          <p v-if="form.addressId" class="text-[11px] text-emerald-600">
+            Alamat berasal dari data customer.
+          </p>
         </div>
       </section>
 
@@ -154,7 +154,7 @@
               </div>
               <div class="flex flex-col gap-1">
                 <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Nama Objek Uji
+                  Nama Sampel
                 </label>
                 <input
                   v-model="item.objectName"
@@ -294,6 +294,8 @@
 <script setup>
 import { ref, watch, computed, onMounted } from 'vue';
 import { useTestStore } from '@/stores/useTestStore';
+import { useWorkCategoryStore } from '@/stores/useWorkCategoryStore';
+import { useAuthStore } from '@/stores/useAuthStore';
 import { useConfirmDialog } from '@/stores/useConfirmDialog';
 
 const props = defineProps({
@@ -305,6 +307,8 @@ const emit = defineEmits(['submit', 'cancel']);
 const openConfirm = useConfirmDialog();
 
 const testStore = useTestStore();
+const workCategoryStore = useWorkCategoryStore();
+const authStore = useAuthStore();
 const currentYear = new Date().getFullYear();
 const isEditMode = computed(() => props.isEdit);
 
@@ -338,9 +342,50 @@ const testOptions = computed(() =>
   })
 );
 
+const workCategoryOptions = computed(() =>
+  (workCategoryStore.categories || []).map((cat) => ({
+    value: cat.id,
+    label: cat.name || 'Kategori',
+  }))
+);
+
+const authUser = computed(() => authStore.currentUser || null);
+const userRoles = computed(() =>
+  Array.isArray(authUser.value?.roles)
+    ? authUser.value.roles.map((r) => (typeof r === 'string' ? r : r.name)).filter(Boolean)
+    : []
+);
+const isCustomerUser = computed(() =>
+  userRoles.value.some((role) => role === 'customer')
+);
+const canManageCustomerData = computed(() =>
+  typeof authStore.hasAny === 'function'
+    ? authStore.hasAny([
+        'customers.store',
+        'customers.update',
+        'customers.index',
+        'addresses.store',
+        'addresses.update',
+        'addresses.index',
+      ])
+    : false
+);
+
 onMounted(() => {
   if (!testStore.tests.length && !testStore.loading) {
     testStore.fetchAll();
+  }
+  if (!workCategoryStore.categories.length && !workCategoryStore.loading) {
+    workCategoryStore.fetchAll({ perPage: 200 });
+  }
+  if (isCustomerUser.value && authUser.value) {
+    form.value.customerName = authUser.value.name || form.value.customerName;
+    form.value.customerEmail = authUser.value.email || form.value.customerEmail;
+    const phone =
+      authUser.value.phone_number ||
+      authUser.value.phoneNumber ||
+      authUser.value.phone;
+    if (phone) form.value.phoneNumber = phone;
   }
 });
 
@@ -370,9 +415,12 @@ const defaultForm = () => {
     orderNumber: null,
     orderYear,
     entryDate,
+    customerId: '',
+    customerEmail: '',
     customerName: '',
     phoneNumber: '',
     address: '',
+    addressId: '',
     purpose: '',
     testCategory: '',
     jobCategory: '',
@@ -387,14 +435,6 @@ const defaultForm = () => {
 };
 
 const form = ref(defaultForm());
-
-const orderNumberDisplay = computed(() => {
-  const number = form.value.orderNumber;
-  if (number === null || number === undefined || number === '') {
-    return '';
-  }
-  return String(number);
-});
 
 function updateOrderMetadata(entryDate) {
   const year = extractYear(entryDate);
@@ -425,6 +465,9 @@ watch(
           manualPrice: Boolean(item.manualPrice),
         })),
         certificateName: val.certificateName || val.certificate_name || '',
+        customerId: val.customerId || val.customer_id || '',
+        customerEmail: val.customerEmail || val.customer_email || val.email || '',
+        addressId: val.addressId || val.address_id || '',
         note: val.note || '',
         supportingFile: val.supportingFile || null,
         supportingFileName: val.supportingFileName || val.supporting_file_name || '',
@@ -595,9 +638,7 @@ const normalizedTestItems = computed(() =>
 );
 
 const canSave = computed(() => {
-  const hasCustomer = Boolean(
-    form.value.customerName && form.value.customerName.trim()
-  );
+  const hasCustomer = Boolean(form.value.customerName && form.value.customerName.trim());
   return hasCustomer && normalizedTestItems.value.length > 0;
 });
 
@@ -623,8 +664,11 @@ function buildPayload() {
     orderNumber,
     orderYear,
     entryDate,
+    customerId,
     customerName,
+    customerEmail,
     phoneNumber,
+    addressId,
     address,
     jobCategory,
     workPackage,
@@ -640,8 +684,11 @@ function buildPayload() {
     orderNumber: orderNumber ? Number(orderNumber) : null,
     orderYear: orderYear || extractYear(entryDate),
     entryDate,
+    customerId,
     customerName,
+    customerEmail,
     phoneNumber,
+    addressId,
     address,
     jobCategory,
     workPackage,

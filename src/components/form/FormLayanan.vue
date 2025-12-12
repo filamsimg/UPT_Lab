@@ -33,9 +33,9 @@
 
       <!-- Form -->
       <div class="grid grid-cols-2 gap-4 mb-6">
-        <!-- Jenis Pengujian -->
+        <!-- Jenis Layanan -->
         <div class="flex flex-col">
-          <label class="text-sm text-gray-600 mb-1">Jenis Pengujian</label>
+          <label class="text-sm text-gray-600 mb-1">Jenis Layanan</label>
           <select
             v-model="form.category"
             class="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primaryLight focus:border-primaryLight outline-none"
@@ -221,19 +221,31 @@ function resetForm() {
 }
 
 function handleSubmit() {
-  if (!form.category || !form.code || !form.method || !form.equipment) {
-    alert('Mohon lengkapi data layanan (jenis, kode, metode, dan mesin).')
+  const name = toCleanString(form.name)
+  const category = toCleanString(form.category)
+  const code = toCleanString(form.code)
+
+  if (!name) {
+    alert('Nama pengujian wajib diisi secara manual.')
     return
   }
+  if (!category || !code || !form.method || !form.equipment) {
+    alert('Mohon lengkapi data layanan (nama, jenis, kode, metode, dan mesin).')
+    return
+  }
+
   emit('save', {
     ...form,
+    name,
+    category,
+    code,
     isEdit: isEdit.value,
-    service_type: form.category,
-    service_code: form.code,
+    service_type: category,
+    service_code: code,
     method_id: form.method,
     machine_id: form.equipment,
-    serviceType: form.category,
-    serviceCode: form.code,
+    serviceType: category,
+    serviceCode: code,
     methodId: form.method,
     machineId: form.equipment,
     price: toNumber(form.price, 0),
@@ -244,6 +256,10 @@ function handleSubmit() {
 function toNumber(value, fallback = 0) {
   const parsed = Number(value)
   return Number.isFinite(parsed) ? parsed : fallback
+}
+
+function toCleanString(value) {
+  return typeof value === 'string' ? value.trim() : ''
 }
 </script>
 

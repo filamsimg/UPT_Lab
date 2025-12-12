@@ -146,6 +146,32 @@ export const useAuthStore = defineStore('auth', {
   }),
 
   actions: {
+    collectPermissions() {
+      const roles = this.currentUser?.roles || [];
+      const permissions = [];
+      roles.forEach((role) => {
+        if (Array.isArray(role.permissions)) {
+          role.permissions.forEach((perm) => {
+            const name = typeof perm === 'string' ? perm : perm?.name;
+            if (name) permissions.push(String(name));
+          });
+        }
+      });
+      return Array.from(new Set(permissions));
+    },
+
+    hasPermission(permission) {
+      if (!permission) return false;
+      const perms = this.collectPermissions();
+      return perms.includes(permission);
+    },
+
+    hasAny(permissions = []) {
+      if (!Array.isArray(permissions) || !permissions.length) return false;
+      const perms = this.collectPermissions();
+      return permissions.some((perm) => perms.includes(perm));
+    },
+
     sanitizeUser(raw = null) {
       if (!raw || typeof raw !== 'object') return raw
       // Buang field sensitif bila backend masih mengirim
