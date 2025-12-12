@@ -77,16 +77,25 @@ function normalizeService(entry = {}) {
     ensureString(entry.serviceCode) ||
     ensureString(entry.code)
   const methodName =
-    ensureString(entry.method_name) || method?.name || ensureString(entry.name)
+    ensureString(entry.method_name) ||
+    ensureString(entry.methodName) ||
+    ensureString(entry.test_method) ||
+    ensureString(entry.method) ||
+    method?.name ||
+    ''
   const machineName =
     ensureString(entry.machine_name) || machine?.name || ensureString(entry.equipment)
 
-  const name =
+  const rawName =
+    ensureString(entry.test_name) ||
+    ensureString(entry.testName) ||
     ensureString(entry.name) ||
+    ensureString(entry.service_name) ||
+    ensureString(entry.serviceName) ||
     ensureString(entry.testCategory) ||
-    methodName ||
-    code ||
-    'Layanan'
+    ensureString(entry.title)
+
+  const name = rawName || ''
 
   const testCategory = ensureString(entry.test_category) || name
   const serviceLabel =
