@@ -44,7 +44,7 @@
                 <FormField
                   label="Email"
                   type="email"
-                  placeholder="nama@gmail.com"
+                  placeholder="Masukkan email"
                   v-model="loginEmail"
                   :error="formErrors.login.email"
                 />
@@ -1091,4 +1091,3 @@ const FormPasswordField = defineComponent({
   transform: translateY(16px);
 }
 </style>
-

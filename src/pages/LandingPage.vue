@@ -5,13 +5,21 @@
       class="sticky top-0 z-30 border-b border-slate-200 bg-white/90 backdrop-blur shadow-sm"
     >
       <div
-        class="mx-auto flex max-w-6xl items-center justify-between px-6 py-5 text-sm font-medium text-slate-700 lg:py-6"
+        class="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-4 text-sm font-medium text-slate-700 sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:py-5 lg:py-6"
       >
-        <div class="flex items-center gap-2 text-sky-700">
-          <span class="inline-block h-2 w-2 rounded-full bg-emerald-500"></span>
-          <span>UPTD Lab. Perindustrian</span>
+        <div class="flex items-center gap-3 sm:flex-shrink-0">
+          <img
+            :src="navLogo"
+            alt="Logo Dinas Kabupaten Tegal"
+            class="h-10 w-10 rounded-full bg-white/90 object-contain p-1 shadow-sm"
+          />
+          <span class="text-base font-semibold leading-tight text-slate-800">
+            UPTD Laboratorium Perindustrian
+          </span>
         </div>
-        <div class="flex items-center gap-4">
+        <div
+          class="flex w-full flex-wrap items-center justify-between gap-3 sm:w-auto sm:gap-4 sm:justify-end"
+        >
           <a
             href="#layanan"
             class="hover:text-sky-700"
@@ -36,6 +44,12 @@
             @click.prevent="scrollToSection('kontak')"
             >Kontak</a
           >
+          <RouterLink
+            to="/login"
+            class="inline-flex items-center rounded-lg bg-sky-600 px-4 py-2 text-sm text-white shadow transition hover:-translate-y-0.5 hover:bg-sky-500"
+          >
+            Masuk
+          </RouterLink>
         </div>
       </div>
     </div>
@@ -63,7 +77,7 @@
             <span
               class="inline-block h-2 w-2 rounded-full bg-emerald-300"
             ></span>
-            UPTD Laboratorium Perindustrian Kab. Tegal
+            UPTD Laboratorium Perindustrian <br>Kabupaten Tegal
           </p>
           <h1
             class="text-3xl font-semibold leading-tight sm:text-4xl lg:text-5xl"
@@ -538,7 +552,7 @@
             Standar mutu dan lisensi resmi
           </h2>
         </div>
-        <div class="grid gap-6 md:grid-cols-2">
+        <div class="grid gap-6 sm:grid-cols-2 md:grid-cols-3">
           <article
             v-for="(card, idx) in accreditationCards"
             :key="card.title"
@@ -720,6 +734,8 @@ import servicePermesinan from '@/assets/permesinan.webp';
 import serviceSertifikasi from '@/assets/sertifikasi.webp';
 import akreditasiKan from '@/assets/logo KAN.webp';
 import akreditasiTuk from '@/assets/logo TUK.webp';
+import akreditasiLspLmi from '@/assets/Logo LSP LMI.webp';
+import navLogo from '@/assets/LOGO DINAS KAB TEGAL.webp';
 
 const images = {
   profile: bgLogin,
@@ -728,6 +744,7 @@ const images = {
   service3: serviceSertifikasi,
   accreditation1: akreditasiKan,
   accreditation2: akreditasiTuk,
+  accreditation3: akreditasiLspLmi,
   contact1: bgLogin,
   contact2: bgLogin,
   contact3: bgLogin,
@@ -786,6 +803,12 @@ const accreditationCards = [
     description: 'Ditunjuk sebagai Tempat Uji Kompetensi Mandiri sejak 2017.',
     badge: 'Lisensi: LSP Logam dan Mesin Indonesia',
     image: images.accreditation2,
+  },
+  {
+    title: 'LSP Logam dan Mesin Indonesia',
+    description: 'Lembaga sertifikasi profesi mitra untuk lisensi kompetensi.',
+    badge: 'LSP LMI',
+    image: images.accreditation3,
   },
 ];
 
