@@ -14,9 +14,19 @@
       <div
         class="flex items-center justify-between h-16 px-4 border-b border-border"
       >
-        <span v-if="!collapsed" class="font-bold text-lg text-primaryDark"
-          >SIAPEL</span
-        >
+        <div class="flex items-center gap-3">
+          <img
+            :src="navLogo"
+            alt="Logo Dinas Kabupaten Tegal"
+            class="h-10 w-10 rounded-full bg-white object-contain p-1 shadow-sm"
+          />
+          <div v-if="!collapsed" class="leading-tight">
+            <p class="text-xm font-semibold text-primaryDark">SILAPUJI</p>
+            <p class="text-[8px] text-gray-500">
+              Sistem Informasi Layanan Pengujian & Sertifikasi
+            </p>
+          </div>
+        </div>
         <button
           class="focus:outline-none"
           @click="toggleCollapse"
@@ -362,6 +372,7 @@ import { provideNotificationCenter } from '@/stores/useNotificationCenter';
 import { useNotificationStore } from '@/stores/useNotificationStore';
 import { useAuthorization } from '@/composables/auth/useAuthorization';
 import { buildInitialAvatar } from '@/utils/avatar';
+import navLogo from '@/assets/LOGO DINAS KAB TEGAL.webp';
 
 const collapsed = ref(false);
 const showMobileSidebar = ref(false);

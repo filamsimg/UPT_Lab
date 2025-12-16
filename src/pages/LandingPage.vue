@@ -13,9 +13,12 @@
             alt="Logo Dinas Kabupaten Tegal"
             class="h-10 w-10 rounded-full bg-white/90 object-contain p-1 shadow-sm"
           />
-          <span class="text-base font-semibold leading-tight text-slate-800">
-            UPTD Laboratorium Perindustrian
-          </span>
+          <div class="flex flex-col leading-tight text-slate-800">
+            <span class="text-base font-semibold">SILAPUJI</span>
+            <span class="text-xs text-slate-500">
+              Sistem Informasi Layanan Pengujian & Sertifikasi
+            </span>
+          </div>
         </div>
         <div
           class="flex w-full flex-wrap items-center justify-between gap-3 sm:w-auto sm:gap-4 sm:justify-end"
@@ -77,7 +80,7 @@
             <span
               class="inline-block h-2 w-2 rounded-full bg-emerald-300"
             ></span>
-            UPTD Laboratorium Perindustrian <br>Kabupaten Tegal
+            SILAPUJI - Sistem Informasi Layanan Pengujian & Sertifikasi
           </p>
           <h1
             class="text-3xl font-semibold leading-tight sm:text-4xl lg:text-5xl"
@@ -430,7 +433,7 @@
               Profil & Instansi Induk
             </p>
             <h2 class="text-2xl font-semibold text-slate-900">
-              UPTD Laboratorium Perindustrian Kabupaten Tegal
+              UPT Laboratorium Perindustrian Kabupaten Tegal
             </h2>
           </div>
           <p class="text-base text-slate-700">
@@ -458,14 +461,14 @@
             <span
               class="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-2 font-semibold text-slate-800"
             >
-              Kepala UPTD: Eko Supriyanto, S.T.
+              Kepala UPT: Eko Supriyanto, S.T.
             </span>
           </div>
         </div>
         <div class="rounded-3xl border border-slate-200 bg-white shadow-lg">
           <img
             :src="images.profile"
-            alt="Laboratorium UPTD"
+            alt="Laboratorium UPT"
             class="h-64 w-full rounded-t-3xl object-cover"
           />
           <div class="space-y-3 p-5">
@@ -677,7 +680,7 @@
               Siap uji material atau sertifikasi kompetensi?
             </h3>
             <p class="mt-2 text-sm text-slate-100">
-              Tim UPTD Laboratorium Perindustrian Kabupaten Tegal siap membantu
+              Tim UPT Laboratorium Perindustrian Kabupaten Tegal siap membantu
               kebutuhan uji material, permesinan, dan sertifikasi. Gunakan
               dashboard untuk proses cepat dan transparan.
             </p>
@@ -841,7 +844,7 @@ const contactCards = [
     image: images.contact3,
     lines: [
       'Dinas Perindustrian, Transmigrasi dan Tenaga Kerja',
-      'Kepala UPTD: Eko Supriyanto, S.T.',
+      'Kepala UPT: Eko Supriyanto, S.T.',
     ],
   },
 ];
