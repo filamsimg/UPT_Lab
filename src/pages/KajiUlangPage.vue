@@ -30,17 +30,33 @@
       v-if="!showForm"
       class="rounded-xl border border-gray-200 bg-white p-3 shadow-md sm:p-4"
     >
+      <div
+        class="mb-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
+      >
+        <h3 class="text-base font-semibold text-surfaceDark sm:text-lg"></h3>
+        <button
+          v-if="selectedRows.length"
+          @click="deleteSelected"
+          class="w-full rounded-md bg-red-500 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-red-600 sm:w-auto"
+        >
+          Hapus Terpilih ({{ selectedRows.length }})
+        </button>
+      </div>
+
       <DataTable
         :columns="columns"
         :rows="tableRows"
         searchable
         filterable
+        selectable
         search-field="orderNo"
         status-field="status"
         date-field="date"
         :status-options="statusOptions"
+        row-key="__rowKey"
         scroll-body-on-mobile
         body-scroll-height="55vh"
+        @update:selected="selectedRows = $event"
       >
         <template #sampleNo="{ row }">
           <div class="text-sm text-gray-700">
@@ -334,6 +350,7 @@ const pushToast = (options = {}) =>
 const showForm = ref(false);
 const editingOrderId = ref(null);
 const isEditing = ref(false);
+const selectedRows = ref([]);
 const lookupLoading = ref(false);
 const lookupError = ref('');
 const showReviewModal = ref(false);
@@ -645,12 +662,13 @@ const buildSampleCodes = (order = {}) => {
 const tableRows = computed(() =>
   kajiUlangStore.orders
     .filter((order) => order.status !== 'cancelled')
-    .map((order) => {
+    .map((order, index) => {
       const sampleCodes = buildSampleCodes(order);
       // Konsolidasi status: gunakan status permintaan sebagai satu sumber
       return {
         id: order.id,
         orderNo: order.orderNo,
+        __rowKey: order.id || order.orderNo || `row-${index}`,
         sampleNo: sampleCodes.join(', ') || order.sampleNo || '',
         sampleCodes,
         date: resolveLatestDate(order),
@@ -753,6 +771,38 @@ function handleEdit(row) {
   applyOrderToForm(order);
   editingOrderId.value = order.id;
   showForm.value = true;
+}
+
+async function deleteSelected() {
+  if (!selectedRows.value.length) return;
+  const removable = selectedRows.value.filter((row) => row.canDelete !== false);
+  const skipped = selectedRows.value.length - removable.length;
+  if (!removable.length) {
+    pushToast({
+      tone: 'warning',
+      title: 'Tidak Bisa Dihapus',
+      message: 'Semua data terpilih terkunci karena sudah diproses.',
+    });
+    return;
+  }
+  const ok = await openConfirm({
+    title: 'Hapus data kaji ulang terpilih?',
+    message: `${removable.length} data kaji ulang akan dihapus${skipped ? ' (beberapa terkunci dan akan dilewati).' : '.'}`,
+    confirmLabel: 'Hapus Semua',
+    variant: 'danger',
+  });
+  if (!ok) return;
+  removable.forEach((row) => {
+    kajiUlangStore.removeOrder(row.id ?? row.orderNo);
+  });
+  selectedRows.value = [];
+  if (skipped) {
+    pushToast({
+      tone: 'warning',
+      title: 'Sebagian Dilewati',
+      message: `${skipped} data tidak dihapus karena status terkunci.`,
+    });
+  }
 }
 
 async function handleDelete(row) {

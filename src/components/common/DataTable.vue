@@ -56,7 +56,7 @@
         :class="getBodyWrapperClasses()"
         :style="getBodyWrapperStyle()"
       >
-        <table class="dt-table w-full min-w-full border-separate border-spacing-0 text-left lg:min-w-[720px]">
+        <table class="dt-table w-max border-separate border-spacing-0 text-left">
           <thead :class="getTheadClasses()">
             <tr>
               <th
@@ -78,7 +78,7 @@
                 <button
                   v-if="isColumnSortable(column)"
                   type="button"
-                  class="flex w-full items-center justify-start gap-1 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 transition focus:outline-none hover:text-primary"
+                  class="flex w-full items-center justify-center gap-1 text-center text-xs font-semibold uppercase tracking-wide text-gray-500 transition focus:outline-none hover:text-primary whitespace-nowrap"
                   @click="toggleSort(column.field)"
                 >
                   <span>{{ column.title }}</span>
@@ -92,7 +92,7 @@
                 </button>
                 <span
                   v-else
-                  class="text-xs font-semibold uppercase tracking-wide text-gray-500"
+                  class="block text-center text-xs font-semibold uppercase tracking-wide text-gray-500 whitespace-nowrap"
                 >
                   {{ column.title }}
                 </span>
@@ -717,8 +717,8 @@ function getCellClasses(column) {
       'border-b',
       'border-gray-100',
       'align-middle',
-      'md:px-4',
-      'md:py-3',
+      'md:px-2',
+      'md:py-2',
       'table-cell',
     );
   }
@@ -780,8 +780,8 @@ function getSelectionCellClasses() {
     'text-center',
     'px-2',
     'py-2',
-    'md:px-3',
-    'md:py-3',
+    'md:px-2',
+    'md:py-2',
     'w-12',
     'max-w-[48px]',
     'min-w-[32px]',
@@ -799,8 +799,9 @@ function getTheadClasses() {
   return classes;
 }
 
+
 function getHeaderCellClasses(column) {
-  const classes = ['dt-header-cell', 'px-3 py-2 font-semibold text-left md:px-4 md:py-3'];
+  const classes = ['dt-header-cell', 'px-3 py-2 font-semibold text-left md:px-3 md:py-2'];
   if (isStackMode.value) {
     classes.unshift('hidden');
     classes.push('md:table-cell');
@@ -816,7 +817,7 @@ function getHeaderCellClasses(column) {
 function getSelectionHeaderClasses() {
   const classes = [
     'dt-header-cell',
-    'bg-gray-100 px-2 py-2 text-center md:px-3 md:py-3 w-12 max-w-[48px] min-w-[32px]',
+    'bg-gray-100 px-2 py-2 text-center md:px-2 md:py-2 w-12 max-w-[48px] min-w-[32px]',
   ];
   if (isStackMode.value) {
     classes.unshift('hidden');
@@ -865,7 +866,7 @@ function getBodyWrapperStyle() {
 }
 
 .dt-table {
-  table-layout: fixed;
+  table-layout:fixed;
   width: 100%;
 }
 

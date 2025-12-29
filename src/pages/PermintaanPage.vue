@@ -82,7 +82,7 @@
             </button>
           </template>
           <template #orderNumber="{ row }">
-            <span class="text-sm text-gray-700">
+            <span class="block text-center text-sm text-gray-700">
               {{ formatOrderNumber(row) }}
             </span>
           </template>
@@ -175,7 +175,7 @@
             @click="closePreviewModal"
           >
             <span class="sr-only">Tutup</span>
-            ԣ�
+            ԣ�
           </button>
           <div class="flex flex-col gap-4 sm:flex-row sm:items-center">
             <img
@@ -403,8 +403,8 @@ const columns = [
   },
   {
     field: 'orderNumber',
-    title: 'No. Order',
-    className: 'md:min-w-[120px]',
+    title: 'No Order',
+    className: 'md:min-w-[120px] text-center',
   },
   { field: 'entryDate', title: 'Tanggal Masuk' },
   {
