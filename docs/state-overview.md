@@ -25,7 +25,7 @@ Dokumen ini merangkum tanggung jawab tiap store dan bentuk data yang dikonsumsi 
   1) `fetchAll` / `fetchById` mengisi cache lalu mengembalikan hasil normalisasi.
   2) `createOrder` kirim payload, lalu (opsional) upload dokumen pendukung ke `/medias`, kemudian refresh detail.
   3) `updateOrder` saat ini hanya mendukung update `status`; jika endpoint BE belum ada, state diupdate lokal supaya UI tetap jalan.
-  4) `deleteOrder` belum tersedia di BE (mengembalikan NOT_IMPLEMENTED).
+  4) `deleteOrder` dialihkan ke `cancelOrder` karena BE tidak menyediakan endpoint hapus order.
 
 ## useKajiUlangStore (`src/stores/useKajiUlangStore.js`)
 - Peran: menampung data kaji ulang yang diturunkan dari permintaan/order yang sudah dinormalisasi; tidak memanggil API.

@@ -114,7 +114,7 @@
               class="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-2"
             >
               <span class="h-2 w-2 rounded-full bg-emerald-300"></span>
-              ISO/IEC 17025:2017 (KAN) ÔÇö LP-396-IDN
+              ISO/IEC 17025:2017 (KAN) ï¿½ï¿½ï¿½ LP-396-IDN
             </span>
             <span
               class="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-2"
@@ -477,7 +477,7 @@
                 Terakreditasi KAN
               </p>
               <p class="text-sm text-slate-600">
-                Nomor: LP-396-IDN ÔÇó ISO/IEC 17025:2017 (sejak 2008)
+                Nomor: LP-396-IDN ï¿½ï¿½ï¿½ ISO/IEC 17025:2017 (sejak 2008)
               </p>
             </div>
             <div class="rounded-2xl border border-slate-100 bg-slate-50 p-4">
@@ -485,7 +485,7 @@
                 TUK Mandiri BNSP
               </p>
               <p class="text-sm text-slate-600">
-                Lisensi: LSP Logam dan Mesin Indonesia ÔÇó Sejak 2017
+                Lisensi: LSP Logam dan Mesin Indonesia ï¿½ï¿½ï¿½ Sejak 2017
               </p>
             </div>
           </div>
@@ -827,7 +827,7 @@ const contactCards = [
       'Dampyak, Kec. Kramat, Kab. Tegal',
       'Telepon: (0283) 357437',
       'Email: labperindtgl@gmail.com',
-      'Jam: Senin ÔÇô Jumat, 08.00 ÔÇô 17.00 WIB',
+      'Jam: Senin - Jumat, 07.30-16.15 WIB',
     ],
   },
   {
@@ -838,7 +838,7 @@ const contactCards = [
       'lab.disperinnaker.tegalkab.go.id',
     ],
     cta: {
-      href: 'https://lab.disperinnaker.tegalkab.go.id',
+      href: 'https://disperintransnaker.tegalkab.go.id/',
       label: 'Buka website',
     },
   },
@@ -1052,7 +1052,7 @@ const specialStatus = computed(() => {
 
 const stepIndexLabel = (key) => {
   const index = baseSteps.findIndex((step) => step.key === key);
-  return index === -1 ? 'ÔÇó' : index + 1;
+  return index === -1 ? 'ï¿½ï¿½ï¿½' : index + 1;
 };
 
 // Aksi cek status order via store

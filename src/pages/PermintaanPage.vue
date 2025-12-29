@@ -46,14 +46,7 @@
         class="mb-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
       >
         <h3 class="text-base font-semibold text-surfaceDark sm:text-lg"></h3>
-        <!-- Tombol hapus massal -->
-        <button
-          v-if="selectedRows.length"
-          @click="deleteSelected"
-          class="w-full rounded-md bg-red-500 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-red-600 sm:w-auto"
-        >
-          Hapus Terpilih ({{ selectedRows.length }})
-        </button>
+        
       </div>
 
       <div class="overflow-x-auto md:overflow-visible">
@@ -63,12 +56,10 @@
           :page-size="10"
           searchable
           filterable
-          selectable
           :status-options="requestStatusOptions"
           row-key="__rowKey"
           scroll-body-on-mobile
           body-scroll-height="55vh"
-          @update:selected="selectedRows = $event"
         >
           <template #idOrder="{ value }">
             <button
@@ -124,10 +115,12 @@
                 <PencilIcon class="w-5 h-5" />
               </button>
               <button
+                v-if="canCancel(row)"
                 class="p-1.5 rounded-md hover:bg-red-50 text-red-600 hover:text-red-800"
-                @click="deleteRequest(row)"
+                title="Batalkan permintaan"
+                @click="cancelRequest(row)"
               >
-                <TrashIcon class="w-5 h-5" />
+                <XCircleIcon class="w-5 h-5" />
               </button>
               <button
                 v-if="canOpenPayment(row)"
@@ -330,7 +323,6 @@ import { useAuthStore } from '@/stores/useAuthStore';
 import { useRouter, useRoute } from 'vue-router';
 import {
   PencilIcon,
-  TrashIcon,
   EyeIcon,
   XCircleIcon,
   BanknotesIcon,
@@ -362,7 +354,6 @@ const showPaymentModal = ref(false);
 const showPreviewModal = ref(false);
 const isEdit = ref(false);
 const selectedRequest = ref(null);
-const selectedRows = ref([]);
 const paymentContext = ref(null);
 const previewRequest = ref(null);
 const openConfirm = useConfirmDialog();
@@ -489,6 +480,16 @@ const requestStatusOptions = [
   { value: 'cancelled', label: 'Dibatalkan' },
   { value: 'rejected', label: 'Ditolak' },
 ];
+
+// Order tidak bisa dihapus; gunakan cancel agar status berubah ke "cancelled".
+const cancelableStatuses = new Set([
+  'draft',
+  'awaiting_review',
+  'awaiting_payment',
+  'payment_submitted',
+  'payment_rejected',
+  'rejected',
+]);
 
 const tableRows = computed(() =>
   (orderStore.orders ?? []).map((order, index) => {
@@ -804,6 +805,10 @@ function canOpenPayment(row) {
   );
 }
 
+function canCancel(row) {
+  return Boolean(row && cancelableStatuses.has(row.status));
+}
+
 function openPaymentModal(row) {
   if (!canOpenPayment(row)) return;
   updateRouteQuery({ mode: 'payment', id: row.idOrder });
@@ -864,31 +869,41 @@ function closeModal() {
   clearRouteQuery();
 }
 
-async function deleteRequest(item) {
+async function cancelRequest(item) {
+  if (!canCancel(item)) {
+    notify({
+      tone: 'warning',
+      title: 'Tidak Bisa Dibatalkan',
+      message: 'Status permintaan sudah tidak bisa dibatalkan.',
+      persist: false,
+    });
+    return;
+  }
   const ok = await openConfirm({
-    title: 'Hapus permintaan?',
-    message: `Permintaan ${item.idOrder} akan dihapus permanen.`,
-    confirmLabel: 'Hapus',
+    title: 'Batalkan permintaan?',
+    message: `Permintaan ${item.idOrder} akan dibatalkan.`,
+    confirmLabel: 'Batalkan',
     variant: 'danger',
   });
   if (!ok) return;
-  await orderStore.deleteOrder(item.idOrder);
+  const result = await orderStore.cancelOrder(item.idOrder);
+  if (!result?.ok) {
+    notify({
+      tone: 'error',
+      title: 'Gagal Membatalkan',
+      message: result?.error || 'Tidak dapat membatalkan permintaan.',
+      persist: false,
+    });
+    return;
+  }
+  notify({
+    tone: 'success',
+    title: 'Permintaan Dibatalkan',
+    message: `Permintaan ${item.idOrder} sudah dibatalkan.`,
+    persist: false,
+  });
 }
 
-async function deleteSelected() {
-  if (!selectedRows.value.length) return;
-  const ok = await openConfirm({
-    title: 'Hapus permintaan terpilih?',
-    message: `${selectedRows.value.length} permintaan akan dihapus permanen.`,
-    confirmLabel: 'Hapus Semua',
-    variant: 'danger',
-  });
-  if (!ok) return;
-  for (const row of selectedRows.value) {
-    await orderStore.deleteOrder(row.idOrder);
-  }
-  selectedRows.value = [];
-}
 
 function formatOrderNumber(row) {
   if (!row) return '-';

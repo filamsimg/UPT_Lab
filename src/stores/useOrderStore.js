@@ -990,12 +990,9 @@ export const useOrderStore = defineStore('order', {
     async deleteOrder(orderNo) {
       const target = ensureString(orderNo);
       if (!target) return { ok: false, error: 'OrderNo kosong' };
-      console.warn('[OrderStore] deleteOrder belum tersedia di BE.');
-      return {
-        ok: false,
-        error: 'Endpoint hapus order belum tersedia di backend.',
-        status: 'NOT_IMPLEMENTED',
-      };
+      // BE tidak menyediakan DELETE order; gunakan cancel agar status berubah ke "cancelled".
+      console.warn('[OrderStore] deleteOrder dialihkan ke cancelOrder.');
+      return this.cancelOrder(target);
     },
 
   },

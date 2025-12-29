@@ -34,13 +34,7 @@
         class="mb-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
       >
         <h3 class="text-base font-semibold text-surfaceDark sm:text-lg"></h3>
-        <button
-          v-if="selectedRows.length"
-          @click="deleteSelected"
-          class="w-full rounded-md bg-red-500 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-red-600 sm:w-auto"
-        >
-          Hapus Terpilih ({{ selectedRows.length }})
-        </button>
+
       </div>
 
       <DataTable
@@ -48,7 +42,6 @@
         :rows="tableRows"
         searchable
         filterable
-        selectable
         search-field="orderNo"
         status-field="status"
         date-field="date"
@@ -56,7 +49,6 @@
         row-key="__rowKey"
         scroll-body-on-mobile
         body-scroll-height="55vh"
-        @update:selected="selectedRows = $event"
       >
         <template #sampleNo="{ row }">
           <div class="text-sm text-gray-700">
@@ -132,12 +124,12 @@
               <PencilIcon class="h-5 w-5" />
             </button>
             <button
-              v-if="row.canDelete"
+              v-if="row.canCancel"
               class="rounded-md bg-red-50 p-1.5 text-danger transition hover:bg-red-100 hover:text-red-700"
-              @click="handleDelete(row)"
-              title="Hapus Data"
+              @click="cancelOrder(row)"
+              title="Batalkan Order"
             >
-              <TrashIcon class="h-5 w-5" />
+              <XCircleIcon class="h-5 w-5" />
             </button>
           </div>
         </template>
@@ -320,7 +312,6 @@ import Badge from '@/components/common/Badge.vue';
 import FormKajiUlang from '@/components/form/FormKajiUlang.vue';
 import {
   PencilIcon,
-  TrashIcon,
   EyeIcon,
   XCircleIcon,
   PrinterIcon,
@@ -353,7 +344,6 @@ const pushToast = (options = {}) =>
 const showForm = ref(false);
 const editingOrderId = ref(null);
 const isEditing = ref(false);
-const selectedRows = ref([]);
 const lookupLoading = ref(false);
 const lookupError = ref('');
 const showReviewModal = ref(false);
@@ -556,6 +546,16 @@ const statusOptions = [
   { value: 'rejected', label: 'Ditolak' },
 ];
 
+// Order tidak bisa dihapus; gunakan cancel agar status menjadi "cancelled".
+const cancelableStatuses = new Set([
+  'draft',
+  'awaiting_review',
+  'awaiting_payment',
+  'payment_submitted',
+  'payment_rejected',
+  'rejected',
+]);
+
 const formatOrderNumberForSample = (orderNumber) => {
   if (orderNumber === null || orderNumber === undefined || orderNumber === '') return '--';
   if (typeof orderNumber === 'number') return String(orderNumber).padStart(3, '0');
@@ -710,7 +710,7 @@ const tableRows = computed(() =>
         paymentInfo: order.paymentInfo,
         canReviewPayment: order.status === 'payment_submitted',
         canOpenForm: !['completed', 'testing', 'payment_approved'].includes(order.status),
-        canDelete: !['testing', 'completed'].includes(order.status),
+        canCancel: cancelableStatuses.has(order.status),
       };
     })
 );
@@ -960,47 +960,45 @@ function handleEdit(row) {
   updateRouteQuery({ mode: 'edit', id: order.orderNo || order.id });
 }
 
-async function deleteSelected() {
-  if (!selectedRows.value.length) return;
-  const removable = selectedRows.value.filter((row) => row.canDelete !== false);
-  const skipped = selectedRows.value.length - removable.length;
-  if (!removable.length) {
+async function cancelOrder(row) {
+  if (!row?.orderNo) return;
+  if (!row.canCancel) {
     pushToast({
       tone: 'warning',
-      title: 'Tidak Bisa Dihapus',
-      message: 'Semua data terpilih terkunci karena sudah diproses.',
+      title: 'Tidak Bisa Dibatalkan',
+      message: 'Status order sudah tidak bisa dibatalkan.',
     });
     return;
   }
   const ok = await openConfirm({
-    title: 'Hapus data kaji ulang terpilih?',
-    message: `${removable.length} data kaji ulang akan dihapus${skipped ? ' (beberapa terkunci dan akan dilewati).' : '.'}`,
-    confirmLabel: 'Hapus Semua',
+    title: 'Batalkan order?',
+    message: `Order ${row.orderNo} akan dibatalkan.`,
+    confirmLabel: 'Batalkan',
     variant: 'danger',
   });
   if (!ok) return;
-  removable.forEach((row) => {
-    kajiUlangStore.removeOrder(row.id ?? row.orderNo);
-  });
-  selectedRows.value = [];
-  if (skipped) {
+  const result = await orderStore.cancelOrder(row.orderNo);
+  if (!result?.ok) {
     pushToast({
-      tone: 'warning',
-      title: 'Sebagian Dilewati',
-      message: `${skipped} data tidak dihapus karena status terkunci.`,
+      tone: 'error',
+      title: 'Gagal Membatalkan',
+      message: result?.error || 'Tidak dapat membatalkan order.',
     });
+    return;
   }
-}
-
-async function handleDelete(row) {
-  const ok = await openConfirm({
-    title: 'Hapus data kaji ulang?',
-    message: `Data kaji ulang untuk order ${row.orderNo} akan dihapus.`,
-    confirmLabel: 'Hapus',
-    variant: 'danger',
+  const paymentInfo = result?.data?.paymentInfo || row.paymentInfo;
+  const cancelPaymentInfo = paymentInfo
+    ? { ...paymentInfo, status: 'cancelled' }
+    : null;
+  kajiUlangStore.updateOrder(row.id ?? row.orderNo, {
+    status: 'cancelled',
+    paymentInfo: cancelPaymentInfo,
   });
-  if (!ok) return;
-  kajiUlangStore.removeOrder(row.id ?? row.orderNo);
+  pushToast({
+    tone: 'success',
+    title: 'Order Dibatalkan',
+    message: `Order ${row.orderNo} sudah dibatalkan.`,
+  });
 }
 
 function openPaymentReview(row) {
