@@ -290,6 +290,32 @@ export const useUserStore = defineStore('user', {
       this.filters.status = status;
     },
 
+    // Ambil detail user untuk mendukung deep-link form edit.
+    async fetchById(id) {
+      const target = String(id || '').trim();
+      if (!target) {
+        return { ok: false, error: 'User id kosong.' };
+      }
+      try {
+        const query = new URLSearchParams();
+        ['roles', 'roles.permissions'].forEach((include) => query.append('include', include));
+        const endpoint = `/api/v1/users/${encodeURIComponent(target)}?${query.toString()}`;
+        const response = await api.get(endpoint);
+        const payload = response.data?.data ?? response.data ?? {};
+        const normalized = normalizeUser(payload.user ?? payload);
+        const idx = this.users.findIndex((user) => user.id === normalized.id);
+        if (idx !== -1) this.users[idx] = normalized;
+        else this.users.unshift(normalized);
+        return { ok: true, data: normalized };
+      } catch (err) {
+        const message =
+          err.response?.data?.message ||
+          err.message ||
+          'Gagal memuat data pengguna.';
+        return { ok: false, error: message, status: err.response?.status || null };
+      }
+    },
+
     async createUser(payload) {
       this.saving = true;
       try {

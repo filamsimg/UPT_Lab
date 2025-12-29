@@ -4,7 +4,7 @@
     <!-- Sidebar -->
     <aside
       :class="[
-        'fixed md:static inset-y-0 left-0 z-50 flex h-screen md:min-h-screen flex-col bg-surface text-gray-800 transition-all duration-300 ease-in-out md:self-stretch shadow-lg md:shadow-none',
+        'fixed md:static inset-y-0 left-0 z-50 flex h-screen md:min-h-screen shrink-0 flex-col bg-surface text-gray-800 transition-all duration-300 ease-in-out md:self-stretch shadow-lg md:shadow-none',
         collapsed ? 'w-14 md:w-14' : 'w-60 md:w-56',
         showMobileSidebar
           ? 'translate-x-0'
@@ -318,7 +318,7 @@
 
       <!-- Page Content -->
       <main
-        class="app-main flex-1 w-full p-4 sm:p-6 lg:p-8 overflow-x-hidden md:overflow-y-scroll md:max-h-[calc(100vh-4rem)]"
+        class="app-main min-w-0 flex-1 w-full p-4 sm:p-6 lg:p-8 overflow-x-hidden md:overflow-y-scroll md:max-h-[calc(100vh-4rem)]"
       >
         <slot />
       </main>

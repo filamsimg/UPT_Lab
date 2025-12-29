@@ -322,12 +322,12 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, watch } from 'vue';
 import { useOrderStore } from '@/stores/useOrderStore';
 import { useTestStore } from '@/stores/useTestStore';
 import { useAuthorization } from '@/composables/auth/useAuthorization';
 import { useAuthStore } from '@/stores/useAuthStore';
-import { useRouter } from 'vue-router';
+import { useRouter, useRoute } from 'vue-router';
 import {
   PencilIcon,
   TrashIcon,
@@ -356,6 +356,7 @@ const testStore = useTestStore();
 const authStore = useAuthStore();
 const { hasPermission } = useAuthorization();
 const router = useRouter();
+const route = useRoute();
 const showModal = ref(false);
 const showPaymentModal = ref(false);
 const showPreviewModal = ref(false);
@@ -379,6 +380,39 @@ const isCustomer = computed(() =>
 const canViewServices = computed(() =>
   !isCustomer.value || hasPermission('material_test_services.index')
 );
+
+// Query mode routing: ?mode=new|edit|payment|preview&id=ORDER_NO&doc=request|invoice
+const readQueryValue = (value) =>
+  Array.isArray(value) ? value[0] ?? '' : value ?? '';
+
+const routeMode = computed(() =>
+  String(readQueryValue(route.query.mode)).trim().toLowerCase()
+);
+const routeId = computed(() => String(readQueryValue(route.query.id)).trim());
+const routeDoc = computed(() =>
+  String(readQueryValue(route.query.doc)).trim().toLowerCase()
+);
+const suppressAutoPrint = ref(false);
+
+function updateRouteQuery(next = {}) {
+  const query = { ...route.query };
+  Object.entries(next).forEach(([key, value]) => {
+    if (value === null || value === undefined || value === '') {
+      delete query[key];
+    } else {
+      query[key] = value;
+    }
+  });
+  router.push({ path: route.path, query });
+}
+
+function clearRouteQuery(keys = ['mode', 'id', 'doc']) {
+  const query = { ...route.query };
+  keys.forEach((key) => {
+    delete query[key];
+  });
+  router.push({ path: route.path, query });
+}
 
 onMounted(() => {
   if (!canViewServices.value) {
@@ -497,9 +531,25 @@ const previewTotals = computed(() => {
 });
 
 // === Modal logic ===
-function openAddModal() {
+function resetFormState() {
+  showModal.value = false;
+  selectedRequest.value = null;
   isEdit.value = false;
-  selectedRequest.value = {
+}
+
+function resetPaymentState() {
+  showPaymentModal.value = false;
+  paymentContext.value = null;
+}
+
+function resetPreviewState() {
+  showPreviewModal.value = false;
+  previewRequest.value = null;
+  suppressAutoPrint.value = false;
+}
+
+function buildDefaultRequest() {
+  return {
     idOrder: '',
     entryDate: new Date().toISOString().substring(0, 10),
     customerName: '',
@@ -511,11 +561,17 @@ function openAddModal() {
     testItems: [],
     status: 'draft',
   };
+}
 
+function applyNewFormState() {
+  resetPaymentState();
+  resetPreviewState();
+  isEdit.value = false;
+  selectedRequest.value = buildDefaultRequest();
   showModal.value = true;
 }
 
-function openEditModal(item) {
+function applyEditSelection(item) {
   isEdit.value = true;
   selectedRequest.value = {
     ...item,
@@ -530,6 +586,216 @@ function openEditModal(item) {
   showModal.value = true;
 }
 
+function applyPaymentContext(row) {
+  paymentContext.value = {
+    orderId: row.idOrder,
+    customerName: row.customerName,
+    entryDate: row.entryDate,
+    rows: buildPaymentRows(row.testItems),
+  };
+  showPaymentModal.value = true;
+}
+
+function applyPreviewState(row) {
+  previewRequest.value = row;
+  showPreviewModal.value = true;
+}
+
+function findRowById(orderId) {
+  const target = String(orderId || '').trim().toLowerCase();
+  if (!target) return null;
+  return (
+    tableRows.value.find(
+      (row) => String(row.idOrder || '').trim().toLowerCase() === target
+    ) || null
+  );
+}
+
+async function resolveRowById(orderId) {
+  const target = String(orderId || '').trim();
+  if (!target) return null;
+  const existing = findRowById(target);
+  if (existing) return existing;
+
+  const { ok, data } = await orderStore.fetchById(target);
+  if (!ok || !data) return null;
+  const idOrder = data.orderNo || data.id || target;
+  return {
+    ...data,
+    idOrder,
+    orderNumber: data.orderNumber ?? null,
+    entryDate: data.entryDate || data.createdAt || '',
+    phoneNumber: data.customerPhone || data.phoneNumber || '',
+    customerName: data.customerName || '',
+    address: data.address || data.customerAddress || '',
+    jobCategory: data.jobCategory || data.workCategoryName || '',
+    workPackage:
+      data.workPackageName ||
+      data.workPackage ||
+      data.workPackageId ||
+      '',
+    testItems: data.testItems || [],
+    paymentInfo: data.paymentInfo || null,
+  };
+}
+
+async function openEditById(orderId) {
+  const row = await resolveRowById(orderId);
+  if (!row) {
+    notify({
+      tone: 'warning',
+      title: 'Order Tidak Ditemukan',
+      message: `Order ${orderId || '-'} tidak ditemukan.`,
+      duration: 4000,
+    });
+    clearRouteQuery();
+    resetFormState();
+    return;
+  }
+  applyEditSelection(row);
+}
+
+async function openPaymentById(orderId) {
+  const row = await resolveRowById(orderId);
+  if (!row) {
+    notify({
+      tone: 'warning',
+      title: 'Order Tidak Ditemukan',
+      message: `Order ${orderId || '-'} tidak ditemukan.`,
+      duration: 4000,
+    });
+    clearRouteQuery();
+    resetPaymentState();
+    return;
+  }
+  if (!canOpenPayment(row)) {
+    notify({
+      tone: 'warning',
+      title: 'Pembayaran Belum Tersedia',
+      message: 'Status order belum bisa melakukan input pembayaran.',
+      duration: 4000,
+    });
+    clearRouteQuery();
+    resetPaymentState();
+    return;
+  }
+  applyPaymentContext(row);
+}
+
+function isPrintableDoc(value) {
+  return value === 'request' || value === 'invoice';
+}
+
+async function openPreviewById(orderId, doc) {
+  const row = await resolveRowById(orderId);
+  if (!row) {
+    notify({
+      tone: 'warning',
+      title: 'Order Tidak Ditemukan',
+      message: `Order ${orderId || '-'} tidak ditemukan.`,
+      duration: 4000,
+    });
+    clearRouteQuery();
+    resetPreviewState();
+    return;
+  }
+  applyPreviewState(row);
+
+  const docType = String(doc || '').toLowerCase();
+  if (!isPrintableDoc(docType)) return;
+
+  if (suppressAutoPrint.value) {
+    suppressAutoPrint.value = false;
+    return;
+  }
+
+  setTimeout(() => {
+    printFromPreview(docType, { skipQueryUpdate: true });
+  }, 0);
+}
+
+watch(
+  [routeMode, routeId, routeDoc],
+  async ([mode, id, doc]) => {
+    if (!mode) {
+      resetFormState();
+      resetPaymentState();
+      resetPreviewState();
+      return;
+    }
+
+    if (mode === 'new') {
+      applyNewFormState();
+      return;
+    }
+
+    if (mode === 'edit') {
+      resetPaymentState();
+      resetPreviewState();
+      if (!id) {
+        notify({
+          tone: 'warning',
+          title: 'ID Order Kosong',
+          message: 'Masukkan id order pada query untuk membuka form edit.',
+          duration: 4000,
+        });
+        clearRouteQuery();
+        return;
+      }
+      await openEditById(id);
+      return;
+    }
+
+    if (mode === 'payment') {
+      resetFormState();
+      resetPreviewState();
+      if (!id) {
+        notify({
+          tone: 'warning',
+          title: 'ID Order Kosong',
+          message: 'Masukkan id order pada query untuk pembayaran.',
+          duration: 4000,
+        });
+        clearRouteQuery();
+        return;
+      }
+      await openPaymentById(id);
+      return;
+    }
+
+    if (mode === 'preview') {
+      resetFormState();
+      resetPaymentState();
+      if (!id) {
+        notify({
+          tone: 'warning',
+          title: 'ID Order Kosong',
+          message: 'Masukkan id order pada query untuk preview.',
+          duration: 4000,
+        });
+        clearRouteQuery();
+        return;
+      }
+      await openPreviewById(id, doc);
+      return;
+    }
+
+    resetFormState();
+    resetPaymentState();
+    resetPreviewState();
+  },
+  { immediate: true }
+);
+
+function openAddModal() {
+  updateRouteQuery({ mode: 'new', id: null });
+}
+
+function openEditModal(item) {
+  if (!item?.idOrder) return;
+  updateRouteQuery({ mode: 'edit', id: item.idOrder });
+}
+
 function canOpenPayment(row) {
   if (!row) return false;
   const allowedStatuses = ['awaiting_payment', 'payment_rejected'];
@@ -540,13 +806,7 @@ function canOpenPayment(row) {
 
 function openPaymentModal(row) {
   if (!canOpenPayment(row)) return;
-  paymentContext.value = {
-    orderId: row.idOrder,
-    customerName: row.customerName,
-    entryDate: row.entryDate,
-    rows: buildPaymentRows(row.testItems),
-  };
-  showPaymentModal.value = true;
+  updateRouteQuery({ mode: 'payment', id: row.idOrder });
 }
 
 function buildPaymentRows(items = []) {
@@ -590,20 +850,18 @@ async function handleFormSubmit(payload) {
     savedData = created || data;
   }
 
-  showModal.value = false;
-  selectedRequest.value = null;
-  isEdit.value = false;
+  resetFormState();
+  clearRouteQuery();
 }
 
 function closePaymentModal() {
-  showPaymentModal.value = false;
-  paymentContext.value = null;
+  resetPaymentState();
+  clearRouteQuery();
 }
 
 function closeModal() {
-  showModal.value = false;
-  selectedRequest.value = null;
-  isEdit.value = false;
+  resetFormState();
+  clearRouteQuery();
 }
 
 async function deleteRequest(item) {
@@ -772,13 +1030,13 @@ function canPrint(row) {
 }
 
 function openPreviewModal(row) {
-  previewRequest.value = row || null;
-  showPreviewModal.value = Boolean(row);
+  if (!row) return;
+  updateRouteQuery({ mode: 'preview', id: row.idOrder, doc: null });
 }
 
 function closePreviewModal() {
-  showPreviewModal.value = false;
-  previewRequest.value = null;
+  resetPreviewState();
+  clearRouteQuery();
 }
 
 async function copyId(id) {
@@ -795,8 +1053,24 @@ async function copyId(id) {
   });
 }
 
-function printFromPreview(type) {
+function printFromPreview(type, options = {}) {
   if (!previewRequest.value) return;
+  const docType = String(type || '').toLowerCase();
+  if (!options.skipQueryUpdate && docType) {
+    const idOrder =
+      previewRequest.value.idOrder ||
+      previewRequest.value.orderNo ||
+      previewRequest.value.id ||
+      '';
+    const sameRoute =
+      routeMode.value === 'preview' &&
+      routeId.value === String(idOrder) &&
+      routeDoc.value === docType;
+    if (!sameRoute) {
+      suppressAutoPrint.value = true;
+      updateRouteQuery({ mode: 'preview', id: idOrder, doc: docType });
+    }
+  }
   printDocument(previewRequest.value, type);
 }
 

@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <!-- Form kaji ulang: lookup order, isi evaluasi, tanda tangan, dan simpan -->
   <div class="flex min-h-screen w-full flex-col bg-slate-50">
     <header class="border-b border-slate-200 bg-white/90 backdrop-blur">
@@ -9,7 +9,7 @@
             {{ isEditing ? 'Ubah Data Kaji Ulang' : 'Tambah Kaji Ulang' }}
           </h1>
           <p class="text-sm text-slate-500">
-            Isi evaluasi kaji ulang untuk permintaan dengan status menunggu kaji ulang (awaiting_review).
+            Isi evaluasi kaji ulang untuk permintaan dengan status menunggu kaji ulang .
           </p>
         </div>
         <button

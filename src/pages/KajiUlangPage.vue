@@ -314,7 +314,7 @@
 </template>
 
 <script setup>
-import { reactive, ref, computed, onMounted } from 'vue';
+import { reactive, ref, computed, onMounted, watch } from 'vue';
 import DataTable from '@/components/common/DataTable.vue';
 import Badge from '@/components/common/Badge.vue';
 import FormKajiUlang from '@/components/form/FormKajiUlang.vue';
@@ -335,12 +335,15 @@ import { useOrderStore } from '@/stores/useOrderStore';
 import { useNotificationCenter } from '@/stores/useNotificationCenter';
 import { copyText } from '@/utils/copyText';
 import { normalizeOrderStatus } from '@/utils/orderStatus';
+import { useRoute, useRouter } from 'vue-router';
 
 const kajiUlangStore = useKajiUlangStore();
 const testStore = useTestStore();
 const openConfirm = useConfirmDialog();
 const orderStore = useOrderStore();
 const { notify } = useNotificationCenter();
+const route = useRoute();
+const router = useRouter();
 const pushToast = (options = {}) =>
   notify({
     duration: options.duration ?? 4500,
@@ -357,6 +360,34 @@ const showReviewModal = ref(false);
 const reviewingOrder = ref(null);
 const reviewNote = ref('');
 const reviewerName = 'Admin';
+
+// Query mode routing: ?mode=new|edit|payment&id=ORDER_NO
+const readQueryValue = (value) =>
+  Array.isArray(value) ? value[0] ?? '' : value ?? '';
+const routeMode = computed(() =>
+  String(readQueryValue(route.query.mode)).trim().toLowerCase()
+);
+const routeId = computed(() => String(readQueryValue(route.query.id)).trim());
+
+function updateRouteQuery(next = {}) {
+  const query = { ...route.query };
+  Object.entries(next).forEach(([key, value]) => {
+    if (value === null || value === undefined || value === '') {
+      delete query[key];
+    } else {
+      query[key] = value;
+    }
+  });
+  router.push({ path: route.path, query });
+}
+
+function clearRouteQuery(keys = ['mode', 'id']) {
+  const query = { ...route.query };
+  keys.forEach((key) => {
+    delete query[key];
+  });
+  router.push({ path: route.path, query });
+}
 
 const makeDefaultReviewRows = () => [
   { topic: 'Peralatan', result: '' },
@@ -698,6 +729,168 @@ onMounted(async () => {
   });
 });
 
+function resetFormState() {
+  showForm.value = false;
+  resetForm();
+}
+
+function resetReviewState() {
+  showReviewModal.value = false;
+  reviewingOrder.value = null;
+  reviewNote.value = '';
+}
+
+function applyNewFormState() {
+  resetReviewState();
+  resetForm();
+  showForm.value = true;
+}
+
+function findOrderById(orderId) {
+  const target = String(orderId || '').trim().toLowerCase();
+  if (!target) return null;
+  return (
+    kajiUlangStore.orders.find(
+      (order) => String(order.orderNo || '').trim().toLowerCase() === target
+    ) || null
+  );
+}
+
+async function resolveOrderById(orderId) {
+  const target = String(orderId || '').trim();
+  if (!target) return null;
+  const existing = findOrderById(target);
+  if (existing) return existing;
+  const { ok, data } = await orderStore.fetchById(target);
+  if (!ok || !data) return null;
+  return kajiUlangStore.upsertFromRequest(data, {
+    paymentDetail: data.paymentInfo || null,
+  });
+}
+
+function canReviewPayment(order) {
+  return order?.status === 'payment_submitted';
+}
+
+async function openEditById(orderId) {
+  const order = await resolveOrderById(orderId);
+  if (!order) {
+    pushToast({
+      tone: 'warning',
+      title: 'Order Tidak Ditemukan',
+      message: `Order ${orderId || '-'} tidak ditemukan.`,
+    });
+    clearRouteQuery();
+    resetFormState();
+    return;
+  }
+  if (['payment_approved', 'completed', 'testing'].includes(order.status)) {
+    pushToast({
+      tone: 'warning',
+      title: 'Belum Bisa Dibuka',
+      message: 'Order sudah terkunci karena pembayaran selesai.',
+    });
+    clearRouteQuery();
+    resetFormState();
+    return;
+  }
+  isEditing.value = true;
+  lookupError.value = '';
+  lookupLoading.value = false;
+  applyOrderToForm(order);
+  editingOrderId.value = order.id;
+  showForm.value = true;
+}
+
+async function openPaymentReviewById(orderId) {
+  const order = await resolveOrderById(orderId);
+  if (!order) {
+    pushToast({
+      tone: 'warning',
+      title: 'Order Tidak Ditemukan',
+      message: `Order ${orderId || '-'} tidak ditemukan.`,
+    });
+    clearRouteQuery();
+    resetReviewState();
+    return;
+  }
+  if (!canReviewPayment(order)) {
+    pushToast({
+      tone: 'warning',
+      title: 'Pembayaran Belum Siap',
+      message: 'Status order belum bisa direview.',
+    });
+    clearRouteQuery();
+    resetReviewState();
+    return;
+  }
+  if (!order.paymentInfo) {
+    pushToast({
+      tone: 'warning',
+      title: 'Bukti Tidak Ditemukan',
+      message: 'Tidak ada bukti pembayaran yang dapat direview.',
+    });
+    clearRouteQuery();
+    resetReviewState();
+    return;
+  }
+  reviewingOrder.value = order;
+  reviewNote.value = order.paymentInfo?.reviewNote || '';
+  showReviewModal.value = true;
+}
+
+watch(
+  [routeMode, routeId],
+  async ([mode, id]) => {
+    if (!mode) {
+      resetReviewState();
+      resetFormState();
+      return;
+    }
+
+    if (mode === 'new') {
+      applyNewFormState();
+      return;
+    }
+
+    if (mode === 'edit') {
+      resetReviewState();
+      if (!id) {
+        pushToast({
+          tone: 'warning',
+          title: 'ID Order Kosong',
+          message: 'Masukkan id order pada query untuk membuka form.',
+        });
+        clearRouteQuery();
+        resetFormState();
+        return;
+      }
+      await openEditById(id);
+      return;
+    }
+
+    if (mode === 'payment') {
+      resetFormState();
+      if (!id) {
+        pushToast({
+          tone: 'warning',
+          title: 'ID Order Kosong',
+          message: 'Masukkan id order pada query untuk review pembayaran.',
+        });
+        clearRouteQuery();
+        resetReviewState();
+        return;
+      }
+      await openPaymentReviewById(id);
+      return;
+    }
+
+    resetReviewState();
+    resetFormState();
+  },
+  { immediate: true }
+);
+
 function setReviewRows(rows) {
   const source =
     Array.isArray(rows) && rows.length ? rows : makeDefaultReviewRows();
@@ -748,8 +941,7 @@ function resetForm() {
 }
 
 function handleAdd() {
-  resetForm();
-  showForm.value = true;
+  updateRouteQuery({ mode: 'new', id: null });
 }
 
 function handleEdit(row) {
@@ -765,12 +957,7 @@ function handleEdit(row) {
     });
     return;
   }
-  isEditing.value = true;
-  lookupError.value = '';
-  lookupLoading.value = false;
-  applyOrderToForm(order);
-  editingOrderId.value = order.id;
-  showForm.value = true;
+  updateRouteQuery({ mode: 'edit', id: order.orderNo || order.id });
 }
 
 async function deleteSelected() {
@@ -828,15 +1015,12 @@ function openPaymentReview(row) {
     });
     return;
   }
-  reviewingOrder.value = order;
-  reviewNote.value = order.paymentInfo.reviewNote || '';
-  showReviewModal.value = true;
+  updateRouteQuery({ mode: 'payment', id: order.orderNo || order.id });
 }
 
 function closeReviewModal() {
-  reviewingOrder.value = null;
-  reviewNote.value = '';
-  showReviewModal.value = false;
+  resetReviewState();
+  clearRouteQuery();
 }
 
 function printKajiUlang(row) {
@@ -960,8 +1144,10 @@ async function lookupOrder(orderNo) {
     }
 
     applyOrderToForm(order);
+    isEditing.value = true;
     editingOrderId.value = order.id;
     showForm.value = true;
+    updateRouteQuery({ mode: 'edit', id: order.orderNo || order.id });
   } catch (err) {
     console.error('lookupOrder error', err);
     lookupError.value = 'Terjadi kesalahan saat mencari ID Order.';
@@ -1094,8 +1280,8 @@ async function approveReview() {
   } catch (err) {
     console.error('Gagal sinkron status permintaan', err);
   }
-  showForm.value = false;
-  resetForm();
+  resetFormState();
+  clearRouteQuery();
   pushToast({
     tone: 'success',
     title: 'Draft Kaji Ulang Disimpan',
@@ -1126,13 +1312,13 @@ function rejectReview() {
       });
     });
   }
-  showForm.value = false;
-  resetForm();
+  resetFormState();
+  clearRouteQuery();
 }
 
 function closeForm() {
-  showForm.value = false;
-  resetForm();
+  resetFormState();
+  clearRouteQuery();
 }
 
 function openPrintWindow(html) {

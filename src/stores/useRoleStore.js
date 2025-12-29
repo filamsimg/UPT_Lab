@@ -207,6 +207,32 @@ export const useRoleStore = defineStore('role', {
       this.search = value;
     },
 
+    // Ambil detail role untuk mendukung deep-link form edit.
+    async fetchById(id) {
+      const target = String(id || '').trim();
+      if (!target) {
+        return { ok: false, error: 'Role id kosong.' };
+      }
+      try {
+        const query = new URLSearchParams();
+        ['permissions', 'users'].forEach((include) => query.append('include', include));
+        const endpoint = `/api/v1/roles/${encodeURIComponent(target)}?${query.toString()}`;
+        const response = await api.get(endpoint);
+        const payload = response.data?.data ?? response.data ?? {};
+        const normalized = normalizeRole(payload.role ?? payload);
+        const idx = this.roles.findIndex((role) => role.id === normalized.id);
+        if (idx !== -1) this.roles[idx] = normalized;
+        else this.roles.unshift(normalized);
+        return { ok: true, data: normalized };
+      } catch (err) {
+        const message =
+          err.response?.data?.message ||
+          err.message ||
+          'Gagal memuat data role.';
+        return { ok: false, error: message, status: err.response?.status || null };
+      }
+    },
+
     async createRole(payload) {
       this.saving = true;
       try {

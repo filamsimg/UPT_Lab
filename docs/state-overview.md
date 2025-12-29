@@ -46,3 +46,21 @@ Dokumen ini merangkum tanggung jawab tiap store dan bentuk data yang dikonsumsi 
 - Input order internal: bentuk payload form -> `useOrderStore.createOrder(payload)` -> jika perlu upload dokumen pendukung lewat field `supportingFile`.
 - Update status di dashboard: panggil `useOrderStore.updateOrder(orderNo, { status })`; jika backend belum siap, state akan diperbarui lokal.
 - Kaji ulang: hasil `normalizeOrderToRequest` / `normalizeOrder` dikirim ke `useKajiUlangStore.upsertFromRequest`, kemudian pakai `updateReview` atau `reviewPayment` untuk menyimpan hasil evaluasi.
+
+## Query-based routing (Permintaan & Kaji Ulang)
+- Tujuan: URL selalu merepresentasikan order yang sedang dibuka tanpa membuat route baru.
+- Pola: `?mode=new|edit|payment|preview&id=<ORDER_NO>&doc=request|invoice`.
+- Halaman terkait: `src/pages/PermintaanPage.vue`, `src/pages/KajiUlangPage.vue`.
+- Perilaku:
+  - `mode=new` membuka form kosong.
+  - `mode=edit&id=...` membuka form edit berdasarkan `orderNo`.
+  - `mode=payment&id=...` membuka modal pembayaran/review bukti.
+  - `mode=preview&id=...` membuka preview permintaan (opsional `doc=request|invoice`) - hanya di Permintaan.
+  - Tutup form/modal akan menghapus `mode`/`id`/`doc` dari query.
+
+## Query-based routing (Manajemen Pengguna)
+- Tujuan: deep-link form pengguna/role tanpa route baru.
+- Pola:
+  - Users: `?mode=new|edit&id=<USER_ID>` di `src/pages/UsersPage.vue`.
+  - Roles: `?mode=new|edit&id=<ROLE_ID>` di `src/pages/RolesPage.vue`.
+- Perilaku: mode `new` membuka form kosong, `edit` membuka form edit by id, tutup modal menghapus query.

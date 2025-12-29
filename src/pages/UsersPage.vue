@@ -309,6 +309,7 @@
 
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import {
   ArrowPathIcon,
   MagnifyingGlassIcon,
@@ -329,11 +330,41 @@ const roleStore = useRoleStore();
 const openConfirm = useConfirmDialog();
 const { notify } = useNotificationCenter();
 const { hasPermission } = useAuthorization();
+const route = useRoute();
+const router = useRouter();
 
 const canViewUsers = computed(() => hasPermission('users.index'));
 const canCreateUser = computed(() => hasPermission('users.store'));
 const canUpdateUser = computed(() => hasPermission('users.update'));
 const canDeleteUser = computed(() => hasPermission('users.destroy'));
+
+// Query mode routing: ?mode=new|edit&id=USER_ID
+const readQueryValue = (value) =>
+  Array.isArray(value) ? value[0] ?? '' : value ?? '';
+const routeMode = computed(() =>
+  String(readQueryValue(route.query.mode)).trim().toLowerCase()
+);
+const routeId = computed(() => String(readQueryValue(route.query.id)).trim());
+
+function updateRouteQuery(next = {}) {
+  const query = { ...route.query };
+  Object.entries(next).forEach(([key, value]) => {
+    if (value === null || value === undefined || value === '') {
+      delete query[key];
+    } else {
+      query[key] = value;
+    }
+  });
+  router.push({ path: route.path, query });
+}
+
+function clearRouteQuery(keys = ['mode', 'id']) {
+  const query = { ...route.query };
+  keys.forEach((key) => {
+    delete query[key];
+  });
+  router.push({ path: route.path, query });
+}
 
 const columns = [
   { field: 'name', title: 'Nama', isSortable: false },
@@ -423,6 +454,117 @@ const endEntry = computed(() => {
     totalItems.value
   );
 });
+
+function resetFormState() {
+  showForm.value = false;
+  selectedUser.value = null;
+  isEdit.value = false;
+}
+
+function applyNewFormState() {
+  selectedUser.value = null;
+  isEdit.value = false;
+  showForm.value = true;
+}
+
+function applyEditState(user) {
+  selectedUser.value = { ...user };
+  isEdit.value = true;
+  showForm.value = true;
+}
+
+function findUserById(userId) {
+  const target = String(userId || '').trim().toLowerCase();
+  if (!target) return null;
+  return (
+    userStore.users.find(
+      (user) => String(user.id || '').trim().toLowerCase() === target
+    ) || null
+  );
+}
+
+async function resolveUserById(userId) {
+  const target = String(userId || '').trim();
+  if (!target) return null;
+  const existing = findUserById(target);
+  if (existing) return existing;
+  const { ok, data } = await userStore.fetchById(target);
+  return ok ? data : null;
+}
+
+async function openEditById(userId) {
+  if (!canUpdateUser.value) {
+    notify({
+      tone: 'warning',
+      title: 'Akses Ditolak',
+      message: 'Anda tidak memiliki izin untuk mengedit pengguna.',
+      persist: false,
+    });
+    clearRouteQuery();
+    resetFormState();
+    return;
+  }
+  const user = await resolveUserById(userId);
+  if (!user) {
+    notify({
+      tone: 'warning',
+      title: 'Pengguna Tidak Ditemukan',
+      message: `Pengguna ${userId || '-'} tidak ditemukan.`,
+      persist: false,
+    });
+    clearRouteQuery();
+    resetFormState();
+    return;
+  }
+  applyEditState(user);
+}
+
+// Sinkronkan modal dengan query agar URL bisa di-share.
+watch(
+  [routeMode, routeId],
+  async ([mode, id]) => {
+    if (!canViewUsers.value) {
+      resetFormState();
+      return;
+    }
+    if (!mode) {
+      resetFormState();
+      return;
+    }
+    if (mode === 'new') {
+      if (!canCreateUser.value) {
+        notify({
+          tone: 'warning',
+          title: 'Akses Ditolak',
+          message: 'Anda tidak memiliki izin untuk menambah pengguna.',
+          persist: false,
+        });
+        clearRouteQuery();
+        resetFormState();
+        return;
+      }
+      applyNewFormState();
+      return;
+    }
+    if (mode === 'edit') {
+      if (!id) {
+        notify({
+          tone: 'warning',
+          title: 'ID Pengguna Kosong',
+          message: 'Masukkan id pada query untuk membuka form edit.',
+          persist: false,
+        });
+        clearRouteQuery();
+        resetFormState();
+        return;
+      }
+      await openEditById(id);
+      return;
+    }
+    resetFormState();
+  },
+  { immediate: true }
+);
 
 watch(
   searchTerm,
@@ -536,23 +678,19 @@ function normalizePerPage(value) {
 function openCreateForm() {
   if (!canViewUsers.value) return;
   if (!canCreateUser.value) return;
-  selectedUser.value = null;
-  isEdit.value = false;
-  showForm.value = true;
+  updateRouteQuery({ mode: 'new', id: null });
 }
 
 function openEditForm(user) {
   if (!canViewUsers.value) return;
   if (!canUpdateUser.value) return;
-  selectedUser.value = { ...user };
-  isEdit.value = true;
-  showForm.value = true;
+  if (!user?.id) return;
+  updateRouteQuery({ mode: 'edit', id: user.id });
 }
 
 function closeForm() {
-  showForm.value = false;
-  selectedUser.value = null;
-  isEdit.value = false;
+  resetFormState();
+  clearRouteQuery();
 }
 
 async function handleSubmit(payload) {

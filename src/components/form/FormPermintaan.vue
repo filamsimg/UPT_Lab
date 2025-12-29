@@ -199,7 +199,8 @@
             :key="`test-${index}`"
             class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm space-y-3"
           >
-            <div class="grid gap-3 md:grid-cols-[5fr_3fr_2fr_2fr_2fr_auto] md:items-end">
+            <div class="overflow-x-auto">
+              <div class="grid w-full min-w-full gap-3 md:grid-cols-[5fr_3fr_2fr_2fr_2fr_auto] md:items-end">
               <div class="flex flex-col gap-1">
                 <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">
                   Cari Pengujian
@@ -280,6 +281,7 @@
                 >
                   Hapus
                 </button>
+              </div>
               </div>
             </div>
             <div class="flex flex-wrap items-center justify-between border-t border-dashed pt-3 text-xs text-slate-600">

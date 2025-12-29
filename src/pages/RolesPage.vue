@@ -324,6 +324,7 @@
 
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import {
   ArrowPathIcon,
   MagnifyingGlassIcon,
@@ -344,11 +345,41 @@ const permissionStore = usePermissionStore();
 const openConfirm = useConfirmDialog();
 const { notify } = useNotificationCenter();
 const { hasPermission } = useAuthorization();
+const route = useRoute();
+const router = useRouter();
 
 const canViewRoles = computed(() => hasPermission('roles.index'));
 const canCreateRole = computed(() => hasPermission('roles.store'));
 const canUpdateRole = computed(() => hasPermission('roles.update'));
 const canDeleteRole = computed(() => hasPermission('roles.destroy'));
+
+// Query mode routing: ?mode=new|edit&id=ROLE_ID
+const readQueryValue = (value) =>
+  Array.isArray(value) ? value[0] ?? '' : value ?? '';
+const routeMode = computed(() =>
+  String(readQueryValue(route.query.mode)).trim().toLowerCase()
+);
+const routeId = computed(() => String(readQueryValue(route.query.id)).trim());
+
+function updateRouteQuery(next = {}) {
+  const query = { ...route.query };
+  Object.entries(next).forEach(([key, value]) => {
+    if (value === null || value === undefined || value === '') {
+      delete query[key];
+    } else {
+      query[key] = value;
+    }
+  });
+  router.push({ path: route.path, query });
+}
+
+function clearRouteQuery(keys = ['mode', 'id']) {
+  const query = { ...route.query };
+  keys.forEach((key) => {
+    delete query[key];
+  });
+  router.push({ path: route.path, query });
+}
 
 const columns = [
   { field: 'name', title: 'Nama Role', slotName: 'roleName' },
@@ -430,6 +461,117 @@ const endEntry = computed(() => {
   return Math.min(roleStore.pagination.currentPage * currentPerPage.value, totalItems.value);
 });
 
+function resetFormState() {
+  showForm.value = false;
+  selectedRole.value = null;
+  isEdit.value = false;
+}
+
+function applyNewFormState() {
+  selectedRole.value = null;
+  isEdit.value = false;
+  showForm.value = true;
+}
+
+function applyEditState(role) {
+  selectedRole.value = { ...role };
+  isEdit.value = true;
+  showForm.value = true;
+}
+
+function findRoleById(roleId) {
+  const target = String(roleId || '').trim().toLowerCase();
+  if (!target) return null;
+  return (
+    roleStore.roles.find(
+      (role) => String(role.id || '').trim().toLowerCase() === target
+    ) || null
+  );
+}
+
+async function resolveRoleById(roleId) {
+  const target = String(roleId || '').trim();
+  if (!target) return null;
+  const existing = findRoleById(target);
+  if (existing) return existing;
+  const { ok, data } = await roleStore.fetchById(target);
+  return ok ? data : null;
+}
+
+async function openEditById(roleId) {
+  if (!canUpdateRole.value) {
+    notify({
+      tone: 'warning',
+      title: 'Akses Ditolak',
+      message: 'Anda tidak memiliki izin untuk mengedit role.',
+      persist: false,
+    });
+    clearRouteQuery();
+    resetFormState();
+    return;
+  }
+  const role = await resolveRoleById(roleId);
+  if (!role) {
+    notify({
+      tone: 'warning',
+      title: 'Role Tidak Ditemukan',
+      message: `Role ${roleId || '-'} tidak ditemukan.`,
+      persist: false,
+    });
+    clearRouteQuery();
+    resetFormState();
+    return;
+  }
+  applyEditState(role);
+}
+
+// Sinkronkan modal dengan query agar URL bisa di-share.
+watch(
+  [routeMode, routeId],
+  async ([mode, id]) => {
+    if (!canViewRoles.value) {
+      resetFormState();
+      return;
+    }
+    if (!mode) {
+      resetFormState();
+      return;
+    }
+    if (mode === 'new') {
+      if (!canCreateRole.value) {
+        notify({
+          tone: 'warning',
+          title: 'Akses Ditolak',
+          message: 'Anda tidak memiliki izin untuk menambah role.',
+          persist: false,
+        });
+        clearRouteQuery();
+        resetFormState();
+        return;
+      }
+      applyNewFormState();
+      return;
+    }
+    if (mode === 'edit') {
+      if (!id) {
+        notify({
+          tone: 'warning',
+          title: 'ID Role Kosong',
+          message: 'Masukkan id pada query untuk membuka form edit.',
+          persist: false,
+        });
+        clearRouteQuery();
+        resetFormState();
+        return;
+      }
+      await openEditById(id);
+      return;
+    }
+    resetFormState();
+  },
+  { immediate: true }
+);
+
 watch(searchTerm, (value) => {
   clearActionMessage();
   if (!canViewRoles.value) return;
@@ -509,24 +651,20 @@ function openCreateForm() {
   clearActionMessage();
   if (!canViewRoles.value) return;
   if (!canCreateRole.value) return;
-  selectedRole.value = null;
-  isEdit.value = false;
-  showForm.value = true;
+  updateRouteQuery({ mode: 'new', id: null });
 }
 
 function openEditForm(role) {
   clearActionMessage();
   if (!canViewRoles.value) return;
   if (!canUpdateRole.value) return;
-  selectedRole.value = { ...role };
-  isEdit.value = true;
-  showForm.value = true;
+  if (!role?.id) return;
+  updateRouteQuery({ mode: 'edit', id: role.id });
 }
 
 function closeForm() {
-  showForm.value = false;
-  selectedRole.value = null;
-  isEdit.value = false;
+  resetFormState();
+  clearRouteQuery();
 }
 
 async function handleSubmit(payload) {
