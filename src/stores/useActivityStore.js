@@ -1,3 +1,4 @@
+// Store aktivitas: memuat/menyimpan log aktivitas pengguna
 import { defineStore } from 'pinia';
 import api from '@/services/apiServices';
 import { isSuperAdminUser } from '@/composables/auth/useAuthorization';
@@ -305,6 +306,7 @@ export const useActivityStore = defineStore('activity', {
   },
 
   actions: {
+
     hydrate() {
       if (typeof window === 'undefined') return;
       this.events = filterVisibleActivities(
@@ -368,6 +370,9 @@ export const useActivityStore = defineStore('activity', {
       const viewerIsSuperAdmin =
         options.viewerIsSuperAdmin ?? isSuperAdminUser(options.viewer) ?? false;
       const effectiveOptions = { ...options, viewerId, viewerIsSuperAdmin };
+      const localEvents = this.events.filter(
+        (event) => event?.metadata?.source === 'frontend'
+      );
 
       try {
         const query = buildQueryParams({
@@ -383,11 +388,32 @@ export const useActivityStore = defineStore('activity', {
         );
         const visible = filterSuperAdmin(normalized, viewerIsSuperAdmin);
         const filtered = filterVisibleActivities(visible);
-        this.events = filtered;
-        this.pagination = normalizePagination(payload, this.pagination);
+        const merged = filterVisibleActivities(mergeEvents(filtered, localEvents));
+        this.events = merged;
+
+        // Sesuaikan pagination: jika setelah filter jumlah item < perPage, anggap halaman terakhir.
+        const normalizedPagination = normalizePagination(payload, this.pagination);
+        const perPageRaw = effectiveOptions.perPage ?? normalizedPagination.perPage;
+        const perPage = Number(perPageRaw) || normalizedPagination.perPage || filtered.length || 1;
+        const hasNextPage =
+          normalizedPagination.hasNextPage && filtered.length >= perPage;
+
+        const displayLastPage = hasNextPage
+          ? normalizedPagination.lastPage
+          : normalizedPagination.currentPage;
+        const displayTotalItems = hasNextPage
+          ? normalizedPagination.totalItems
+          : (normalizedPagination.currentPage - 1) * perPage + filtered.length;
+
+        this.pagination = {
+          ...normalizedPagination,
+          hasNextPage,
+          lastPage: displayLastPage,
+          totalItems: displayTotalItems,
+        };
         this.apiStatus = res.status ?? payload.code ?? 200;
         this.persist();
-        return { ok: true, items: filtered, pagination: this.pagination };
+        return { ok: true, items: this.events, pagination: this.pagination };
       } catch (err) {
         const isNetworkError = err.code === 'ERR_NETWORK' || (!err.response && err.request);
         this.apiStatus =

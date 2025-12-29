@@ -1,3 +1,4 @@
+// Router utama: definisi rute, guard auth/permission
 import { createRouter, createWebHistory } from 'vue-router';
 import { useAuthStore } from '../stores/useAuthStore';
 import {

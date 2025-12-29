@@ -1,4 +1,5 @@
 <template>
+  <!-- Reset password: input email/kode/password baru -->
   <div
     class="min-h-screen flex items-center justify-center bg-gradient-to-br from-primaryLight/10 via-white to-primaryDark/10 px-4 py-10"
   >

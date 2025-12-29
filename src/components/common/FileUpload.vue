@@ -1,4 +1,5 @@
 <template>
+  <!-- Input upload sederhana dengan preview list dan aksi hapus per file -->
   <div>
     <label class="block text-sm font-medium text-gray-700 mb-1">{{ label }}</label>
     <input

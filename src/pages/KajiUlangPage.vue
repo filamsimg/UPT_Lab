@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="space-y-3">
     <header
       v-if="!showForm"
@@ -45,7 +45,11 @@
         <template #sampleNo="{ row }">
           <div class="text-sm text-gray-700">
             <template v-if="row.sampleCodes && row.sampleCodes.length">
-              <p v-for="code in row.sampleCodes" :key="`${row.id}-sample-${code}`">
+              <p
+                v-for="code in row.sampleCodes"
+                :key="`${row.id}-sample-${code}`"
+                class="font-mono text-[11px] uppercase tracking-wide"
+              >
                 {{ code }}
               </p>
             </template>
@@ -70,6 +74,20 @@
         </template>
         <template #status="{ value }">
           <Badge :status="value" />
+        </template>
+        <template #testNames="{ row }">
+          <div class="text-left">
+            <template v-if="row.testItems && row.testItems.length">
+              <span
+                v-for="(item, idx) in row.testItems"
+                :key="`${row.id}-test-${idx}`"
+                class="block text-xs text-gray-700"
+              >
+                {{ resolveTestName(item) || '-' }}
+              </span>
+            </template>
+            <span v-else class="text-xs text-gray-400">-</span>
+          </div>
         </template>
         <!-- Kolom review pembayaran dihilangkan; hanya gunakan status -->
         <template #actions="{ row }">
@@ -300,6 +318,7 @@ import { useConfirmDialog } from '@/stores/useConfirmDialog';
 import { useOrderStore } from '@/stores/useOrderStore';
 import { useNotificationCenter } from '@/stores/useNotificationCenter';
 import { copyText } from '@/utils/copyText';
+import { normalizeOrderStatus } from '@/utils/orderStatus';
 
 const kajiUlangStore = useKajiUlangStore();
 const testStore = useTestStore();
@@ -329,6 +348,24 @@ const makeDefaultReviewRows = () => [
   { topic: 'Kondisi', result: '' },
   { topic: 'Laboratorium Subkontrak', result: '' },
 ];
+
+const evaluationFields = [
+  'is_equipment_available',
+  'is_personnel_available',
+  'is_time_available',
+  'is_test_ready',
+  'is_subcontract_lab_available',
+];
+
+const isEvaluationComplete = (items = []) =>
+  Array.isArray(items) &&
+  items.length > 0 &&
+  items.every((item) => {
+    const ev = item?.evaluation || {};
+    return evaluationFields.every(
+      (field) => ev[field] === true || ev[field] === false
+    );
+  });
 
 const cloneTestItems = (items = []) =>
   items.map((item) => ({
@@ -360,11 +397,16 @@ function buildInvoiceDetail() {
   const items = cloneTestItems(form.testItems);
   const baseInfo = clonePaymentInfo(form.paymentInfo) || {};
   const computedTotal = sumFormTestItems(items);
-  const allowedStatuses = ['payment_pending_review', 'payment_verified'];
-  const statusCandidate = baseInfo.status || 'pending_payment';
+  const allowedStatuses = [
+    'awaiting_payment',
+    'payment_submitted',
+    'payment_approved',
+    'payment_rejected',
+  ];
+  const statusCandidate = normalizeOrderStatus(baseInfo.status) || 'awaiting_payment';
   const status = allowedStatuses.includes(statusCandidate)
     ? statusCandidate
-    : 'pending_payment';
+    : 'awaiting_payment';
   const amountPaid = Math.max(0, Number(baseInfo.amountPaid) || 0);
   const total = baseInfo.total ?? computedTotal;
   const outstanding =
@@ -373,7 +415,7 @@ function buildInvoiceDetail() {
     ...baseInfo,
     status,
     reviewStatus:
-      status === 'pending_payment'
+      status === 'awaiting_payment'
         ? 'invoice_ready'
         : baseInfo.reviewStatus || 'pending',
     total,
@@ -416,7 +458,7 @@ const columns = [
   { field: 'orderNo', title: 'ID Order', className: 'min-w-[150px]' },
   {
     field: 'sampleNo',
-    title: 'Sample No',
+    title: 'No Sampel',
     slotName: 'sampleNo',
     className: 'min-w-[140px]',
   },
@@ -438,9 +480,10 @@ const columns = [
     className: 'min-w-[150px]',
   },
   {
-    field: 'testType',
-    title: 'Jenis Pengujian',
-    className: 'hidden lg:table-cell min-w-[160px]',
+    field: 'testNameSummary',
+    title: 'Nama Pengujian',
+    slotName: 'testNames',
+    className: 'hidden lg:table-cell min-w-[200px]',
   },
   {
     field: 'actions',
@@ -453,13 +496,14 @@ const columns = [
 const statusOptions = [
   { value: '', label: 'Semua Status' },
   { value: 'draft', label: 'Draft' },
-  { value: 'awaiting_kaji_ulang', label: 'Menunggu Kaji Ulang' },
-  { value: 'pending_payment', label: 'Menunggu Pembayaran' },
-  { value: 'payment_pending_review', label: 'Menunggu Review Pembayaran' },
-  { value: 'payment_verified', label: 'Pembayaran Terverifikasi' },
-  { value: 'payment_review_rejected', label: 'Bukti Pembayaran Ditolak' },
-  { value: 'in_testing', label: 'Proses Pengujian' },
+  { value: 'awaiting_review', label: 'Menunggu Kaji Ulang' },
+  { value: 'awaiting_payment', label: 'Menunggu Pembayaran' },
+  { value: 'payment_submitted', label: 'Bukti Pembayaran Dikirim' },
+  { value: 'payment_approved', label: 'Pembayaran Disetujui' },
+  { value: 'payment_rejected', label: 'Bukti Pembayaran Ditolak' },
+  { value: 'testing', label: 'Proses Pengujian' },
   { value: 'completed', label: 'Selesai' },
+  { value: 'refunded', label: 'Refund' },
   { value: 'cancelled', label: 'Dibatalkan' },
   { value: 'rejected', label: 'Ditolak' },
 ];
@@ -470,6 +514,31 @@ const formatOrderNumberForSample = (orderNumber) => {
   const trimmed = String(orderNumber).trim();
   if (!trimmed) return '--';
   return /^\d+$/.test(trimmed) ? trimmed.padStart(3, '0') : trimmed;
+};
+
+const resolveLatestDate = (order) => {
+  if (!order) return '';
+  const candidates = [
+    order.kajiUlangValidatedAt,
+    order.paymentInfo?.reviewedAt,
+    order.paymentInfo?.paymentDate,
+    order.paymentInfo?.paidAt,
+    order.updatedAt,
+    order.date,
+    order.entryDate,
+    order.createdAt,
+  ];
+  let latest = null;
+  candidates.forEach((value) => {
+    if (!value) return;
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) return;
+    if (!latest || parsed > latest) {
+      latest = parsed;
+    }
+  });
+  if (latest) return latest.toISOString();
+  return candidates.find(Boolean) || '';
 };
 
 const resolveMonthYearLabel = (dateValue, fallbackYear = '') => {
@@ -494,6 +563,54 @@ const deriveTestCode = (item = {}) => {
   return '--';
 };
 
+const sanitizeTestName = (value) => {
+  if (!value) return '';
+  const normalized = String(value).trim();
+  if (!normalized) return '';
+  const lower = normalized.toLowerCase();
+  if (['pengujian', 'testing', 'machining'].includes(lower)) return '';
+  return normalized;
+};
+
+const resolveTestName = (item = {}) => {
+  if (!item) return '';
+  const direct =
+    sanitizeTestName(item.testName) ||
+    sanitizeTestName(item.test_name) ||
+    sanitizeTestName(item.name) ||
+    sanitizeTestName(item.service?.test_name) ||
+    sanitizeTestName(item.service?.testName) ||
+    sanitizeTestName(item.service?.name);
+  if (direct) return direct;
+
+  const testId = item.serviceId || item.service_id || item.testId || item.id;
+  if (testId) {
+    const test =
+      typeof testStore.getTestById === 'function'
+        ? testStore.getTestById(testId)
+        : (testStore.tests || []).find((entry) => entry.id === testId);
+    if (test) {
+      const fromStore =
+        sanitizeTestName(test.name) ||
+        sanitizeTestName(test.testName) ||
+        sanitizeTestName(test.test_name) ||
+        sanitizeTestName(test.code);
+      if (fromStore) return fromStore;
+    }
+  }
+
+  return sanitizeTestName(item.testCategory || item.test_category);
+};
+
+const buildTestNameSummary = (items = []) => {
+  if (!Array.isArray(items) || !items.length) return '';
+  const names = items
+    .map((item) => resolveTestName(item))
+    .map((name) => (name ? String(name).trim() : ''))
+    .filter(Boolean);
+  return names.join(', ');
+};
+
 const deriveSampleValue = (item = {}) => {
   const value = item.sampleNo !== undefined && item.sampleNo !== null ? String(item.sampleNo).trim() : '';
   if (value) return value;
@@ -503,6 +620,19 @@ const deriveSampleValue = (item = {}) => {
 
 const buildSampleCodes = (order = {}) => {
   if (!Array.isArray(order.testItems) || !order.testItems.length) return [];
+
+  // Jika BE sudah memberikan sample_number, pakai apa adanya
+  const provided = order.testItems
+    .map((item) => {
+      const raw =
+        (item.sampleNo && String(item.sampleNo).trim()) ||
+        (item.sampleCode && String(item.sampleCode).trim());
+      return raw || null;
+    })
+    .filter(Boolean);
+  if (provided.length === order.testItems.length) return provided;
+
+  // Fallback: generate kode internal
   const prefix = resolveMonthYearLabel(order.date, order.orderYear);
   const orderSegment = formatOrderNumberForSample(order.orderNumber);
   return order.testItems.map((item, idx) => {
@@ -523,14 +653,15 @@ const tableRows = computed(() =>
         orderNo: order.orderNo,
         sampleNo: sampleCodes.join(', ') || order.sampleNo || '',
         sampleCodes,
-        date: order.date || '',
+        date: resolveLatestDate(order),
         customerName: order.customerName || '',
         status: order.status,
-        testType: order.testType || '-',
+        testItems: order.testItems || [],
+        testNameSummary: buildTestNameSummary(order.testItems),
         paymentInfo: order.paymentInfo,
-        canReviewPayment: order.status === 'payment_pending_review',
-        canOpenForm: !['completed', 'in_testing', 'payment_verified'].includes(order.status),
-        canDelete: !['in_testing', 'completed'].includes(order.status),
+        canReviewPayment: order.status === 'payment_submitted',
+        canOpenForm: !['completed', 'testing', 'payment_approved'].includes(order.status),
+        canDelete: !['testing', 'completed'].includes(order.status),
       };
     })
 );
@@ -538,6 +669,9 @@ const tableRows = computed(() =>
 const tests = computed(() => testStore.tests || []);
 
 onMounted(async () => {
+  if (!testStore.tests.length) {
+    testStore.fetchAll();
+  }
   const { data } = await orderStore.fetchAll();
   (data || []).forEach((order) => {
     kajiUlangStore.upsertFromRequest(order, {
@@ -605,7 +739,7 @@ function handleEdit(row) {
     kajiUlangStore.orders.find((o) => o.id === row.id) ||
     kajiUlangStore.orders.find((o) => o.orderNo === row.orderNo);
   if (!order) return;
-  if (['payment_verified', 'completed', 'in_testing'].includes(order.status)) {
+  if (['payment_approved', 'completed', 'testing'].includes(order.status)) {
     pushToast({
       tone: 'warning',
       title: 'Belum Bisa Dibuka',
@@ -685,8 +819,17 @@ async function approvePaymentEvidence() {
     note: reviewNote.value,
   });
   if (updated) {
-    await orderStore.updateOrder(updated.orderNo, {
-      status: 'payment_verified',
+    const { ok, error } = await orderStore.approvePayment(updated.orderNo);
+    if (!ok) {
+      pushToast({
+        tone: 'error',
+        title: 'Gagal Menyetujui Pembayaran',
+        message: error || 'Tidak dapat memperbarui status pembayaran.',
+      });
+      return;
+    }
+    orderStore.updateLocalOrder(updated.orderNo, {
+      status: 'payment_approved',
       paymentInfo: updated.paymentInfo,
     });
     pushToast({
@@ -713,8 +856,17 @@ async function rejectPaymentEvidence() {
     note: reviewNote.value,
   });
   if (updated) {
-    await orderStore.updateOrder(updated.orderNo, {
-      status: 'payment_review_rejected',
+    const { ok, error } = await orderStore.rejectPayment(updated.orderNo);
+    if (!ok) {
+      pushToast({
+        tone: 'error',
+        title: 'Gagal Menolak Pembayaran',
+        message: error || 'Tidak dapat memperbarui status pembayaran.',
+      });
+      return;
+    }
+    orderStore.updateLocalOrder(updated.orderNo, {
+      status: 'payment_rejected',
       paymentInfo: updated.paymentInfo,
     });
     pushToast({
@@ -824,6 +976,15 @@ async function approveReview() {
     });
     return;
   }
+  if (!isEvaluationComplete(form.testItems)) {
+    pushToast({
+      tone: 'warning',
+      title: 'Evaluasi Belum Lengkap',
+      message:
+        'Lengkapi evaluasi kaji ulang untuk semua pengujian sebelum meloloskan.',
+    });
+    return;
+  }
   const invoiceDetail = buildInvoiceDetail();
   if (editingOrderId.value) {
     kajiUlangStore.updateOrder(editingOrderId.value, {
@@ -841,7 +1002,7 @@ async function approveReview() {
     kajiUlangStore.updateReview(editingOrderId.value, {
       rows: reviewRows,
       note: form.note,
-      status: 'pending_validation',
+      status: invoiceDetail.status,
       validator: 'Manajer Teknis',
     });
   } else {
@@ -862,15 +1023,24 @@ async function approveReview() {
     kajiUlangStore.updateReview(created.id, {
       rows: reviewRows,
       note: form.note,
-      status: 'pending_validation',
+      status: invoiceDetail.status,
       validator: 'Manajer Teknis',
     });
   }
   try {
-    await orderStore.updateOrder(form.orderNo, {
-      status: invoiceDetail.status,
-      paymentInfo: invoiceDetail,
-    });
+    const { ok, error } = await orderStore.approveOrder(form.orderNo);
+    if (!ok) {
+      pushToast({
+        tone: 'error',
+        title: 'Gagal Menyetujui Permintaan',
+        message: error || 'Tidak dapat memperbarui status permintaan.',
+      });
+    } else {
+      orderStore.updateLocalOrder(form.orderNo, {
+        status: invoiceDetail.status,
+        paymentInfo: invoiceDetail,
+      });
+    }
   } catch (err) {
     console.error('Gagal sinkron status permintaan', err);
   }
@@ -889,6 +1059,21 @@ function rejectReview() {
       rows: reviewRows,
       note: form.note,
       status: 'rejected',
+    });
+  }
+  if (form.orderNo) {
+    orderStore.rejectOrder(form.orderNo).then(({ ok, error }) => {
+      if (!ok) {
+        pushToast({
+          tone: 'error',
+          title: 'Gagal Menolak Permintaan',
+          message: error || 'Tidak dapat memperbarui status permintaan.',
+        });
+        return;
+      }
+      orderStore.updateLocalOrder(form.orderNo, {
+        status: 'rejected',
+      });
     });
   }
   showForm.value = false;
@@ -948,8 +1133,25 @@ function openPrintWindow(html) {
 function formatDateDisplay(value) {
   if (!value) return '-';
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat('id-ID', { dateStyle: 'medium' }).format(date);
+  if (Number.isNaN(date.getTime())) {
+    const raw = String(value || '').trim();
+    if (raw.length >= 10) {
+      const fallback = new Date(raw.slice(0, 10));
+      if (!Number.isNaN(fallback.getTime())) {
+        return new Intl.DateTimeFormat('id-ID', {
+          day: '2-digit',
+          month: 'short',
+          year: 'numeric',
+        }).format(fallback);
+      }
+    }
+    return raw || '-';
+  }
+  return new Intl.DateTimeFormat('id-ID', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  }).format(date);
 }
 
 function formatCurrency(value) {

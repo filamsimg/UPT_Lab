@@ -1,7 +1,9 @@
+// Composable helper untuk memeriksa permission berbasis useAuthStore
 import { computed } from 'vue';
 import { useAuthStore } from '@/stores/useAuthStore';
 
 function normalizePermissionName(value) {
+// Normalisasi nama permission (string/objek) ke lowercase
   if (value == null) return null;
   if (typeof value === 'string') return value.trim().toLowerCase();
   if (typeof value === 'object') {
@@ -18,6 +20,7 @@ function normalizePermissionName(value) {
 }
 
 function normalizeRoleName(value) {
+// Normalisasi nama role untuk deteksi super admin
   if (typeof value !== 'string') return null;
   return value.trim().toLowerCase().replace(/\s+/g, '_');
 }
@@ -44,6 +47,7 @@ export function isSuperAdminUser(user) {
 }
 
 export function buildPermissionSet(user) {
+// Bangun set permission unik dari user + roles
   const set = new Set();
   if (!user) return set;
 
@@ -80,11 +84,14 @@ export function useAuthorization() {
   const authStore = useAuthStore();
 
   const permissionSet = computed(() =>
+  // Set permission hasil buildPermissionSet
     buildPermissionSet(authStore.currentUser)
   );
   const superAdmin = computed(() => isSuperAdminUser(authStore.currentUser));
+  // Flag jika super admin selalu lolos
 
   const hasPermission = (name) => {
+  // Cek satu permission (super admin bypass)
     const normalized = normalizePermissionName(name);
     if (!normalized) return false;
     if (superAdmin.value) return true;
@@ -92,6 +99,7 @@ export function useAuthorization() {
   };
 
   const hasAnyPermission = (...names) => {
+  // Cek salah satu permission dari list/array
     for (const entry of names) {
       if (Array.isArray(entry)) {
         if (entry.some((permission) => hasPermission(permission))) return true;

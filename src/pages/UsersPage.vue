@@ -1,4 +1,5 @@
 <template>
+  <!-- Halaman manajemen pengguna: listing, filter, CRUD via FormUser, toggle aktif -->
   <div class="space-y-5">
     <div
       v-if="!canViewUsers"

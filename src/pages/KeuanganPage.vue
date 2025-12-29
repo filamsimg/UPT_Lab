@@ -1,4 +1,5 @@
 <template>
+  <!-- Halaman keuangan: ringkasan pembayaran/tagihan -->
   <div>
     <h2 class="text-xl font-semibold mb-4">Keuangan</h2>
     <!-- Export button -->

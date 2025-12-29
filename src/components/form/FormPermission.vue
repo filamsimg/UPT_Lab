@@ -1,4 +1,5 @@
-﻿<template>
+<template>
+  <!-- Form permission: tambah/ubah permission dan deskripsi -->
   <form class="space-y-4" @submit.prevent="handleSubmit">
     <div v-if="form.id" class="flex flex-col gap-1.5">
       <label class="text-sm font-medium text-gray-700">ID Permission</label>
@@ -70,10 +71,11 @@
 </template>
 
 <script setup>
-import { computed, reactive, watch } from 'vue';
-import { useConfirmDialog } from '@/stores/useConfirmDialog';
-
-const props = defineProps({
+  import { computed, reactive, watch } from 'vue';
+  import { useConfirmDialog } from '@/stores/useConfirmDialog';
+  
+  // Form permission: input nama, slug, deskripsi dan konfirmasi simpan
+  const props = defineProps({
   modelValue: { type: Object, default: () => null },
   loading: { type: Boolean, default: false },
   isEdit: { type: Boolean, default: false },

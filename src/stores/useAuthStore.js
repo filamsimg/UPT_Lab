@@ -1,4 +1,5 @@
 // src/stores/useAuthStore.js
+// Store autentikasi: login/register, persist token/user, update profil/password, reset & verifikasi email.
 import { defineStore } from 'pinia'
 import api from '@/services/apiServices'
 import { useActivityStore } from '@/stores/useActivityStore'
@@ -146,6 +147,7 @@ export const useAuthStore = defineStore('auth', {
   }),
 
   actions: {
+    // Helper permission berbasis roles -> permissions
     collectPermissions() {
       const roles = this.currentUser?.roles || [];
       const permissions = [];
@@ -172,6 +174,7 @@ export const useAuthStore = defineStore('auth', {
       return permissions.some((perm) => perms.includes(perm));
     },
 
+    // Hilangkan field sensitif bila masih dikirim backend
     sanitizeUser(raw = null) {
       if (!raw || typeof raw !== 'object') return raw
       // Buang field sensitif bila backend masih mengirim
@@ -250,6 +253,7 @@ export const useAuthStore = defineStore('auth', {
       }
     },
 
+    // Login: simpan token, refresh profil, dan catat aktivitas
     async login({ email, password }) {
       try {
         this.loading = true
@@ -305,6 +309,7 @@ export const useAuthStore = defineStore('auth', {
       }
     },
 
+    // Kirim kode reset password ke email
     async requestPasswordReset({ email }) {
       try {
         const formData = new FormData()
@@ -367,6 +372,7 @@ export const useAuthStore = defineStore('auth', {
       }
     },
 
+    // Kirim kode verifikasi email
     async requestEmailVerificationCode({ email }) {
       try {
         const formData = new FormData()
@@ -434,6 +440,7 @@ export const useAuthStore = defineStore('auth', {
       }
     },
 
+    // Validasi kode verifikasi email
     async verifyEmail({ email, code }) {
       try {
         const formData = new FormData()
@@ -540,6 +547,7 @@ export const useAuthStore = defineStore('auth', {
       }
     },
 
+    // Update profil akun yang sedang login
     async updateProfile(payload = {}) {
       if (!this.currentUser?.id) {
         return {
@@ -597,6 +605,7 @@ export const useAuthStore = defineStore('auth', {
       }
     },
 
+    // Update password akun yang sedang login
     async updatePassword(payload = {}) {
       if (!this.currentUser?.id) {
         return {
@@ -637,6 +646,7 @@ export const useAuthStore = defineStore('auth', {
       }
     },
 
+    // Init di bootstrap: muat profil jika ada token tersimpan
     async init({ skipIfNoSession = true } = {}) {
       if (this.initTried) return
       // Jika tidak ada token in-memory dan mode skip aktif, lewati fetch profil
@@ -663,6 +673,7 @@ export const useAuthStore = defineStore('auth', {
       }
     },
 
+    // Logout best-effort: bersihkan token/user, catat aktivitas
     async logout() {
       const lastUser = this.currentUser
       const activityStore = useActivityStore()

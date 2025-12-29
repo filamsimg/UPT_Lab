@@ -1,3 +1,4 @@
+// Store notifikasi per-user (riwayat)
 import { defineStore } from 'pinia';
 
 const STORAGE_PREFIX = 'uptlab.notifications';

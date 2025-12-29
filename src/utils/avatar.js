@@ -1,3 +1,4 @@
+// Helper avatar inisial: generate warna dan huruf dari nama
 const DEFAULT_BG = '#1e88e5'
 const DEFAULT_TEXT = '#ffffff'
 const NAME_FALLBACK = 'KI'

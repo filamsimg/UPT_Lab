@@ -1,4 +1,5 @@
-﻿<template>
+<template>
+  <!-- Form role: nama role, slug, dan assignment permissions -->
   <form class="space-y-5" @submit.prevent="handleSubmit">
     <div class="flex flex-col gap-1.5">
       <label class="text-sm font-medium text-gray-700">Nama Role</label>
@@ -129,10 +130,11 @@
 </template>
 
 <script setup>
-import { computed, reactive, watch } from 'vue';
-import { useConfirmDialog } from '@/stores/useConfirmDialog';
-
-const props = defineProps({
+  import { computed, reactive, watch } from 'vue';
+  import { useConfirmDialog } from '@/stores/useConfirmDialog';
+  
+  // Form role: nama/slug role dan assignment permissions
+  const props = defineProps({
   modelValue: { type: Object, default: () => null },
   permissionOptions: { type: Array, default: () => [] },
   loading: { type: Boolean, default: false },
@@ -171,6 +173,7 @@ const groupedPermissions = computed(() => {
   const groups = new Map();
 
   props.permissionOptions.forEach((permission) => {
+  // Kelompokkan permission berdasarkan category untuk tombol pilih semua
     const category = permission.category || 'general';
     if (!groups.has(category)) {
       groups.set(category, { category, items: [] });
@@ -190,6 +193,7 @@ const groupedPermissions = computed(() => {
 });
 
 function selectAll(state) {
+ // Select/deselect semua permission
   if (!state) {
     form.permissions = [];
     return;
@@ -198,6 +202,7 @@ function selectAll(state) {
 }
 
 function toggleGroupSelection(permissionIds) {
+ // Toggle semua permission dalam satu grup
   const allSelected = isGroupFullyChecked(permissionIds);
   if (allSelected) {
     form.permissions = form.permissions.filter(
@@ -215,6 +220,7 @@ function isGroupFullyChecked(permissionIds) {
 }
 
 async function handleSubmit() {
+  // Edit: tampilkan konfirmasi karena mempengaruhi akses user yang sudah pakai role
   if (!form.name) return;
   const confirmed = await openConfirm({
     title: props.isEdit ? 'Simpan perubahan role?' : 'Tambah role baru?',

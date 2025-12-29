@@ -1,16 +1,21 @@
 <template>
+  <!-- Dashboard ringkasan KPI/statistik -->
   <div>
     <!-- KPI Cards -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-      <StatCard label="Order Baru" :value="countByStatus('new')" type="new" />
       <StatCard
-        label="Menunggu Validasi"
-        :value="countByStatus('pending_validation')"
+        label="Menunggu Kaji Ulang"
+        :value="countByStatus('awaiting_review')"
+        type="pending"
+      />
+      <StatCard
+        label="Menunggu Pembayaran"
+        :value="countByStatus('awaiting_payment')"
         type="pending"
       />
       <StatCard
         label="Dalam Uji"
-        :value="countByStatus('in_testing')"
+        :value="countByStatus('testing')"
         type="testing"
       />
       <StatCard
@@ -49,9 +54,9 @@
           class="border border-gray-300 rounded-md px-3 py-2 w-full focus:ring-2 focus:ring-blue-500"
         >
           <option value="">Semua</option>
-          <option value="new">Baru</option>
-          <option value="pending_validation">Menunggu Validasi</option>
-          <option value="in_testing">Dalam Uji</option>
+          <option value="awaiting_review">Menunggu Kaji Ulang</option>
+          <option value="awaiting_payment">Menunggu Pembayaran</option>
+          <option value="testing">Dalam Uji</option>
           <option value="completed">Selesai</option>
         </select>
       </div>
@@ -273,6 +278,8 @@ const customerStore = useCustomerStore();
 const activityStore = useActivityStore();
 const authStore = useAuthStore();
 const { hasAnyPermission, isSuperAdmin } = useAuthorization();
+  // Loading indikator untuk tabel
+  // Flag loading data order
 const isLoading = ref(true);
 const canViewAllActivity = computed(() =>
   isSuperAdmin.value ||
@@ -318,12 +325,16 @@ const customerMap = computed(() => {
 });
 
 // === Filters ===
+  // Filter pencarian tabel order
+  // Filter pencarian customer & status
 const filters = reactive({
   search: '',
   status: '',
 });
 
 // === KPI ===
+  // Hitung jumlah order per status
+  // Hitung jumlah order per status
 function countByStatus(status) {
   return (orderStore.orders || []).filter((o) => o.status === status).length;
 }
@@ -348,6 +359,8 @@ const filteredOrders = computed(() =>
 );
 
 const rowsPerPage = 5;
+  // Orders yang sudah difilter/search
+  // Orders yang sudah difilter
 const visibleOrders = computed(() =>
   filteredOrders.value.slice(0, rowsPerPage)
 );

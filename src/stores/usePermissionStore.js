@@ -1,3 +1,4 @@
+// Store permission: daftar & CRUD permission akses
 import { defineStore } from 'pinia';
 import api from '@/services/apiServices';
 

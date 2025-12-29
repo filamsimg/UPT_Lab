@@ -114,7 +114,7 @@
               class="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-2"
             >
               <span class="h-2 w-2 rounded-full bg-emerald-300"></span>
-              ISO/IEC 17025:2017 (KAN) â€” LP-396-IDN
+              ISO/IEC 17025:2017 (KAN) ÔÇö LP-396-IDN
             </span>
             <span
               class="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-2"
@@ -477,7 +477,7 @@
                 Terakreditasi KAN
               </p>
               <p class="text-sm text-slate-600">
-                Nomor: LP-396-IDN â€¢ ISO/IEC 17025:2017 (sejak 2008)
+                Nomor: LP-396-IDN ÔÇó ISO/IEC 17025:2017 (sejak 2008)
               </p>
             </div>
             <div class="rounded-2xl border border-slate-100 bg-slate-50 p-4">
@@ -485,7 +485,7 @@
                 TUK Mandiri BNSP
               </p>
               <p class="text-sm text-slate-600">
-                Lisensi: LSP Logam dan Mesin Indonesia â€¢ Sejak 2017
+                Lisensi: LSP Logam dan Mesin Indonesia ÔÇó Sejak 2017
               </p>
             </div>
           </div>
@@ -753,6 +753,7 @@ const images = {
   contact3: bgLogin,
 };
 
+// Daftar layanan untuk section layanan
 const services = [
   {
     title: 'Pengujian Material',
@@ -794,6 +795,7 @@ const services = [
   },
 ];
 
+// Kartu akreditasi/sertifikasi
 const accreditationCards = [
   {
     title: 'Akreditasi KAN',
@@ -815,6 +817,7 @@ const accreditationCards = [
   },
 ];
 
+// Kartu kontak/lokasi
 const contactCards = [
   {
     title: 'Informasi Kontak',
@@ -824,7 +827,7 @@ const contactCards = [
       'Dampyak, Kec. Kramat, Kab. Tegal',
       'Telepon: (0283) 357437',
       'Email: labperindtgl@gmail.com',
-      'Jam: Senin â€“ Jumat, 08.00 â€“ 17.00 WIB',
+      'Jam: Senin ÔÇô Jumat, 08.00 ÔÇô 17.00 WIB',
     ],
   },
   {
@@ -863,6 +866,7 @@ const formatGalleryLabel = (path = '') => {
   return toTitleCase(normalized);
 };
 
+// Import gambar galeri secara eager
 const galleryImports = import.meta.glob('@/assets/kegiatan/*.webp', {
   eager: true,
   import: 'default',
@@ -874,11 +878,13 @@ const galleryItems = Object.keys(galleryImports)
     label: formatGalleryLabel(key),
   }));
 
+// Background gradient hero
 const heroBackgroundStyle = {
   backgroundImage:
     'radial-gradient(80% 120% at 30% 30%, rgba(255,255,255,0.12), transparent), linear-gradient(135deg, #0b7ac2 0%, #0c6fb1 40%, #0a5f99 100%)',
 };
 
+// Store untuk cek status order publik
 const permintaanStore = usePermintaanStore();
 const searchId = ref('');
 const isChecking = ref(false);
@@ -894,47 +900,56 @@ const stepStateBubble = {
   failed: 'bg-rose-500',
 };
 
+// Tahapan progress tracking
 const baseSteps = [
   {
-    key: 'draft',
-    label: 'Permintaan Diterima',
+    key: 'awaiting_review',
+    label: 'Menunggu Kaji Ulang',
     description:
-      'Permintaan berhasil dicatat di sistem dan menunggu proses berikutnya.',
+      'Permintaan sedang ditinjau oleh tim UPT Lab sebelum diteruskan.',
   },
   {
-    key: 'pending_payment',
+    key: 'awaiting_payment',
     label: 'Menunggu Pembayaran',
     description:
       'Silakan selesaikan pembayaran sesuai instruksi yang diberikan petugas.',
   },
   {
-    key: 'payment_pending_review',
+    key: 'payment_submitted',
     label: 'Verifikasi Pembayaran',
     description: 'Tim kami sedang memeriksa bukti pembayaran yang diajukan.',
   },
   {
-    key: 'payment_verified',
+    key: 'payment_approved',
     label: 'Pembayaran Terverifikasi',
     description:
       'Pembayaran sudah diterima dan diverifikasi oleh petugas keuangan.',
   },
   {
-    key: 'approved',
-    label: 'Permintaan Diproses',
+    key: 'testing',
+    label: 'Proses Pengujian',
     description:
-      'Permintaan Anda diteruskan ke tim teknis untuk diproses lebih lanjut.',
+      'Permintaan Anda diproses oleh tim teknis sesuai jadwal pengujian.',
+  },
+  {
+    key: 'completed',
+    label: 'Selesai',
+    description:
+      'Pengujian selesai dan hasil dapat diambil sesuai informasi petugas.',
   },
 ];
 
-const terminalStatuses = ['payment_review_rejected', 'rejected', 'cancelled'];
+const terminalStatuses = ['payment_rejected', 'rejected', 'cancelled', 'refunded'];
 const statusToStepKey = {
-  payment_review_rejected: 'payment_pending_review',
-  rejected: 'approved',
-  cancelled: 'pending_payment',
+  payment_rejected: 'payment_submitted',
+  rejected: 'awaiting_review',
+  cancelled: 'awaiting_payment',
+  refunded: 'completed',
 };
 
+// Pesan khusus untuk status gagal/batal
 const specialStatusMap = {
-  payment_review_rejected: {
+  payment_rejected: {
     title: 'Bukti Pembayaran Perlu Diperbaiki',
     message:
       'Bukti pembayaran yang Anda unggah belum dapat kami verifikasi. Silakan unggah ulang bukti pembayaran atau hubungi petugas keuangan untuk konfirmasi lebih lanjut.',
@@ -989,15 +1004,13 @@ const statusLabel = computed(() => formatStatus(checkResult.value?.status));
 const statusBadgeClass = computed(() => {
   const status = checkResult.value?.status;
   if (!status) return 'bg-slate-200 text-slate-700';
-  if (status === 'approved' || status === 'payment_verified')
+  if (['payment_approved', 'testing', 'completed'].includes(status))
     return 'bg-emerald-100 text-emerald-700';
-  if (status === 'pending_payment' || status === 'payment_pending_review')
-    return 'bg-amber-100 text-amber-700';
   if (
-    status === 'rejected' ||
-    status === 'payment_review_rejected' ||
-    status === 'cancelled'
+    ['draft', 'awaiting_review', 'awaiting_payment', 'payment_submitted'].includes(status)
   )
+    return 'bg-amber-100 text-amber-700';
+  if (['rejected', 'payment_rejected', 'cancelled', 'refunded'].includes(status))
     return 'bg-rose-100 text-rose-700';
   return 'bg-slate-200 text-slate-700';
 });
@@ -1039,9 +1052,10 @@ const specialStatus = computed(() => {
 
 const stepIndexLabel = (key) => {
   const index = baseSteps.findIndex((step) => step.key === key);
-  return index === -1 ? 'â€¢' : index + 1;
+  return index === -1 ? 'ÔÇó' : index + 1;
 };
 
+// Aksi cek status order via store
 const handleCheckOrder = async () => {
   const query = searchId.value.trim();
   hasSearched.value = true;
@@ -1079,6 +1093,7 @@ const scrollToSection = (targetId) => {
   }
 };
 
+// Setup IntersectionObserver untuk animasi reveal
 const initRevealAnimations = () => {
   if (typeof window === 'undefined') return;
   if (revealObserver.value) {

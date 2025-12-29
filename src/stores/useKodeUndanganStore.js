@@ -1,3 +1,4 @@
+// Store kode undangan: generate/validasi kode registrasi
 import { defineStore } from 'pinia';
 import api from '@/services/apiServices';
 

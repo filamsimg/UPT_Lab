@@ -1,4 +1,5 @@
 <template>
+  <!-- Form layanan: tambah/ubah layanan pengujian -->
   <div
     class="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50"
   >
@@ -149,9 +150,10 @@
 </template>
 
 <script setup>
-import { reactive, watch, computed } from 'vue'
-
-const props = defineProps({
+  import { reactive, watch, computed } from 'vue'
+  
+  // Kelola form master layanan: normalisasi nilai dan emit payload sinkron BE/FE
+  const props = defineProps({
   categories: { type: Array, default: () => [] },
   methods: { type: Array, default: () => [] },
   machines: { type: Array, default: () => [] },
@@ -194,7 +196,7 @@ watch(
         id: val.id ?? null,
         category: val.serviceType || val.category || val.serviceCategory || '',
         code: val.serviceCode || val.code || '',
-        name: val.name || val.testCategory || '',
+        name: val.name || val.test_name || val.testName || '',
         unit: val.unit || '',
         price: val.price ?? 0,
         method: val.methodId || val.method_id || val.method?.id || '',

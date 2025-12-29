@@ -1,3 +1,4 @@
+// Store kategori pekerjaan/paket kerja
 import { defineStore } from 'pinia';
 import api from '@/services/apiServices';
 

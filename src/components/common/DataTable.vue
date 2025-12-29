@@ -1,4 +1,5 @@
 <template>
+  <!-- Tabel generik dengan search/filter optional, sorting, selection, dan slot kolom -->
   <div class="w-full space-y-4 ">
     <div
       v-if="searchable || filterable"
@@ -269,8 +270,16 @@ const props = defineProps({
     default: () => [
       { value: '', label: 'Semua Status' },
       { value: 'draft', label: 'Draft' },
-      { value: 'pending_payment', label: 'Menunggu Pembayaran' },
-      { value: 'payment_received', label: 'Pembayaran Berhasil' },
+      { value: 'awaiting_review', label: 'Menunggu Kaji Ulang' },
+      { value: 'awaiting_payment', label: 'Menunggu Pembayaran' },
+      { value: 'payment_submitted', label: 'Bukti Pembayaran Dikirim' },
+      { value: 'payment_rejected', label: 'Bukti Pembayaran Ditolak' },
+      { value: 'payment_approved', label: 'Pembayaran Disetujui' },
+      { value: 'testing', label: 'Proses Pengujian' },
+      { value: 'completed', label: 'Selesai' },
+      { value: 'refunded', label: 'Refund' },
+      { value: 'cancelled', label: 'Dibatalkan' },
+      { value: 'rejected', label: 'Ditolak' },
     ],
   },
   dateField: {
@@ -331,8 +340,16 @@ const normalizedStatusOptions = computed(() => {
     return [
       { value: '', label: 'Semua Status' },
       { value: 'draft', label: 'Draft' },
-      { value: 'pending_payment', label: 'Menunggu Pembayaran' },
-      { value: 'payment_received', label: 'Pembayaran Berhasil' },
+      { value: 'awaiting_review', label: 'Menunggu Kaji Ulang' },
+      { value: 'awaiting_payment', label: 'Menunggu Pembayaran' },
+      { value: 'payment_submitted', label: 'Bukti Pembayaran Dikirim' },
+      { value: 'payment_rejected', label: 'Bukti Pembayaran Ditolak' },
+      { value: 'payment_approved', label: 'Pembayaran Disetujui' },
+      { value: 'testing', label: 'Proses Pengujian' },
+      { value: 'completed', label: 'Selesai' },
+      { value: 'refunded', label: 'Refund' },
+      { value: 'cancelled', label: 'Dibatalkan' },
+      { value: 'rejected', label: 'Ditolak' },
     ];
   }
   return props.statusOptions;

@@ -1,4 +1,5 @@
 <template>
+  <!-- Halaman manajemen role dan izin -->
   <div class="space-y-5">
     <div
       v-if="!canViewRoles"

@@ -1,3 +1,4 @@
+// Entry point: setup app, pinia, router, global styles
 import { createApp } from 'vue';
 import { createPinia } from 'pinia';
 import App from './App.vue';

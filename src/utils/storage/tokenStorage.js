@@ -1,3 +1,4 @@
+// Helper penyimpanan token ke cookie/localStorage
 const TOKEN_COOKIE = 'uptlab_access_token'
 const DEFAULT_MAX_AGE = 60 * 60 * 24 // 1 hari
 

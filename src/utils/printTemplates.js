@@ -1,3 +1,4 @@
+// Template printer-friendly (kop, konten, footer) untuk cetak dokumen
 import { buildLetterhead } from './print/header';
 import {
   buildPrintLayout,

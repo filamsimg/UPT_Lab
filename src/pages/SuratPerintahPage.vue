@@ -1,4 +1,5 @@
 <template>
+  <!-- Halaman surat perintah kerja / kartu kendali -->
   <div>
     <h2 class="text-xl font-semibold mb-4">Surat Perintah Pengujian</h2>
     <!-- Header -->
@@ -34,7 +35,7 @@
         <thead class="bg-muted">
           <tr>
             <th class="border-b px-2 py-2">No</th>
-            <th class="border-b px-2 py-2">Jenis Pengujian</th>
+            <th class="border-b px-2 py-2">Nama Pengujian</th>
             <th class="border-b px-2 py-2">Jumlah Sampel</th>
             <th class="border-b px-2 py-2">Kode Sampel</th>
             <th class="border-b px-2 py-2">Metode Uji</th>

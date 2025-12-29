@@ -1,4 +1,5 @@
 <template>
+  <!-- Verifikasi email: kirim & validasi kode -->
   <div
     class="min-h-screen flex items-center justify-center bg-gradient-to-br from-primaryLight/10 via-white to-primaryDark/10 px-4 py-10"
   >
@@ -101,18 +102,18 @@ const router = useRouter();
 const authStore = useAuthStore();
 const PENDING_VERIFICATION_KEY = 'pendingVerificationEmail';
 
-const email = ref(typeof route.query.email === 'string' ? route.query.email : '');
-const emailLocked = ref(route.query.lock === '1' && !!email.value);
+const email = ref(typeof route.query.email === 'string' ? route.query.email : ''); // Email diambil dari query jika ada
+const emailLocked = ref(route.query.lock === '1' && !!email.value); // Lock input email jika berasal dari query (lock=1)
 const code = ref('');
 const formErrors = reactive({
   email: '',
   code: '',
 });
-const errorMessage = ref('');
+const errorMessage = ref(''); // Pesan error/verifikasi
 const successMessage = ref('');
-const sending = ref(false);
-const verifying = ref(false);
-const cooldown = ref(0);
+const sending = ref(false); // Status kirim kode
+const verifying = ref(false); // Status verifikasi kode
+const cooldown = ref(0); // Countdown kirim ulang kode
 let cooldownTimer = null;
 let redirectTimer = null;
 
@@ -133,6 +134,7 @@ watch(
   }
 );
 
+// Bersihkan timer cooldown
 function clearCooldown() {
   if (cooldownTimer) {
     clearInterval(cooldownTimer);
@@ -141,6 +143,7 @@ function clearCooldown() {
   cooldown.value = 0;
 }
 
+// Mulai hitung mundur kirim ulang kode
 function startCooldown() {
   clearCooldown();
   cooldown.value = 60;
@@ -157,6 +160,7 @@ function unlockEmail() {
   emailLocked.value = false;
 }
 
+// Panggil API kirim kode verifikasi
 async function sendVerificationCode({ auto = false } = {}) {
   if (sending.value) return;
   errorMessage.value = '';
@@ -187,6 +191,7 @@ async function sendVerificationCode({ auto = false } = {}) {
   }
 }
 
+// Verifikasi kode lalu redirect ke login
 async function handleVerification() {
   errorMessage.value = '';
   successMessage.value = '';

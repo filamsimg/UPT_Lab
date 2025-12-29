@@ -1,4 +1,5 @@
 <template>
+  <!-- Form pembayaran: input total, bukti transfer, status review -->
   <div
     class="fixed inset-0 z-50 flex items-stretch justify-center bg-black/60 backdrop-blur-sm p-0 sm:p-4"
     @click.self="handleClose"
@@ -31,11 +32,11 @@
                 <thead class="bg-muted text-gray-600 uppercase text-xs tracking-wide">
                   <tr>
                     <th class="px-3 py-2 text-center">No</th>
-                    <th class="px-3 py-2 text-left">Jenis Pengujian</th>
+                    <th class="px-3 py-2 text-left">Nama Pengujian</th>
                     <th class="px-3 py-2 text-left">Nama Sampel</th>
                     <th class="px-3 py-2 text-right">Biaya Satuan</th>
                     <th class="px-3 py-2 text-right">Jumlah</th>
-                    <th class="px-3 py-2 text-right">Subtotal</th>
+                    <th class="px-3 py-2 text-right">Line Total</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -213,11 +214,12 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue';
-import FileUpload from '@/components/common/FileUpload.vue';
-import { useConfirmDialog } from '@/stores/useConfirmDialog';
-
-const props = defineProps({
+  import { ref, computed, watch } from 'vue';
+  import FileUpload from '@/components/common/FileUpload.vue';
+  import { useConfirmDialog } from '@/stores/useConfirmDialog';
+  
+  // Form pembayaran: normalisasi bukti transfer, hitung outstanding, dan emit payload
+  const props = defineProps({
   tests: { type: Array, default: () => [] },
   orderId: { type: String, default: '' },
   initialRows: { type: Array, default: () => [] },
@@ -229,7 +231,9 @@ const emit = defineEmits(['close', 'payment-saved']);
 const openConfirm = useConfirmDialog();
 
 const testRows = ref([]);
+ // Daftar item pengujian yang ditagihkan
 const transferFiles = ref([]);
+ // File bukti transfer yang diupload
 const amountPaid = ref(0);
 
 const bankAccounts = [
@@ -238,10 +242,13 @@ const bankAccounts = [
 ];
 
 const formattedOrderId = computed(() => props.orderId || '-');
+  // Tampilkan orderNo/number fallback
 
 const formattedEntryDate = computed(() => formatDate(props.entryDate));
+  // Tanggal permintaan yang diformat
 
 const paymentDeadline = computed(() => {
+  // Hitung tenggat tampil (label + isOverdue)
   const base = props.entryDate ? new Date(props.entryDate) : new Date();
   const deadline = new Date(base.getTime());
   deadline.setDate(deadline.getDate() + 2);
@@ -270,17 +277,23 @@ function normalizeRow(row = {}) {
   const test = findTest(row.testId);
   const quantity = Math.max(1, Number(row.quantity) || 1);
   const price = Math.max(0, Number(row.price ?? test?.price ?? 0));
+  const lineTotal = Number(
+    row.lineTotal ??
+      row.line_total ??
+      price * quantity
+  ) || 0;
   const testName =
     row.testName ||
     test?.name ||
-    test?.testCategory ||
+    test?.code ||
     'Pengujian';
   return {
     testId: row.testId || test?.id || null,
     testName,
-    objectName: row.objectName || row.testName || test?.testCategory || '',
+    objectName: row.objectName || row.testName || test?.name || test?.code || '',
     price,
     quantity,
+    lineTotal,
   };
 }
 
@@ -290,7 +303,11 @@ function findTest(id) {
 }
 
 function rowSubtotal(row) {
-  return Math.max(0, Number(row.price) || 0) * Math.max(1, Number(row.quantity) || 1);
+  const direct =
+    row.lineTotal ??
+    row.line_total ??
+    Math.max(0, Number(row.price) || 0) * Math.max(1, Number(row.quantity) || 1);
+  return Math.max(0, Number(direct) || 0);
 }
 
 function serializeTransferFiles() {
@@ -323,10 +340,12 @@ const grandTotal = computed(() =>
 );
 
 const outstanding = computed(() =>
+  // Outstanding dihitung dari total - paid, tidak negatif
   Math.max(0, grandTotal.value - Math.max(0, Number(amountPaid.value) || 0)),
 );
 
 const customerNameDisplay = computed(() => props.customerName);
+  // Nama customer fallback dari modelValue
 
 const canConfirmPayment = computed(() => {
   return amountPaid.value > 0 && transferFiles.value.length > 0;
@@ -354,13 +373,13 @@ async function savePayment() {
   normalizeAmount();
   const confirmed = await openConfirm({
     title: 'Konfirmasi pembayaran?',
-    message: 'Status permintaan akan diperbarui menjadi menunggu review bukti pembayaran.',
+    message: 'Status permintaan akan diperbarui menjadi bukti pembayaran dikirim.',
     confirmLabel: 'Simpan Pembayaran',
   });
   if (!confirmed) return;
   const detail = {
     orderId: props.orderId,
-    status: 'payment_pending_review',
+    status: 'payment_submitted',
     total: grandTotal.value,
     amountPaid: amountPaid.value,
     outstanding: outstanding.value,
@@ -368,6 +387,7 @@ async function savePayment() {
     paymentDate: new Date().toISOString(),
     testRows: testRows.value.map((row) => ({ ...row })),
     transferFiles: serializeTransferFiles(),
+    transferFilesRaw: transferFiles.value,
     reviewStatus: 'pending',
   };
   emit('payment-saved', detail);
@@ -375,7 +395,7 @@ async function savePayment() {
 }
 
 function handleClose() {
+  // Emit close setelah mengosongkan state upload
   emit('close');
 }
 </script>
-

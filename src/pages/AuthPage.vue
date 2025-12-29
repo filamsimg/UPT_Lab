@@ -1,4 +1,5 @@
 <template>
+  <!-- Halaman auth gabungan: login & register toggle -->
   <div
     class="min-h-screen flex items-center justify-center bg-gradient-to-br from-primaryLight/10 via-white to-primaryDark/10 px-4 py-10"
   >
@@ -498,14 +499,19 @@ const AUTH_ROUTE_DELAY = 380;
 const PENDING_VERIFICATION_KEY = 'pendingVerificationEmail';
 let pendingRouteSync = null;
 
+// Toggle tampilan login vs register
 const isRegister = ref(route.meta.authMode === 'register');
+// Toggle tampilan login/daftar
 
 const loginEmail = ref('');
 const loginPassword = ref('');
 const showLoginPassword = ref(false);
+// Pesan error login yang ditampilkan di AlertBanner
 const loginError = ref('');
 const loginInfo = ref('');
+// Kumpulan error untuk login & register
 const formErrors = reactive({
+  // Kumpulan error per form (login/register)
   login: {
     email: '',
     password: '',
@@ -526,6 +532,7 @@ const registerEmail = ref('');
 const registerPhone = ref('');
 const registerPassword = ref('');
 const registerConfirmPassword = ref('');
+// Mode registrasi dengan/ tanpa kode undangan
 const registerUseKodeUndangan = ref(false);
 const registerKodeUndangan = ref('');
 const registerEmploymentId = ref('');
@@ -604,12 +611,15 @@ watch(registerUseKodeUndangan, (value) => {
   formErrors.register.employmentId = '';
 });
 
+// Reset field yang terkait kode undangan
 function disableInvitationMode() {
   if (!registerUseKodeUndangan.value) return;
   registerUseKodeUndangan.value = false;
 }
 
+// Navigasi ke halaman reset password
 function goToResetPassword() {
+  // Navigasi ke halaman reset password
   const trimmed = loginEmail.value.trim();
   const query = trimmed ? { email: trimmed } : undefined;
   if (query) {
@@ -643,7 +653,9 @@ function navigateToEmailVerification({
   }
 }
 
+// Arahkan ke verifikasi email dari layar login
 function openEmailVerificationFromLogin() {
+  // Buka halaman verifikasi email dari login
   navigateToEmailVerification({
     email: loginEmail.value,
     lockEmail: !!loginEmail.value.trim(),
@@ -657,6 +669,7 @@ onBeforeUnmount(() => {
   }
 });
 
+// Proses login via authStore + fetch profile
 async function handleLogin() {
   loginError.value = '';
   loginInfo.value = '';
@@ -770,6 +783,7 @@ function applyGeneralMessageToField(message) {
   return false;
 }
 
+// Proses registrasi (opsional kode undangan/NIP)
 async function handleRegister() {
   registerError.value = '';
   registerSuccess.value = '';

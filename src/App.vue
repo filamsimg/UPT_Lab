@@ -1,4 +1,5 @@
 <template>
+  <!-- Root app: render router dan AppShell -->
   <div>
     <router-view v-slot="{ Component, route }">
       <component

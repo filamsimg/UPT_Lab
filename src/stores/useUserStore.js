@@ -1,6 +1,8 @@
 import { defineStore } from 'pinia';
 import api from '@/services/apiServices';
 
+// Store manajemen pengguna: fetch/filter/pagination, CRUD, toggle aktivasi.
+
 function normalizeRole(entry = {}) {
   if (!entry) return null;
   const id = entry.id || entry.slug || entry.code || entry.name;
@@ -12,6 +14,7 @@ function normalizeRole(entry = {}) {
 }
 
 function normalizeUser(entry = {}) {
+  // Ratakan field snake/camel + agregasi role/permission dan status aktif
   const roles = Array.isArray(entry.roles)
     ? entry.roles.map((role) => normalizeRole(role)).filter(Boolean)
     : [];
@@ -136,6 +139,7 @@ export const useUserStore = defineStore('user', {
   },
 
   actions: {
+    // Ambil daftar pengguna; jika filter client-side dibutuhkan, backend diambil semua halaman dulu
     async fetchUsers(params = {}) {
       this.loading = true;
       const page = params.page ?? this.pagination.currentPage ?? 1;

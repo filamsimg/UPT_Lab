@@ -1,4 +1,5 @@
 <template>
+  <!-- Dialog konfirmasi reusable; di-trigger via useConfirmDialog -->
   <transition name="fade">
     <div
       v-if="open"

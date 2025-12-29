@@ -1,4 +1,5 @@
-﻿<template>
+<template>
+  <!-- Form user: tambah/ubah akun, assign role, dan status aktif -->
   <div class="p-6 md:p-8 max-h-[85vh] overflow-y-auto">
   <form class="space-y-5" @submit.prevent="handleSubmit">
     <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -152,10 +153,11 @@
 </template>
 
 <script setup>
-import { computed, reactive, watch } from 'vue';
-import { useConfirmDialog } from '@/stores/useConfirmDialog';
-
-const props = defineProps({
+  import { computed, reactive, watch } from 'vue';
+  import { useConfirmDialog } from '@/stores/useConfirmDialog';
+  
+  // Form user: tambah/ubah akun, assign role, dan toggle aktif
+  const props = defineProps({
   modelValue: { type: Object, default: () => null },
   roles: { type: Array, default: () => [] },
   loading: { type: Boolean, default: false },
@@ -202,12 +204,14 @@ watch(
 );
 
 const canSubmit = computed(() => {
+  // Validasi minimal nama+email; password wajib saat create
   if (!form.name || !form.email) return false;
   if (!props.isEdit && !form.password) return false;
   return true;
 });
 
 async function handleSubmit() {
+  // Konfirmasi saat edit; emit payload bersih
   if (!canSubmit.value) return;
   const confirmed = await openConfirm({
     title: props.isEdit ? 'Simpan perubahan pengguna?' : 'Tambah pengguna baru?',

@@ -1,4 +1,5 @@
 <template>
+  <!-- Banner notifikasi inline (info/success/error) -->
   <div :class="['rounded-xl px-4 py-3 text-sm font-medium', toneClass]">
     <slot />
   </div>

@@ -1,4 +1,5 @@
 <template>
+  <!-- Halaman kartu kendali: daftar kartu kendali pekerjaan/lab -->
   <div>
     <h2 class="text-xl font-semibold mb-4">Kartu Kendali Pengujian</h2>
     <!-- Header -->
@@ -156,15 +157,21 @@ const steps = [
 ];
 
 /*
- * Map order statuses to the index of the progress steps.  Using
- * English keys here keeps the mapping in line with the store
- * definitions (new, pending_validation, in_testing, completed).
+ * Map order statuses to the index of the progress steps based on
+ * material test order statuses from backend.
  */
 const statusIndexMap = {
-  new: 0,
-  pending_validation: 1,
-  in_testing: 2,
+  draft: 0,
+  awaiting_review: 0,
+  awaiting_payment: 1,
+  payment_submitted: 1,
+  payment_rejected: 1,
+  payment_approved: 2,
+  testing: 2,
   completed: 3,
+  refunded: 3,
+  cancelled: 3,
+  rejected: 3,
 };
 
 const currentStatusIndex = computed(
@@ -204,7 +211,15 @@ function simpan() {
 function updateStatus() {
   if (order.value) {
     // Move to next status
-    const statuses = ['new', 'pending_validation', 'in_testing', 'completed'];
+    const statuses = [
+      'draft',
+      'awaiting_review',
+      'awaiting_payment',
+      'payment_submitted',
+      'payment_approved',
+      'testing',
+      'completed',
+    ];
     const idx = statuses.indexOf(order.value.status);
     // Pick the next status, capping at the last element
     const nextStatus = statuses[Math.min(idx + 1, statuses.length - 1)];

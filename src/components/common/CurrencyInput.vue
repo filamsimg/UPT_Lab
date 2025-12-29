@@ -1,4 +1,5 @@
 <template>
+  <!-- Input teks dengan formatting mata uang IDR (tanpa desimal), emit angka murni -->
   <input
     :value="displayValue"
     @input="onInput"

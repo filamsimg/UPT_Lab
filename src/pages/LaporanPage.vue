@@ -15,9 +15,12 @@
         <label class="block text-sm mb-1">Status</label>
         <select v-model="filters.status" class="border border-gray-300 rounded-md px-3 py-2 w-full">
           <option value="">Semua</option>
-          <option value="new">Baru</option>
-          <option value="pending_validation">Menunggu Validasi</option>
-          <option value="in_testing">Dalam Uji</option>
+          <option value="draft">Draft</option>
+          <option value="awaiting_review">Menunggu Kaji Ulang</option>
+          <option value="awaiting_payment">Menunggu Pembayaran</option>
+          <option value="payment_submitted">Bukti Pembayaran Dikirim</option>
+          <option value="payment_approved">Pembayaran Disetujui</option>
+          <option value="testing">Dalam Uji</option>
           <option value="completed">Selesai</option>
         </select>
       </div>
@@ -50,6 +53,7 @@ const orderStore = useKajiUlangStore();
 const customerStore = useCustomerStore();
 
 // Define columns for report
+// Kolom laporan
 const columns = [
   { key: 'orderNo', label: 'No Order' },
   { key: 'customerName', label: 'Customer' },
@@ -60,9 +64,11 @@ const columns = [
 ];
 
 // Filters for reporting
+// Filter laporan (tanggal/status)
 const filters = reactive({ start: '', end: '', status: '' });
 
 // Flatten orders with customer names and computed paid/unpaid
+// Normalisasi order -> baris laporan
 const rows = computed(() => {
   return orderStore.orders.map((o) => {
     const cust = customerStore.customers.find((c) => c.id === o.customerId);
@@ -78,6 +84,7 @@ const rows = computed(() => {
 });
 
 // Apply filters to rows
+// Terapkan filter periode/status
 const filteredRows = computed(() => {
   return rows.value.filter((row) => {
     const dateOk = (!filters.start || row.date >= filters.start) && (!filters.end || row.date <= filters.end);
@@ -86,6 +93,7 @@ const filteredRows = computed(() => {
   });
 });
 
+// Export CSV sederhana dari filteredRows
 function exportCsv() {
   const header = columns.map((c) => c.label).join(',');
   const csvRows = filteredRows.value.map((r) => [r.orderNo, r.customerName, r.status, r.date, r.total, r.paid].join(','));

@@ -1,3 +1,4 @@
+// Store customer: CRUD pelanggan/pemohon
 import { defineStore } from 'pinia';
 import api from '@/services/apiServices';
 

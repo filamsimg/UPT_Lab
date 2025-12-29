@@ -1,4 +1,5 @@
 <template>
+  <!-- Kartu ringkas untuk KPI/angka dengan ikon dinamis berdasarkan tipe -->
   <div class="bg-white rounded-xl shadow-md p-4 flex items-center gap-4">
     <div
       class="flex items-center justify-center w-10 h-10 rounded-full"

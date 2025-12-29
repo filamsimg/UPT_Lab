@@ -1,3 +1,4 @@
+// Utility copy-to-clipboard dengan fallback notifikasi
 export async function copyText(value = '') {
   const text = `${value ?? ''}`;
   if (!text || typeof document === 'undefined') return false;

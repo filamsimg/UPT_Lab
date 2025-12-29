@@ -1,4 +1,5 @@
-  <template>
+<template>
+  <!-- Stack notifikasi/toast; gunakan store atau emitter yang mengirim item { id, title, message, tone } -->
   <transition-group
     tag="div"
     name="toast"
@@ -61,6 +62,7 @@ import {
 } from '@heroicons/vue/24/solid';
 
 const props = defineProps({
+  // daftar item: { id: string|number, title: string, message: string, tone?: "info"|"success"|"warning"|"error" }
   items: { type: Array, default: () => [] },
 });
 

@@ -1,4 +1,5 @@
-﻿<template>
+<template>
+  <!-- Badge status permintaan/order dengan warna konsisten -->
   <span class="badge" :class="badgeClass">
     {{ text }}
   </span>
@@ -13,64 +14,69 @@ const props = defineProps({
 
 const statusMap = {
   draft: {
-    bg: 'bg-gray-200',
-    text: 'text-gray-700',
-    border: 'border border-gray-300',
+    bg: 'bg-slate-100',
+    text: 'text-slate-700',
+    ring: 'ring-slate-300',
     label: 'Draft',
   },
-  // approved status tidak dipakai lagi di skema baru
-  rejected: {
-    bg: 'bg-red-100',
-    text: 'text-red-700',
-    border: 'border border-red-200',
-    label: 'Ditolak',
+  awaiting_review: {
+    bg: 'bg-cyan-50',
+    text: 'text-cyan-800',
+    ring: 'ring-cyan-200',
+    label: 'Menunggu Kaji Ulang',
   },
-  pending_payment: {
-    bg: 'bg-amber-100',
-    text: 'text-amber-700',
-    border: 'border border-amber-200',
+  awaiting_payment: {
+    bg: 'bg-amber-50',
+    text: 'text-amber-800',
+    ring: 'ring-amber-200',
     label: 'Menunggu Pembayaran',
   },
-  payment_pending_review: {
-    bg: 'bg-amber-100',
-    text: 'text-amber-800',
-    border: 'border border-amber-200',
-    label: 'Menunggu Review Pembayaran',
+  payment_submitted: {
+    bg: 'bg-blue-50',
+    text: 'text-blue-700',
+    ring: 'ring-blue-200',
+    label: 'Bukti Pembayaran Dikirim',
   },
-  payment_review_rejected: {
-    bg: 'bg-red-100',
-    text: 'text-red-700',
-    border: 'border border-red-200',
-    label: 'Bukti Ditolak',
+  payment_rejected: {
+    bg: 'bg-rose-50',
+    text: 'text-rose-700',
+    ring: 'ring-rose-200',
+    label: 'Pembayaran Ditolak',
   },
-  payment_verified: {
-    bg: 'bg-emerald-100',
-    text: 'text-emerald-800',
-    border: 'border border-emerald-200',
-    label: 'Pembayaran Terverifikasi',
+  payment_approved: {
+    bg: 'bg-emerald-50',
+    text: 'text-emerald-700',
+    ring: 'ring-emerald-200',
+    label: 'Pembayaran Disetujui',
   },
-  in_testing: {
-    bg: 'bg-indigo-100',
-    text: 'text-indigo-700',
-    border: 'border border-indigo-200',
+  testing: {
+    bg: 'bg-purple-50',
+    text: 'text-purple-700',
+    ring: 'ring-purple-200',
     label: 'Proses Pengujian',
   },
   completed: {
-    bg: 'bg-emerald-100',
-    text: 'text-emerald-700',
-    border: 'border border-emerald-200',
+    bg: 'bg-teal-50',
+    text: 'text-teal-700',
+    ring: 'ring-teal-200',
     label: 'Selesai',
   },
-  awaiting_kaji_ulang: {
-    bg: 'bg-sky-100',
-    text: 'text-sky-700',
-    border: 'border border-sky-200',
-    label: 'Menunggu Kaji Ulang',
+  rejected: {
+    bg: 'bg-red-50',
+    text: 'text-red-700',
+    ring: 'ring-red-200',
+    label: 'Ditolak',
+  },
+  refunded: {
+    bg: 'bg-violet-50',
+    text: 'text-violet-700',
+    ring: 'ring-violet-200',
+    label: 'Refund',
   },
   cancelled: {
-    bg: 'bg-gray-200',
-    text: 'text-gray-600',
-    border: 'border border-gray-300',
+    bg: 'bg-stone-100',
+    text: 'text-stone-700',
+    ring: 'ring-stone-200',
     label: 'Dibatalkan',
   },
 }
@@ -79,22 +85,22 @@ const badge = computed(() => {
   const found = statusMap[props.status]
   if (found) return found
   return {
-    bg: 'bg-gray-100',
-    text: 'text-gray-500',
-    border: 'border border-gray-200',
+    bg: 'bg-slate-50',
+    text: 'text-slate-600',
+    ring: 'ring-slate-200',
     label: props.status || '-',
   }
 })
 
 const badgeClass = computed(
-  () => `${badge.value.bg} ${badge.value.text} ${badge.value.border}`
+  () => `${badge.value.bg} ${badge.value.text} ring-1 ring-inset ${badge.value.ring}`
 )
 const text = computed(() => badge.value.label)
 </script>
 
 <style scoped>
 .badge {
-  @apply w-full px-2.5 py-0.5 text-[10px] font-semibold rounded-md whitespace-normal break-words leading-tight inline-flex items-center justify-center text-center;
+  @apply inline-flex items-center justify-center rounded-full px-3 py-1 text-[11px] font-semibold leading-tight shadow-[0_1px_2px_rgba(0,0,0,0.08)] whitespace-normal break-words text-center;
   transition: all 0.2s ease;
 }
 

@@ -1,4 +1,5 @@
 <template>
+  <!-- Halaman validasi hasil/sertifikat -->
   <div class="space-y-6">
     <header class="flex flex-col gap-1">
       <h2 class="text-xl font-semibold text-surfaceDark sm:text-2xl">
@@ -72,7 +73,7 @@
           <thead class="bg-gray-50">
             <tr>
               <th class="border-b px-3 py-2 text-left">No</th>
-              <th class="border-b px-3 py-2 text-left">Jenis Pengujian</th>
+              <th class="border-b px-3 py-2 text-left">Nama Pengujian</th>
               <th class="border-b px-3 py-2 text-left">Jumlah Sampel</th>
               <th class="border-b px-3 py-2 text-left">Kode Sampel</th>
               <th class="border-b px-3 py-2 text-left">Metode Uji</th>

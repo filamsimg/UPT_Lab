@@ -86,6 +86,11 @@
               {{ formatOrderNumber(row) }}
             </span>
           </template>
+          <template #entryDate="{ value }">
+            <span class="text-sm text-gray-700">
+              {{ formatShortDate(value) }}
+            </span>
+          </template>
           <template #testItems="{ value, row }">
             <div class="text-left">
               <template v-if="value?.length">
@@ -94,12 +99,12 @@
                   :key="`${row.idOrder}-test-${idx}`"
                   class="block text-xs text-gray-700"
                 >
-                  {{ item.testName || resolveTestName(item) }}
+                  {{ resolveTestName(item) }}
                   <span class="text-gray-500">({{ item.quantity }})</span>
                 </span>
               </template>
               <span v-else class="text-xs text-gray-400">
-                {{ row.testCategory || '-' }}
+                {{ '-' }}
               </span>
             </div>
           </template>
@@ -170,7 +175,7 @@
             @click="closePreviewModal"
           >
             <span class="sr-only">Tutup</span>
-            ✕
+            ԣ�
           </button>
           <div class="flex flex-col gap-4 sm:flex-row sm:items-center">
             <img
@@ -237,7 +242,7 @@
                       <span>{{ item.quantity }} x</span>
                     </div>
                     <p class="mt-1 font-semibold text-surfaceDark">
-                      {{ item.testName || resolveTestName(item) }}
+                      {{ resolveTestName(item) }}
                     </p>
                     <p class="text-xs text-gray-500">
                       {{ item.objectName || '-' }}
@@ -387,6 +392,7 @@ onMounted(() => {
 });
 
 // === DataTable columns ===
+// Kolom tabel permintaan
 const columns = [
   // Kolom utama tetap tampak
   {
@@ -422,7 +428,7 @@ const columns = [
 
   {
     field: 'testItems',
-    title: 'Jenis Pengujian',
+    title: 'Nama Pengujian',
     className: 'hidden lg:table-cell text-left',
   },
 
@@ -438,12 +444,16 @@ const columns = [
 const requestStatusOptions = [
   { value: '', label: 'Semua Status' },
   { value: 'draft', label: 'Draft' },
-  { value: 'awaiting_kaji_ulang', label: 'Menunggu Kaji Ulang' },
-  { value: 'pending_payment', label: 'Menunggu Pembayaran' },
-  { value: 'payment_pending_review', label: 'Menunggu Review Pembayaran' },
-  { value: 'payment_verified', label: 'Pembayaran Terverifikasi' },
-  { value: 'payment_review_rejected', label: 'Bukti Pembayaran Ditolak' },
+  { value: 'awaiting_review', label: 'Menunggu Kaji Ulang' },
+  { value: 'awaiting_payment', label: 'Menunggu Pembayaran' },
+  { value: 'payment_submitted', label: 'Bukti Pembayaran Dikirim' },
+  { value: 'payment_approved', label: 'Pembayaran Disetujui' },
+  { value: 'payment_rejected', label: 'Bukti Pembayaran Ditolak' },
+  { value: 'testing', label: 'Proses Pengujian' },
+  { value: 'completed', label: 'Selesai' },
+  { value: 'refunded', label: 'Refund' },
   { value: 'cancelled', label: 'Dibatalkan' },
+  { value: 'rejected', label: 'Ditolak' },
 ];
 
 const tableRows = computed(() =>
@@ -522,7 +532,7 @@ function openEditModal(item) {
 
 function canOpenPayment(row) {
   if (!row) return false;
-  const allowedStatuses = ['pending_payment', 'payment_review_rejected'];
+  const allowedStatuses = ['awaiting_payment', 'payment_rejected'];
   return (
     allowedStatuses.includes(row.status) && Array.isArray(row.testItems) && row.testItems.length > 0
   );
@@ -545,14 +555,22 @@ function buildPaymentRows(items = []) {
       typeof testStore.getTestById === 'function'
         ? testStore.getTestById(item.testId)
         : (testStore.tests || []).find((t) => t.id === item.testId);
+    const directName = sanitizeTestName(item.testName);
+    const resolvedName =
+      directName ||
+      sanitizeTestName(test?.name) ||
+      sanitizeTestName(test?.testName) ||
+      sanitizeTestName(test?.test_name) ||
+      sanitizeTestName(test?.code) ||
+      '';
     return {
       testId: item.testId || test?.id || null,
-      testName: item.testName || test?.name || test?.testCategory || '',
+      testName: resolvedName,
       objectName:
         item.objectName ||
-        item.testName ||
-        test?.testCategory ||
-        test?.name ||
+        directName ||
+        sanitizeTestName(test?.name) ||
+        sanitizeTestName(test?.code) ||
         '',
       quantity: item.quantity ?? 1,
       price: Number(item.price ?? test?.price ?? 0),
@@ -628,32 +646,113 @@ function formatOrderNumber(row) {
   return '-';
 }
 
+function formatShortDate(value) {
+  if (!value) return "-";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    const raw = String(value || "").trim();
+    if (raw.length >= 10) {
+      const fallback = new Date(raw.slice(0, 10));
+      if (!Number.isNaN(fallback.getTime())) {
+        return new Intl.DateTimeFormat("id-ID", {
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+        }).format(fallback);
+      }
+    }
+    return raw || "-";
+  }
+  return new Intl.DateTimeFormat("id-ID", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  }).format(date);
+}
+function looksLikeId(value) {
+  if (!value) return false;
+  const text = String(value).trim();
+  if (!text) return false;
+  return (
+    /^[0-9A-HJKMNP-TV-Z]{26}$/i.test(text) ||
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(text)
+  );
+}
+
+function sanitizeTestName(value) {
+  if (!value) return '';
+  const text = String(value).trim();
+  if (!text) return '';
+  if (looksLikeId(text)) return '';
+  return text;
+}
+
 function resolveTestName(detail) {
   if (!detail) return '-';
-  if (detail.testName) return detail.testName;
-  const testId = detail.testId;
+  const direct =
+    sanitizeTestName(detail.testName) ||
+    sanitizeTestName(detail.test_name) ||
+    sanitizeTestName(detail.name) ||
+    sanitizeTestName(detail.service?.test_name) ||
+    sanitizeTestName(detail.service?.testName) ||
+    sanitizeTestName(detail.service?.name);
+  if (direct) return direct;
+
+  const testId =
+    detail.serviceId ||
+    detail.service_id ||
+    detail.testId ||
+    detail.service?.id ||
+    '';
   if (!testId) return '-';
   const test =
     typeof testStore.getTestById === 'function'
       ? testStore.getTestById(testId)
       : testStore.tests.find((t) => t.id === testId);
   return (
-    test?.name ||
-    test?.testCategory ||
-    [test?.category, test?.code].filter(Boolean).join(' - ') ||
-    test?.code ||
-    testId
+    sanitizeTestName(test?.name) ||
+    sanitizeTestName(test?.testName) ||
+    sanitizeTestName(test?.test_name) ||
+    sanitizeTestName(test?.code) ||
+    '-'
   );
 }
 
 async function handlePaymentSaved(detail) {
-  const paymentStatus = 'payment_pending_review';
+  const paymentStatus = 'payment_submitted';
   const paymentInfo = {
     ...detail,
     status: paymentStatus,
     reviewStatus: detail.reviewStatus || 'pending',
   };
-  await orderStore.updateOrder(detail.orderId, {
+  const rawFiles = Array.isArray(detail.transferFilesRaw)
+    ? detail.transferFilesRaw
+    : [];
+  const paymentFile = rawFiles.find((file) => file instanceof File) || rawFiles[0] || null;
+  if (!paymentFile) {
+    notify({
+      tone: 'error',
+      title: 'Bukti Pembayaran Kosong',
+      message: 'Unggah bukti pembayaran terlebih dahulu.',
+      duration: 5000,
+    });
+    return;
+  }
+
+  const { ok, error } = await orderStore.submitPayment(detail.orderId, {
+    file: paymentFile,
+  });
+  if (!ok) {
+    notify({
+      tone: 'error',
+      title: 'Gagal Mengirim Pembayaran',
+      message: error || 'Tidak dapat mengirim bukti pembayaran.',
+      duration: 6000,
+    });
+    return;
+  }
+
+  orderStore.updateLocalOrder(detail.orderId, {
     status: paymentStatus,
     paymentInfo,
   });
@@ -668,7 +767,7 @@ async function handlePaymentSaved(detail) {
 
 function canPrint(row) {
   if (!row) return false;
-  const printableStatuses = ['payment_verified', 'completed', 'done'];
+  const printableStatuses = ['payment_approved', 'completed'];
   return printableStatuses.includes(row.status);
 }
 

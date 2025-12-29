@@ -1,4 +1,5 @@
 // Bagian isi & utilitas untuk dokumen cetak (body/content)
+import { ORDER_STATUS_LABELS, normalizeOrderStatus } from '@/utils/orderStatus';
 
 export function sanitize(value) {
   if (value === null || value === undefined) return '-';
@@ -23,13 +24,11 @@ export function toLineMarkup(value) {
 
 export function formatFullDate(value) {
   if (!value) return '-';
+  const match = /^(\d{4}-\d{2}-\d{2})/.exec(String(value));
+  if (match) return match[1];
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return '-';
-  return new Intl.DateTimeFormat('id-ID', {
-    day: '2-digit',
-    month: 'long',
-    year: 'numeric',
-  }).format(date);
+  return date.toISOString().slice(0, 10);
 }
 
 export function formatNumber(value) {
@@ -41,20 +40,9 @@ export function formatCurrency(value) {
 }
 
 export function translateStatus(status) {
-  switch (status) {
-    case 'pending_payment':
-      return 'Menunggu Pembayaran';
-    case 'payment_pending_review':
-      return 'Menunggu Review Pembayaran';
-    case 'payment_verified':
-      return 'Pembayaran Terverifikasi';
-    case 'payment_review_rejected':
-      return 'Bukti Pembayaran Ditolak';
-    case 'cancelled':
-      return 'Dibatalkan';
-    default:
-      return 'Draft';
-  }
+  const normalized = normalizeOrderStatus(status);
+  if (!normalized) return 'Draft';
+  return ORDER_STATUS_LABELS[normalized] || normalized;
 }
 
 export function buildPrintLayout({
@@ -150,12 +138,23 @@ const PERMINTAAN_STYLES = `
 `;
 
 function formatOrderNumber(row) {
-  if (!row || !row.orderNumber) return '-';
-  const number =
-    typeof row.orderNumber === 'number'
-      ? String(row.orderNumber).padStart(3, '0')
-      : String(row.orderNumber).padStart(3, '0');
-  return number;
+  if (!row) return '-';
+  const explicit =
+    row.orderDisplay ||
+    row.orderCode ||
+    row.order_code ||
+    row.number ||
+    row.orderNumber;
+
+  if (typeof explicit === 'string' && explicit.trim()) {
+    return explicit.trim();
+  }
+  if (explicit === null || explicit === undefined || explicit === '') return '-';
+
+  const numeric = Number(explicit);
+  if (Number.isFinite(numeric)) return String(numeric).padStart(3, '0');
+
+  return String(explicit);
 }
 
 function buildInfoTable(row, type) {
@@ -197,7 +196,7 @@ function buildItemsTable(row) {
       <thead>
         <tr>
           <th>No</th>
-          <th>Jenis Pengujian</th>
+          <th>Nama Pengujian</th>
           <th>Nama Sampel</th>
           <th>Qty</th>
           <th>Tarif (Rp)</th>
@@ -464,22 +463,7 @@ export function buildKajiUlangStyles() {
 }
 
 function translateKajiUlangStatus(status) {
-  switch (status) {
-    case 'ready_for_kaji_ulang':
-      return 'Siap Kaji Ulang';
-    case 'pending_validation':
-      return 'Menunggu Validasi';
-    case 'in_testing':
-      return 'Sedang Pengujian';
-    case 'completed':
-      return 'Selesai';
-    case 'rejected':
-      return 'Ditolak';
-    case 'cancelled':
-      return 'Dibatalkan';
-    default:
-      return translateStatus(status);
-  }
+  return translateStatus(status);
 }
 
 // === VALIDASI ===
@@ -525,10 +509,13 @@ function resolveCommodity(order = {}) {
 }
 
 export function buildValidasiBody(order, title) {
+  const orderId = order.orderNo || order.id || order.requestId || '-';
+  const orderNumber = formatOrderNumber(order);
+
   const infoTable = `
     <table class="info-table">
-      ${buildInfoRow('ID Order', order.id || order.requestId || '-')}
-      ${buildInfoRow('No Order', order.orderNo || '-')}
+      ${buildInfoRow('ID Order', orderId)}
+      ${buildInfoRow('No Order', orderNumber)}
       ${buildInfoRow('Tanggal', formatFullDate(order.date || order.entryDate))}
       ${buildInfoRow('Komoditi / Benda Uji', resolveCommodity(order))}
     </table>
@@ -540,7 +527,7 @@ export function buildValidasiBody(order, title) {
       <thead>
         <tr>
           <th style="width:8%;">No</th>
-          <th style="width:26%;">Jenis Pengujian</th>
+          <th style="width:26%;">Nama Pengujian</th>
           <th style="width:14%;">Jumlah Sampel</th>
           <th style="width:20%;">Kode Sampel</th>
           <th style="width:18%;">Metode Uji</th>
@@ -583,6 +570,16 @@ export function buildValidasiStyles() {
 }
 
 function formatSampleCode(order, item, index) {
+  const backendSample =
+    (item.sampleCode && String(item.sampleCode).trim()) ||
+    (item.sample_number && String(item.sample_number).trim()) ||
+    (item.sampleNumber && String(item.sampleNumber).trim()) ||
+    (item.sample_code && String(item.sample_code).trim()) ||
+    '';
+  if (backendSample && !/^\d{1,3}$/.test(backendSample)) {
+    return backendSample;
+  }
+
   const date = order.date || order.entryDate || new Date().toISOString();
   const monthYear = formatMonthYear(date);
   const orderSegment = order.orderNumber

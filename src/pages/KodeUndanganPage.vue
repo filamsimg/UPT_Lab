@@ -1,4 +1,5 @@
 <template>
+  <!-- Halaman kode undangan: input & verifikasi kode untuk registrasi -->
   <div class="space-y-6">
     <div
       v-if="!canManageInvites"

@@ -1,3 +1,4 @@
+// Store/composable dialog konfirmasi global (provide/inject)
 import { inject, provide, reactive } from 'vue';
 
 const CONFIRM_DIALOG_KEY = Symbol('CONFIRM_DIALOG');

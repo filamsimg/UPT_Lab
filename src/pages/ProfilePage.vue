@@ -1,4 +1,5 @@
 <template>
+  <!-- Halaman profil pengguna: update data diri dan password -->
   <div class="p-6 max-w-3xl mx-auto">
     <h1 class="text-2xl font-semibold mb-4 text-primary">Profil Saya</h1>
 
@@ -73,23 +74,6 @@
       class="bg-white rounded-xl shadow p-6 space-y-4 mt-6 border border-border"
     >
       <h2 class="text-lg font-semibold text-gray-700">Edit Profil</h2>
-
-      <div>
-        <label class="block text-gray-600 text-sm mb-1">Foto Profil</label>
-        <div class="flex items-center gap-4">
-          <img
-            :src="previewAvatar || userAvatar"
-            alt="Preview"
-            class="w-20 h-20 rounded-full ring-2 ring-primary/40 object-cover"
-          />
-          <input
-            type="file"
-            accept="image/*"
-            class="text-sm"
-            @change="handleFileUpload"
-          />
-        </div>
-      </div>
 
       <div>
         <label class="block text-gray-600 text-sm mb-1">Nama Lengkap</label>
@@ -256,9 +240,6 @@ const { notify } = useNotificationCenter()
 const editMode = ref(false)
 const saving = ref(false)
 
-const previewAvatar = ref(null)
-const avatarFile = ref(null)
-
 const form = reactive({
   name: '',
   email: '',
@@ -393,8 +374,6 @@ const resetForm = () => {
   form.phone = user.value.phoneNumber || user.value.phone || user.value.phone_number || ''
   form.employmentIdentityNumber =
     user.value.employmentIdentityNumber || user.value.employment_identity_number || ''
-  previewAvatar.value = null
-  avatarFile.value = null
   resetPasswordForm()
 }
 
@@ -417,18 +396,6 @@ const toggleEditMode = () => {
 const cancelEdit = () => {
   editMode.value = false
   resetForm()
-}
-
-const handleFileUpload = (event) => {
-  const file = event.target.files?.[0]
-  if (!file) return
-  avatarFile.value = file
-
-  const reader = new FileReader()
-  reader.onload = () => {
-    previewAvatar.value = reader.result
-  }
-  reader.readAsDataURL(file)
 }
 
 watch(
@@ -485,7 +452,6 @@ const saveProfile = async () => {
       role_ids: roleIds,
       isActive: accountIsActive.value,
       is_active: accountIsActive.value,
-      avatar: avatarFile.value || undefined,
     }
 
     const profileResult = await authStore.updateProfile(payload)
@@ -494,8 +460,6 @@ const saveProfile = async () => {
     }
 
     editMode.value = false
-    previewAvatar.value = null
-    avatarFile.value = null
 
     notify({
       tone: 'success',
@@ -555,6 +519,10 @@ const saveProfile = async () => {
 </script>
 
 <style scoped>
+:global(body) {
+  scrollbar-gutter: stable;
+}
+
 input:focus {
   outline: none;
   border-color: #0d5bd5;

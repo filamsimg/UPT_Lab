@@ -1,4 +1,5 @@
 <template>
+  <!-- App shell: layout utama dengan sidebar, header, slot konten, provider dialog/notifikasi -->
   <div class="flex min-h-screen bg-muted items-stretch">
     <!-- Sidebar -->
     <aside
@@ -317,7 +318,7 @@
 
       <!-- Page Content -->
       <main
-        class="flex-1 w-full p-4 sm:p-6 lg:p-8 overflow-x-hidden md:overflow-y-auto md:max-h-[calc(100vh-4rem)]"
+        class="app-main flex-1 w-full p-4 sm:p-6 lg:p-8 overflow-x-hidden md:overflow-y-scroll md:max-h-[calc(100vh-4rem)]"
       >
         <slot />
       </main>
@@ -494,6 +495,7 @@ watch(showNotifications, (isOpen) => {
 });
 
 const baseMenu = [
+  // Definisi menu sidebar beserta izin yang diperlukan
   {
     label: 'Pengujian',
     icon: FolderIcon,
@@ -585,6 +587,7 @@ const baseMenu = [
 ];
 
 const groupedMenu = computed(() =>
+  // Filter menu sesuai permission user
   baseMenu
     .map((group) => {
       const allowedChildren = group.children.filter((child) => {
@@ -603,6 +606,7 @@ const groupedMenu = computed(() =>
 );
 
 const pageTitle = computed(() => {
+  // Judul halaman dari meta atau default
   const activeChild = groupedMenu.value
     .flatMap((g) => g.children)
     .find((i) => i.path === route.path);
@@ -621,6 +625,7 @@ const avatarUrl = computed(() => {
 });
 
 async function logout() {
+  // Logout lewat authStore lalu redirect
   const ok = await openConfirmDialog({
     title: 'Keluar dari aplikasi?',
     message: 'Sesi Anda akan ditutup dan perlu login kembali.',
@@ -636,6 +641,10 @@ async function logout() {
 <style scoped>
 aside::-webkit-scrollbar {
   display: none;
+}
+
+.app-main {
+  scrollbar-gutter: stable both-edges;
 }
 
 .fade-enter-active,

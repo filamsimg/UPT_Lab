@@ -1,3 +1,4 @@
+// Store test/services: data pengujian untuk dropdown/list
 import { defineStore } from 'pinia'
 import api from '@/services/apiServices'
 
@@ -154,7 +155,13 @@ function buildServicePayload(payload = {}) {
     method_id: payload.method_id || payload.methodId || payload.method || '',
     unit: payload.unit || '',
     price: toNumber(payload.price, 0),
-    name: payload.name || payload.testCategory || '',
+    name:
+      payload.name ||
+      payload.test_name ||
+      payload.testName ||
+      payload.service_name ||
+      payload.serviceName ||
+      '',
   }
 }
 

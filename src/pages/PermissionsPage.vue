@@ -193,6 +193,7 @@ const { hasPermission } = useAuthorization();
 
 const canViewPermissions = computed(() => hasPermission('permissions.index'));
 
+// Kolom tabel permissions
 const columns = [
   { field: 'name', title: 'Nama Permission' },
   { field: 'description', title: 'Deskripsi', slotName: 'description' },
@@ -205,6 +206,7 @@ let debounceTimer = null;
 const perPageOptions = [10, 25, 50, 100];
 const perPageSelection = ref(permissionStore.pagination?.perPage || perPageOptions[0]);
 
+// Data permission dari store
 const rows = computed(() => permissionStore.permissions);
 
 const noDataText = computed(() => {

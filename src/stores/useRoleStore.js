@@ -1,3 +1,4 @@
+// Store role: CRUD role dan assign permissions
 import { defineStore } from 'pinia';
 import api from '@/services/apiServices';
 
