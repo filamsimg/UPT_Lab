@@ -174,6 +174,38 @@
       @save="handleSaveTest"
     />
 
+    <FormMasterItem
+      v-if="showMachineModal"
+      :title="machineModalTitle"
+      name-label="Nama Mesin Uji"
+      name-placeholder="Nama mesin uji"
+      description-label="Deskripsi Mesin Uji"
+      description-placeholder="Deskripsi singkat mesin uji"
+      :submit-label="machineSubmitLabel"
+      :submit-action="handleSaveMachine"
+      :loading="machineSaving"
+      :initial-value="machineEditData"
+      :reset-on-success="machineModalMode === 'add'"
+      :close-on-success="machineModalMode === 'edit'"
+      @close="closeMachineModal"
+    />
+
+    <FormMasterItem
+      v-if="showMethodModal"
+      :title="methodModalTitle"
+      name-label="Nama Metode Uji"
+      name-placeholder="Nama metode uji"
+      description-label="Deskripsi Metode Uji"
+      description-placeholder="Deskripsi singkat metode uji"
+      :submit-label="methodSubmitLabel"
+      :submit-action="handleSaveMethod"
+      :loading="methodSaving"
+      :initial-value="methodEditData"
+      :reset-on-success="methodModalMode === 'add'"
+      :close-on-success="methodModalMode === 'edit'"
+      @close="closeMethodModal"
+    />
+
     <!-- === MESIN UJI === -->
     <div class="bg-white rounded-xl shadow-md p-5 mb-8">
       <div
@@ -181,16 +213,11 @@
       >
         <h3 class="text-lg font-semibold text-surfaceDark">Mesin Uji</h3>
         <div class="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap">
-          <input
-            v-model="newMachine"
-            placeholder="Nama mesin uji"
-            class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm sm:w-64"
-          />
           <button
             class="w-full rounded-md bg-gradient-to-r from-primaryLight to-primaryDark px-3 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-90 sm:w-auto"
-            @click="addMachine"
+            @click="openMachineModal"
           >
-            Tambah
+            + Tambah Mesin Uji
           </button>
         </div>
       </div>
@@ -205,11 +232,32 @@
         body-scroll-height="40vh"
         class="rounded-md"
       >
+        <template #index="{ value }">
+          <span class="block text-center text-sm text-gray-700">
+            {{ value ?? '-' }}
+          </span>
+        </template>
+        <template #name="{ value }">
+          <span class="block text-center text-sm text-gray-700">
+            {{ value || '-' }}
+          </span>
+        </template>
+        <template #description="{ value }">
+          <span class="block text-center text-sm text-gray-700">
+            {{ value || '-' }}
+          </span>
+        </template>
         <template #actions="{ row, index }">
-          <div class="justify-left">
+          <div class="flex w-full items-center justify-center gap-2">
+            <button
+              class="p-1.5 rounded-md hover:bg-blue-50 text-primary hover:text-primaryDark transition"
+              @click="openMachineEdit(row)"
+            >
+              <PencilIcon class="w-5 h-5 inline" />
+            </button>
             <button
               class="p-1.5 rounded-md hover:bg-red-50 text-danger hover:text-red-700 transition"
-              @click="removeMachine(index)"
+              @click="removeMachine(row.id || index)"
             >
               <TrashIcon class="w-5 h-5 inline" />
             </button>
@@ -225,16 +273,11 @@
       >
         <h3 class="text-lg font-semibold text-surfaceDark">Metode Uji</h3>
         <div class="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap">
-          <input
-            v-model="newMethod"
-            placeholder="Nama metode uji"
-            class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm sm:w-64"
-          />
           <button
             class="w-full rounded-md bg-gradient-to-r from-primaryLight to-primaryDark px-3 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-90 sm:w-auto"
-            @click="addMethod"
+            @click="openMethodModal"
           >
-            Tambah
+            + Tambah Metode Uji
           </button>
         </div>
       </div>
@@ -249,11 +292,32 @@
         body-scroll-height="40vh"
         class="rounded-md"
       >
+        <template #index="{ value }">
+          <span class="block text-center text-sm text-gray-700">
+            {{ value ?? '-' }}
+          </span>
+        </template>
+        <template #name="{ value }">
+          <span class="block text-center text-sm text-gray-700">
+            {{ value || '-' }}
+          </span>
+        </template>
+        <template #description="{ value }">
+          <span class="block text-center text-sm text-gray-700">
+            {{ value || '-' }}
+          </span>
+        </template>
         <template #actions="{ row, index }">
-          <div class="justify-left">
+          <div class="flex w-full items-center justify-center gap-2">
+            <button
+              class="p-1.5 rounded-md hover:bg-blue-50 text-primary hover:text-primaryDark transition"
+              @click="openMethodEdit(row)"
+            >
+              <PencilIcon class="w-5 h-5 inline" />
+            </button>
             <button
               class="p-1.5 rounded-md hover:bg-red-50 text-danger hover:text-red-700 transition"
-              @click="removeMethod(index)"
+              @click="removeMethod(row.id || index)"
             >
               <TrashIcon class="w-5 h-5 inline" />
             </button>
@@ -269,6 +333,7 @@ import { computed, ref, onMounted, watch } from 'vue'
 import { ArrowPathIcon, MagnifyingGlassIcon, PencilIcon, TrashIcon } from '@heroicons/vue/24/outline'
 import DataTable from '@/components/common/DataTable.vue'
 import FormLayanan from '@/components/form/FormLayanan.vue'
+import FormMasterItem from '@/components/form/FormMasterItem.vue'
 import { useTestStore } from '@/stores/useTestStore'
 
 const testStore = useTestStore()
@@ -289,6 +354,14 @@ const initialized = ref(false)
 let debounceTimer = null
 const perPageOptions = [10, 25, 50, 100]
 const perPageSelection = ref(testStore.pagination?.perPage || perPageOptions[0])
+const showMachineModal = ref(false)
+const showMethodModal = ref(false)
+const machineSaving = ref(false)
+const methodSaving = ref(false)
+const machineModalMode = ref('add')
+const methodModalMode = ref('add')
+const machineEditData = ref(null)
+const methodEditData = ref(null)
 
 const testColumns = [
   { field: 'serviceCategoryLabel', title: 'Jenis Layanan', slotName: 'serviceCategoryLabel', isSortable: true },
@@ -302,17 +375,17 @@ const testColumns = [
 ]
 
 const machineColumns = [
-  { field: 'index', title: 'No', className: 'w-20 text-left' },
-  { field: 'name', title: 'Nama Mesin' },
-  { field: 'description', title: 'Deskripsi', className: 'hidden sm:table-cell' },
-  { field: 'actions', title: 'Aksi', className: 'w-20 text-left', slotName: 'actions', sortable: false },
+  { field: 'index', title: 'No', className: 'w-20 text-left md:text-center' },
+  { field: 'name', title: 'Nama Mesin', className: 'text-left md:text-center' },
+  { field: 'description', title: 'Deskripsi', className: 'hidden sm:table-cell text-left md:text-center' },
+  { field: 'actions', title: 'Aksi', className: 'md:min-w-[120px] text-left md:text-center', slotName: 'actions', sortable: false },
 ]
 
 const methodColumns = [
-  { field: 'index', title: 'No', className: 'w-20 text-left' },
-  { field: 'name', title: 'Nama Metode' },
-  { field: 'description', title: 'Deskripsi', className: 'hidden sm:table-cell' },
-  { field: 'actions', title: 'Aksi', className: 'w-20 text-left', slotName: 'actions', sortable: false },
+  { field: 'index', title: 'No', className: 'w-20 text-left md:text-center' },
+  { field: 'name', title: 'Nama Metode', className: 'text-left md:text-center' },
+  { field: 'description', title: 'Deskripsi', className: 'hidden sm:table-cell text-left md:text-center' },
+  { field: 'actions', title: 'Aksi', className: 'md:min-w-[120px] text-left md:text-center', slotName: 'actions', sortable: false },
 ]
 
 // Data layanan yang ditampilkan
@@ -331,6 +404,7 @@ const rows = computed(() =>
 
 const machineItems = computed(() =>
   machines.value.map((m, i) => ({
+    id: m.id || m.machine_id || m.machineId || '',
     index: i + 1,
     name: m.name || m,
     description: m.description || '',
@@ -339,6 +413,7 @@ const machineItems = computed(() =>
 
 const methodItems = computed(() =>
   methods.value.map((m, i) => ({
+    id: m.id || m.method_id || m.methodId || '',
     index: i + 1,
     name: m.name || m,
     description: m.description || '',
@@ -364,6 +439,19 @@ const noDataText = computed(() =>
   searchTerm.value
     ? 'Layanan tidak ditemukan untuk kata kunci tersebut.'
     : 'Belum ada layanan yang terdaftar.'
+)
+
+const machineModalTitle = computed(() =>
+  machineModalMode.value === 'edit' ? 'Edit Mesin Uji' : 'Tambah Mesin Uji'
+)
+const methodModalTitle = computed(() =>
+  methodModalMode.value === 'edit' ? 'Edit Metode Uji' : 'Tambah Metode Uji'
+)
+const machineSubmitLabel = computed(() =>
+  machineModalMode.value === 'edit' ? 'Perbarui' : 'Tambah'
+)
+const methodSubmitLabel = computed(() =>
+  methodModalMode.value === 'edit' ? 'Perbarui' : 'Tambah'
 )
 
 watch(searchTerm, (value) => {
@@ -450,22 +538,78 @@ function normalizePerPage(value) {
 }
 
 // === Mesin ===
-const newMachine = ref('')
-async function addMachine() {
-  if (!newMachine.value.trim()) return
-  await testStore.addMachine(newMachine.value)
-  newMachine.value = ''
+async function handleSaveMachine({ name, description }) {
+  const cleanedName = typeof name === 'string' ? name.trim() : ''
+  const cleanedDescription = typeof description === 'string' ? description.trim() : ''
+  if (!cleanedName) {
+    return { ok: false, error: 'Nama mesin uji wajib diisi.' }
+  }
+  machineSaving.value = true
+  try {
+    if (machineModalMode.value === 'edit') {
+      const id = machineEditData.value?.id
+      if (!id) return { ok: false, error: 'ID mesin tidak ditemukan.' }
+      const result = await testStore.updateMachine({
+        id,
+        name: cleanedName,
+        description: cleanedDescription,
+      })
+      return result || { ok: true }
+    }
+    const result = await testStore.addMachine(cleanedName, cleanedDescription)
+    return result || { ok: true }
+  } catch (err) {
+    return {
+      ok: false,
+      error:
+        err?.response?.data?.message ||
+        err?.message ||
+        (machineModalMode.value === 'edit'
+          ? 'Gagal memperbarui mesin.'
+          : 'Gagal menambahkan mesin.'),
+    }
+  } finally {
+    machineSaving.value = false
+  }
 }
 function removeMachine(idx) {
   testStore.removeMachine(idx)
 }
 
 // === Metode ===
-const newMethod = ref('')
-async function addMethod() {
-  if (!newMethod.value.trim()) return
-  await testStore.addMethod(newMethod.value)
-  newMethod.value = ''
+async function handleSaveMethod({ name, description }) {
+  const cleanedName = typeof name === 'string' ? name.trim() : ''
+  const cleanedDescription = typeof description === 'string' ? description.trim() : ''
+  if (!cleanedName) {
+    return { ok: false, error: 'Nama metode uji wajib diisi.' }
+  }
+  methodSaving.value = true
+  try {
+    if (methodModalMode.value === 'edit') {
+      const id = methodEditData.value?.id
+      if (!id) return { ok: false, error: 'ID metode tidak ditemukan.' }
+      const result = await testStore.updateMethod({
+        id,
+        name: cleanedName,
+        description: cleanedDescription,
+      })
+      return result || { ok: true }
+    }
+    const result = await testStore.addMethod(cleanedName, cleanedDescription)
+    return result || { ok: true }
+  } catch (err) {
+    return {
+      ok: false,
+      error:
+        err?.response?.data?.message ||
+        err?.message ||
+        (methodModalMode.value === 'edit'
+          ? 'Gagal memperbarui metode.'
+          : 'Gagal menambahkan metode.'),
+    }
+  } finally {
+    methodSaving.value = false
+  }
 }
 function removeMethod(idx) {
   testStore.removeMethod(idx)
@@ -474,6 +618,52 @@ function removeMethod(idx) {
 function closeModal() {
   showModal.value = false
   editData.value = null
+}
+
+function openMachineModal() {
+  machineModalMode.value = 'add'
+  machineEditData.value = null
+  showMachineModal.value = true
+}
+
+function closeMachineModal() {
+  showMachineModal.value = false
+  machineModalMode.value = 'add'
+  machineEditData.value = null
+}
+
+function openMachineEdit(row) {
+  if (!row?.id) return
+  machineModalMode.value = 'edit'
+  machineEditData.value = {
+    id: row.id,
+    name: row.name || '',
+    description: row.description || '',
+  }
+  showMachineModal.value = true
+}
+
+function openMethodModal() {
+  methodModalMode.value = 'add'
+  methodEditData.value = null
+  showMethodModal.value = true
+}
+
+function closeMethodModal() {
+  showMethodModal.value = false
+  methodModalMode.value = 'add'
+  methodEditData.value = null
+}
+
+function openMethodEdit(row) {
+  if (!row?.id) return
+  methodModalMode.value = 'edit'
+  methodEditData.value = {
+    id: row.id,
+    name: row.name || '',
+    description: row.description || '',
+  }
+  showMethodModal.value = true
 }
 </script>
 

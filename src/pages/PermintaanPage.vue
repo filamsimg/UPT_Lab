@@ -429,9 +429,11 @@ const columns = [
   {
     field: 'orderNumber',
     title: 'No Order',
-    className: 'md:min-w-[120px] text-center',
+    className: 'md:min-w-[120px] text-left',
   },
-  { field: 'entryDate', title: 'Tanggal Masuk' },
+  { field: 'entryDate', title: 'Tanggal Masuk',
+   },
+
   {
     field: 'status',
     title: 'Status',

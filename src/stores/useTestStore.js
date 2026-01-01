@@ -155,14 +155,40 @@ function buildServicePayload(payload = {}) {
     method_id: payload.method_id || payload.methodId || payload.method || '',
     unit: payload.unit || '',
     price: toNumber(payload.price, 0),
-    name:
-      payload.name ||
+    test_name:
       payload.test_name ||
       payload.testName ||
+      payload.name ||
       payload.service_name ||
       payload.serviceName ||
       '',
   }
+}
+
+function resolveMachineEntity(payload = {}) {
+  const data = payload?.data ?? payload ?? {}
+  return (
+    data.material_test_machine ||
+    data.materialTestMachine ||
+    data.machine ||
+    payload.material_test_machine ||
+    payload.materialTestMachine ||
+    payload.machine ||
+    data
+  )
+}
+
+function resolveMethodEntity(payload = {}) {
+  const data = payload?.data ?? payload ?? {}
+  return (
+    data.material_test_method ||
+    data.materialTestMethod ||
+    data.method ||
+    payload.material_test_method ||
+    payload.materialTestMethod ||
+    payload.method ||
+    data
+  )
 }
 
 export const useTestStore = defineStore('test', {
@@ -373,17 +399,54 @@ export const useTestStore = defineStore('test', {
       }
     },
 
-    async addMachine(name) {
-      const MachineName = ensureString(name)
+    async addMachine(name, description) {
+      const MachineName = ensureString(typeof name === 'string' ? name.trim() : name)
+      const MachineDescription = ensureString(
+        typeof description === 'string' ? description.trim() : description
+      )
       if (!MachineName) return
       try {
-        const res = await api.post('/api/v1/material-test-machines', { name: MachineName })
-        const created = normalizeMachine(res.data?.data ?? res.data ?? { name: MachineName })
+        const body = { name: MachineName }
+        if (MachineDescription) body.description = MachineDescription
+        const res = await api.post('/api/v1/material-test-machines', body)
+        const entity = resolveMachineEntity(res.data ?? {})
+        const created = normalizeMachine(entity || {})
+        if (!created.id && entity?.id) created.id = entity.id
+        if (!created.name) created.name = MachineName
+        if (!created.description && MachineDescription) created.description = MachineDescription
+        this.machines = this.machines.filter((m) => m && (m.id || m.name))
         this.machines.push(created)
         return { ok: true, data: created }
       } catch (err) {
         this.error =
           err?.response?.data?.message || err?.message || 'Gagal menambahkan mesin.'
+        throw err
+      }
+    },
+
+    async updateMachine(payload = {}) {
+      const id = payload.id || payload.machine_id || payload.machineId
+      if (!id) return { ok: false, error: 'ID mesin tidak ditemukan' }
+      const MachineName = ensureString(payload.name || payload.machine_name || payload.machineName)
+      if (!MachineName) return { ok: false, error: 'Nama mesin uji wajib diisi.' }
+      const MachineDescription =
+        typeof payload.description === 'string' ? payload.description.trim() : ''
+      try {
+        const body = { name: MachineName, description: MachineDescription }
+        const res = await api.put(`/api/v1/material-test-machines/${id}`, body)
+        const entity = resolveMachineEntity(res.data ?? {})
+        const updated = normalizeMachine(entity || {})
+        if (!updated.id) updated.id = id
+        if (!updated.name) updated.name = MachineName
+        if (!updated.description && MachineDescription) updated.description = MachineDescription
+        const idx = this.machines.findIndex((m) => m.id === id)
+        if (idx !== -1) this.machines[idx] = updated
+        else this.machines.push(updated)
+        this.machines = this.machines.filter((m) => m && (m.id || m.name))
+        return { ok: true, data: updated }
+      } catch (err) {
+        this.error =
+          err?.response?.data?.message || err?.message || 'Gagal memperbarui mesin.'
         throw err
       }
     },
@@ -406,17 +469,54 @@ export const useTestStore = defineStore('test', {
       }
     },
 
-    async addMethod(name) {
-      const MethodName = ensureString(name)
+    async addMethod(name, description) {
+      const MethodName = ensureString(typeof name === 'string' ? name.trim() : name)
+      const MethodDescription = ensureString(
+        typeof description === 'string' ? description.trim() : description
+      )
       if (!MethodName) return
       try {
-        const res = await api.post('/api/v1/material-test-methods', { name: MethodName })
-        const created = normalizeMethod(res.data?.data ?? res.data ?? { name: MethodName })
+        const body = { name: MethodName }
+        if (MethodDescription) body.description = MethodDescription
+        const res = await api.post('/api/v1/material-test-methods', body)
+        const entity = resolveMethodEntity(res.data ?? {})
+        const created = normalizeMethod(entity || {})
+        if (!created.id && entity?.id) created.id = entity.id
+        if (!created.name) created.name = MethodName
+        if (!created.description && MethodDescription) created.description = MethodDescription
+        this.methods = this.methods.filter((m) => m && (m.id || m.name))
         this.methods.push(created)
         return { ok: true, data: created }
       } catch (err) {
         this.error =
           err?.response?.data?.message || err?.message || 'Gagal menambahkan metode.'
+        throw err
+      }
+    },
+
+    async updateMethod(payload = {}) {
+      const id = payload.id || payload.method_id || payload.methodId
+      if (!id) return { ok: false, error: 'ID metode tidak ditemukan' }
+      const MethodName = ensureString(payload.name || payload.method_name || payload.methodName)
+      if (!MethodName) return { ok: false, error: 'Nama metode uji wajib diisi.' }
+      const MethodDescription =
+        typeof payload.description === 'string' ? payload.description.trim() : ''
+      try {
+        const body = { name: MethodName, description: MethodDescription }
+        const res = await api.put(`/api/v1/material-test-methods/${id}`, body)
+        const entity = resolveMethodEntity(res.data ?? {})
+        const updated = normalizeMethod(entity || {})
+        if (!updated.id) updated.id = id
+        if (!updated.name) updated.name = MethodName
+        if (!updated.description && MethodDescription) updated.description = MethodDescription
+        const idx = this.methods.findIndex((m) => m.id === id)
+        if (idx !== -1) this.methods[idx] = updated
+        else this.methods.push(updated)
+        this.methods = this.methods.filter((m) => m && (m.id || m.name))
+        return { ok: true, data: updated }
+      } catch (err) {
+        this.error =
+          err?.response?.data?.message || err?.message || 'Gagal memperbarui metode.'
         throw err
       }
     },
