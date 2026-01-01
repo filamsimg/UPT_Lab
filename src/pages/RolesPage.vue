@@ -129,12 +129,12 @@
           :no-data-text="noDataText"
         >
           <template #roleName="{ row }">
-            <span class="text-sm font-semibold text-surfaceDark">
+            <span class="block text-center text-sm font-semibold text-surfaceDark md:text-left">
               {{ formatRoleLabel(row.name) }}
             </span>
           </template>
           <template #permissions="{ row }">
-            <div class="flex flex-wrap items-center gap-2">
+            <div class="flex flex-wrap items-center justify-center gap-2 md:justify-start">
               <span
                 v-for="permission in limitedPermissions(row.permissions)"
                 :key="permission.id"
@@ -154,33 +154,35 @@
             </div>
           </template>
           <template #defaultStatus="{ row }">
-            <span
-              v-if="row.isDefault"
-              class="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700"
-            >
-              <span class="h-2 w-2 rounded-full bg-emerald-500"></span>
-              Default
-            </span>
-            <button
-              v-else-if="canSetDefault(row)"
-              type="button"
-              class="inline-flex items-center gap-2 rounded-full border border-primary/40 px-3 py-1 text-xs font-semibold text-primary hover:bg-primary/5 transition"
-              :disabled="roleStore.saving"
-              @click="handleSetDefault(row)"
-            >
-              Jadikan default
-            </button>
-            <span
-              v-else
-              class="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-xs font-medium text-gray-500"
-            >
-              <span class="h-2 w-2 rounded-full bg-gray-300"></span>
-              Tidak didukung
-            </span>
+            <div class="flex w-full justify-center md:justify-start">
+              <span
+                v-if="row.isDefault"
+                class="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700"
+              >
+                <span class="h-2 w-2 rounded-full bg-emerald-500"></span>
+                Default
+              </span>
+              <button
+                v-else-if="canSetDefault(row)"
+                type="button"
+                class="inline-flex items-center gap-2 rounded-full border border-primary/40 px-3 py-1 text-xs font-semibold text-primary hover:bg-primary/5 transition"
+                :disabled="roleStore.saving"
+                @click="handleSetDefault(row)"
+              >
+                Jadikan default
+              </button>
+              <span
+                v-else
+                class="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-xs font-medium text-gray-500"
+              >
+                <span class="h-2 w-2 rounded-full bg-gray-300"></span>
+                Tidak didukung
+              </span>
+            </div>
           </template>
 
           <template #timeline="{ row }">
-            <div class="space-y-1 text-xs text-gray-600">
+            <div class="space-y-1 text-center text-xs text-gray-600 md:text-left">
               <p>
                 Dibuat:
                 <span class="font-medium text-gray-700">
@@ -197,7 +199,7 @@
           </template>
 
           <template #actions="{ row }">
-            <div class="flex gap-3">
+            <div class="flex justify-center gap-3 md:justify-start">
               <button
                 v-if="canUpdateRole"
                 class="rounded-md inline-flex items-center gap-1 p-1.5 text-primary transition hover:bg-primary/10"

@@ -64,7 +64,7 @@
           <template #idOrder="{ value }">
             <button
               type="button"
-              class="inline-flex w-full items-center justify-start gap-1 text-left text-sm text-gray-800 hover:text-gray-900 sm:whitespace-nowrap sm:overflow-hidden sm:text-ellipsis"
+              class="inline-flex w-full items-center justify-center gap-1 text-center text-sm text-gray-800 hover:text-gray-900 md:justify-start md:text-left sm:whitespace-nowrap sm:overflow-hidden sm:text-ellipsis"
               @click="copyId(value)"
               :title="value || '-'"
             >
@@ -78,7 +78,7 @@
             </span>
           </template>
           <template #entryDate="{ value }">
-            <span class="text-sm text-gray-700">
+            <span class="block text-center text-sm text-gray-700 md:text-left">
               {{ formatShortDate(value) }}
             </span>
           </template>
@@ -102,7 +102,7 @@
 
           <template #status="{ value }">
             <div class="w-full">
-              <Badge :status="value" class="w-full justify-center" />
+              <Badge :status="value" class="w-full justify-center md:justify-start" />
             </div>
           </template>
 

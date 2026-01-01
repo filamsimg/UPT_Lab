@@ -135,8 +135,23 @@
           scroll-body-on-mobile
           :no-data-text="noDataText"
         >
+          <template #name="{ value }">
+            <span class="block text-center text-sm text-gray-700 md:text-left">
+              {{ value || '-' }}
+            </span>
+          </template>
+          <template #email="{ value }">
+            <span class="block text-center text-sm text-gray-700 md:text-left">
+              {{ value || '-' }}
+            </span>
+          </template>
+          <template #employmentIdentityNumber="{ value }">
+            <span class="block text-center text-sm text-gray-700 md:text-left">
+              {{ value || '-' }}
+            </span>
+          </template>
           <template #roles="{ value }">
-            <div class="flex flex-wrap items-center gap-2">
+            <div class="flex flex-wrap items-center justify-center gap-2 md:justify-start">
               <span
                 v-for="role in value"
                 :key="role.id"
@@ -149,7 +164,7 @@
           </template>
 
           <template #status="{ row }">
-            <div class="flex items-center gap-3">
+            <div class="flex items-center justify-center gap-3 md:justify-start">
               <span
                 :class="[
                   'rounded-full px-2 py-1 text-xs font-medium',
@@ -182,7 +197,7 @@
           </template>
 
           <template #timeline="{ row }">
-            <div class="space-y-1 text-xs text-gray-600">
+            <div class="space-y-1 text-center text-xs text-gray-600 md:text-left">
               <p>
                 Dibuat:
                 <span class="font-medium text-gray-700">
@@ -199,7 +214,7 @@
           </template>
 
           <template #actions="{ row }">
-            <div class="flex gap-1">
+            <div class="flex justify-center gap-1 md:justify-center">
               <button
                 v-if="canUpdateUser"
                 class="rounded-md inline-flex items-center gap-1 p-1.5 text-primary transition hover:bg-primary/10"

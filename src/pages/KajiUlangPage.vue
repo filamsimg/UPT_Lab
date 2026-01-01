@@ -51,12 +51,12 @@
         body-scroll-height="55vh"
       >
         <template #sampleNo="{ row }">
-          <div class="text-sm text-gray-700">
+          <div class="text-center text-sm text-gray-700 md:text-left">
             <template v-if="row.sampleCodes && row.sampleCodes.length">
               <p
                 v-for="code in row.sampleCodes"
                 :key="`${row.id}-sample-${code}`"
-                class="font-mono text-[11px] uppercase tracking-wide"
+                class="font-mono text-[11px] uppercase tracking-wide text-center md:text-left"
               >
                 {{ code }}
               </p>
@@ -65,14 +65,14 @@
           </div>
         </template>
         <template #date="{ value }">
-          <span class="text-sm text-gray-700">{{
+          <span class="block text-center text-sm text-gray-700 md:text-left">{{
             formatDateDisplay(value)
           }}</span>
         </template>
         <template #orderNo="{ value }">
           <button
             type="button"
-            class="inline-flex w-full items-center justify-start gap-1 text-left text-sm text-gray-800 hover:text-gray-900 sm:whitespace-nowrap sm:overflow-hidden sm:text-ellipsis"
+            class="inline-flex w-full items-center justify-center gap-1 text-center text-sm text-gray-800 hover:text-gray-900 md:justify-start md:text-left sm:whitespace-nowrap sm:overflow-hidden sm:text-ellipsis"
             @click="copyId(value)"
             :title="value || '-'"
           >
@@ -81,15 +81,17 @@
           </button>
         </template>
         <template #status="{ value }">
-          <Badge :status="value" />
+          <div class="w-full">
+            <Badge :status="value" class="w-full justify-center md:justify-start" />
+          </div>
         </template>
         <template #testNames="{ row }">
-          <div class="text-left">
+          <div class="text-center md:text-left">
             <template v-if="row.testItems && row.testItems.length">
               <span
                 v-for="(item, idx) in row.testItems"
                 :key="`${row.id}-test-${idx}`"
-                class="block text-xs text-gray-700"
+                class="block text-xs text-gray-700 text-center md:text-left"
               >
                 {{ resolveTestName(item) || '-' }}
               </span>
