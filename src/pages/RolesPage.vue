@@ -284,7 +284,7 @@
         class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 py-8 backdrop-blur-sm"
       >
         <div
-          class="relative w-[95%] md:w-[600px] rounded-2xl bg-white p-4 shadow-xl"
+          class="relative w-[95%] md:w-[720px] lg:w-[860px] md:min-h-[70vh] rounded-2xl bg-white p-4 shadow-xl"
         >
           <button
             class="absolute right-4 top-4 text-gray-400 transition hover:text-gray-600"

@@ -27,7 +27,7 @@
 
       <div
         v-if="permissionOptions.length"
-        class="max-h-56 space-y-3 overflow-y-auto rounded-md border border-gray-200 p-3"
+        class="max-h-[50vh] md:max-h-[55vh] lg:max-h-[60vh] space-y-3 overflow-y-auto rounded-md border border-gray-200 p-3"
       >
         <div
           v-for="group in groupedPermissions"
