@@ -97,7 +97,6 @@
             <span v-else class="text-xs text-gray-400">-</span>
           </div>
         </template>
-        <!-- Kolom review pembayaran dihilangkan; hanya gunakan status -->
         <template #actions="{ row }">
           <div class="flex justify-center gap-2 text-surfaceDark">
             <button
@@ -122,6 +121,30 @@
               title="Buka Form Kaji Ulang"
             >
               <PencilIcon class="h-5 w-5" />
+            </button>
+            <button
+              v-if="row.canMarkTesting"
+              class="rounded-md bg-indigo-50 p-1.5 text-indigo-600 transition hover:bg-indigo-100 hover:text-indigo-800"
+              @click="markTesting(row)"
+              title="Mulai Pengujian"
+            >
+              <BeakerIcon class="h-5 w-5" />
+            </button>
+            <button
+              v-if="row.canComplete"
+              class="rounded-md bg-emerald-50 p-1.5 text-emerald-600 transition hover:bg-emerald-100 hover:text-emerald-800"
+              @click="completeTesting(row)"
+              title="Selesaikan Pengujian"
+            >
+              <CheckCircleIcon class="h-5 w-5" />
+            </button>
+            <button
+              v-if="row.canRefund"
+              class="rounded-md bg-amber-50 p-1.5 text-amber-700 transition hover:bg-amber-100 hover:text-amber-800"
+              @click="openRefundModal(row)"
+              title="Refund"
+            >
+              <ArrowUturnLeftIcon class="h-5 w-5" />
             </button>
             <button
               v-if="row.canCancel"
@@ -302,6 +325,73 @@
         </div>
       </div>
     </transition>
+
+    <transition name="fade">
+      <div
+        v-if="showRefundModal"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4"
+      >
+        <div
+          class="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl"
+        >
+          <div
+            class="mb-4 flex items-center justify-between border-b border-gray-200 pb-4"
+          >
+            <div>
+              <p class="text-xs uppercase tracking-wide text-gray-500">
+                Proses Refund
+              </p>
+              <h3 class="text-lg font-semibold text-surfaceDark">
+                Order {{ refundingOrder?.orderNo || '-' }}
+              </h3>
+            </div>
+            <button
+              class="rounded-md p-1.5 text-gray-500 transition hover:bg-gray-100 hover:text-gray-700"
+              @click="closeRefundModal"
+            >
+              <span class="sr-only">Tutup</span>
+              <XCircleIcon class="h-6 w-6" />
+            </button>
+          </div>
+
+          <div class="space-y-4">
+            <section class="rounded-xl border border-gray-200 p-4">
+              <h4 class="mb-2 text-sm font-semibold text-surfaceDark">
+                Upload Bukti Refund
+              </h4>
+              <input
+                type="file"
+                class="w-full text-sm"
+                accept=".pdf,.png,.jpg,.jpeg"
+                @change="handleRefundFileChange"
+              />
+              <p v-if="refundFileName" class="mt-2 text-xs text-gray-600">
+                File terpilih: <strong>{{ refundFileName }}</strong>
+              </p>
+              <p v-if="refundError" class="mt-2 text-xs font-medium text-rose-600">
+                {{ refundError }}
+              </p>
+            </section>
+
+            <div class="flex flex-col gap-2 sm:flex-row sm:justify-end">
+              <button
+                class="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-600 transition hover:bg-gray-50 sm:w-auto"
+                @click="closeRefundModal"
+              >
+                Batal
+              </button>
+              <button
+                class="w-full rounded-lg bg-amber-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-amber-600 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+                :disabled="!refundFile"
+                @click="submitRefund"
+              >
+                Proses Refund
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </transition>
   </div>
 </template>
 
@@ -316,6 +406,9 @@ import {
   XCircleIcon,
   PrinterIcon,
   DocumentDuplicateIcon,
+  BeakerIcon,
+  CheckCircleIcon,
+  ArrowUturnLeftIcon,
 } from '@heroicons/vue/24/outline';
 import logoDinas from '@/assets/LOGO DINAS KAB TEGAL.webp';
 import { buildKajiUlangPrintHtml } from '@/utils/printTemplates';
@@ -350,6 +443,10 @@ const showReviewModal = ref(false);
 const reviewingOrder = ref(null);
 const reviewNote = ref('');
 const reviewerName = 'Admin';
+const showRefundModal = ref(false);
+const refundingOrder = ref(null);
+const refundFile = ref(null);
+const refundError = ref('');
 
 // Query mode routing: ?mode=new|edit|payment&id=ORDER_NO
 const readQueryValue = (value) =>
@@ -491,6 +588,7 @@ const reviewRows = reactive(makeDefaultReviewRows());
 const reviewFiles = computed(
   () => reviewingOrder.value?.paymentInfo?.transferFiles || []
 );
+const refundFileName = computed(() => refundFile.value?.name || '');
 
 const columns = [
   { field: 'orderNo', title: 'ID Order', className: 'min-w-[150px]' },
@@ -551,7 +649,6 @@ const cancelableStatuses = new Set([
   'draft',
   'awaiting_review',
   'awaiting_payment',
-  'payment_submitted',
   'payment_rejected',
   'rejected',
 ]);
@@ -666,6 +763,13 @@ const deriveSampleValue = (item = {}) => {
   return '--';
 };
 
+const resolveDisplayStatus = (order = {}) => {
+  const baseStatus = normalizeOrderStatus(order?.status);
+  if (baseStatus) return baseStatus;
+  const paymentStatus = normalizeOrderStatus(order?.paymentInfo?.status);
+  return paymentStatus || 'draft';
+};
+
 const buildSampleCodes = (order = {}) => {
   if (!Array.isArray(order.testItems) || !order.testItems.length) return [];
 
@@ -692,9 +796,14 @@ const buildSampleCodes = (order = {}) => {
 
 const tableRows = computed(() =>
   kajiUlangStore.orders
-    .filter((order) => order.status !== 'cancelled')
+    // Draft tidak masuk tabel kaji ulang.
+    .filter(
+      (order) =>
+        !['draft', 'cancelled'].includes(normalizeOrderStatus(order.status))
+    )
     .map((order, index) => {
       const sampleCodes = buildSampleCodes(order);
+      const normalizedStatus = normalizeOrderStatus(order.status);
       // Konsolidasi status: gunakan status permintaan sebagai satu sumber
       return {
         id: order.id,
@@ -704,13 +813,16 @@ const tableRows = computed(() =>
         sampleCodes,
         date: resolveLatestDate(order),
         customerName: order.customerName || '',
-        status: order.status,
+        status: resolveDisplayStatus(order),
         testItems: order.testItems || [],
         testNameSummary: buildTestNameSummary(order.testItems),
         paymentInfo: order.paymentInfo,
-        canReviewPayment: order.status === 'payment_submitted',
-        canOpenForm: !['completed', 'testing', 'payment_approved'].includes(order.status),
-        canCancel: cancelableStatuses.has(order.status),
+        canReviewPayment: normalizedStatus === 'payment_submitted',
+        canOpenForm: !['completed', 'testing', 'payment_approved'].includes(normalizedStatus),
+        canMarkTesting: normalizedStatus === 'payment_approved',
+        canComplete: normalizedStatus === 'testing',
+        canRefund: ['payment_approved', 'testing', 'completed'].includes(normalizedStatus),
+        canCancel: cancelableStatuses.has(normalizedStatus),
       };
     })
 );
@@ -732,6 +844,7 @@ onMounted(async () => {
 function resetFormState() {
   showForm.value = false;
   resetForm();
+  resetRefundState();
 }
 
 function resetReviewState() {
@@ -740,8 +853,16 @@ function resetReviewState() {
   reviewNote.value = '';
 }
 
+function resetRefundState() {
+  showRefundModal.value = false;
+  refundingOrder.value = null;
+  refundFile.value = null;
+  refundError.value = '';
+}
+
 function applyNewFormState() {
   resetReviewState();
+  resetRefundState();
   resetForm();
   showForm.value = true;
 }
@@ -769,7 +890,7 @@ async function resolveOrderById(orderId) {
 }
 
 function canReviewPayment(order) {
-  return order?.status === 'payment_submitted';
+  return normalizeOrderStatus(order?.status) === 'payment_submitted';
 }
 
 async function openEditById(orderId) {
@@ -855,6 +976,7 @@ watch(
 
     if (mode === 'edit') {
       resetReviewState();
+      resetRefundState();
       if (!id) {
         pushToast({
           tone: 'warning',
@@ -949,7 +1071,8 @@ function handleEdit(row) {
     kajiUlangStore.orders.find((o) => o.id === row.id) ||
     kajiUlangStore.orders.find((o) => o.orderNo === row.orderNo);
   if (!order) return;
-  if (['payment_approved', 'completed', 'testing'].includes(order.status)) {
+  const normalizedStatus = normalizeOrderStatus(order.status);
+  if (['payment_approved', 'completed', 'testing'].includes(normalizedStatus)) {
     pushToast({
       tone: 'warning',
       title: 'Belum Bisa Dibuka',
@@ -1001,6 +1124,64 @@ async function cancelOrder(row) {
   });
 }
 
+async function markTesting(row) {
+  if (!row?.orderNo) return;
+  const ok = await openConfirm({
+    title: 'Mulai pengujian?',
+    message: `Order ${row.orderNo || '-'} akan masuk status pengujian.`,
+    confirmLabel: 'Mulai',
+  });
+  if (!ok) return;
+  const { ok: updatedOk, error, data } = await orderStore.markTesting(row.orderNo);
+  if (!updatedOk) {
+    pushToast({
+      tone: 'error',
+      title: 'Gagal Memulai Uji',
+      message: error || 'Tidak dapat memperbarui status pengujian.',
+    });
+    return;
+  }
+  const updated = data || {};
+  kajiUlangStore.updateOrder(row.id ?? row.orderNo, {
+    status: updated.status || 'testing',
+    paymentInfo: updated.paymentInfo || row.paymentInfo,
+  });
+  pushToast({
+    tone: 'success',
+    title: 'Pengujian Dimulai',
+    message: `Order ${row.orderNo || '-'} masuk proses pengujian.`,
+  });
+}
+
+async function completeTesting(row) {
+  if (!row?.orderNo) return;
+  const ok = await openConfirm({
+    title: 'Selesaikan pengujian?',
+    message: `Order ${row.orderNo || '-'} akan ditandai selesai.`,
+    confirmLabel: 'Selesai',
+  });
+  if (!ok) return;
+  const { ok: updatedOk, error, data } = await orderStore.completeOrder(row.orderNo);
+  if (!updatedOk) {
+    pushToast({
+      tone: 'error',
+      title: 'Gagal Menyelesaikan',
+      message: error || 'Tidak dapat menyelesaikan pengujian.',
+    });
+    return;
+  }
+  const updated = data || {};
+  kajiUlangStore.updateOrder(row.id ?? row.orderNo, {
+    status: updated.status || 'completed',
+    paymentInfo: updated.paymentInfo || row.paymentInfo,
+  });
+  pushToast({
+    tone: 'success',
+    title: 'Pengujian Selesai',
+    message: `Order ${row.orderNo || '-'} sudah selesai.`,
+  });
+}
+
 function openPaymentReview(row) {
   const order =
     kajiUlangStore.orders.find((o) => o.id === row.id) ||
@@ -1019,6 +1200,28 @@ function openPaymentReview(row) {
 function closeReviewModal() {
   resetReviewState();
   clearRouteQuery();
+}
+
+function openRefundModal(row) {
+  const order =
+    kajiUlangStore.orders.find((o) => o.id === row.id) ||
+    kajiUlangStore.orders.find((o) => o.orderNo === row.orderNo);
+  if (!order) {
+    pushToast({
+      tone: 'warning',
+      title: 'Order Tidak Ditemukan',
+      message: 'Data refund tidak tersedia.',
+    });
+    return;
+  }
+  refundingOrder.value = order;
+  refundFile.value = null;
+  refundError.value = '';
+  showRefundModal.value = true;
+}
+
+function closeRefundModal() {
+  resetRefundState();
 }
 
 function printKajiUlang(row) {
@@ -1108,6 +1311,53 @@ async function rejectPaymentEvidence() {
     });
   }
   closeReviewModal();
+}
+
+function handleRefundFileChange(event) {
+  const file = event?.target?.files?.[0] || null;
+  refundFile.value = file;
+  refundError.value = '';
+}
+
+async function submitRefund() {
+  if (!refundingOrder.value) return;
+  if (!refundFile.value) {
+    refundError.value = 'File refund wajib diunggah.';
+    return;
+  }
+  const confirmed = await openConfirm({
+    title: 'Proses refund?',
+    message: `Refund untuk order ${refundingOrder.value.orderNo || '-'} akan diproses.`,
+    confirmLabel: 'Refund',
+    variant: 'danger',
+  });
+  if (!confirmed) return;
+  const { ok, error, data } = await orderStore.refundOrder(
+    refundingOrder.value.orderNo,
+    { file: refundFile.value }
+  );
+  if (!ok) {
+    pushToast({
+      tone: 'error',
+      title: 'Gagal Refund',
+      message: error || 'Tidak dapat memproses refund.',
+    });
+    return;
+  }
+  const updated = data || {};
+  kajiUlangStore.updateOrder(
+    refundingOrder.value.id ?? refundingOrder.value.orderNo,
+    {
+      status: updated.status || 'refunded',
+      paymentInfo: updated.paymentInfo || refundingOrder.value.paymentInfo,
+    }
+  );
+  pushToast({
+    tone: 'success',
+    title: 'Refund Diproses',
+    message: `Order ${refundingOrder.value.orderNo || '-'} sudah refund.`,
+  });
+  closeRefundModal();
 }
 
 async function lookupOrder(orderNo) {

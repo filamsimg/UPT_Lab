@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import { BE_ORDER_STATUSES, normalizeOrderStatus } from '@/utils/orderStatus';
+import { normalizeOrderStatus } from '@/utils/orderStatus';
 
 /**
  * Store untuk modul Kaji Ulang.
@@ -7,8 +7,6 @@ import { BE_ORDER_STATUSES, normalizeOrderStatus } from '@/utils/orderStatus';
  * - Menjaga status order selaras dengan hasil review pembayaran jika ada.
  * - Tidak memanggil API: fokus di manipulasi state & data binding form kaji ulang.
  */
-
-const BE_STATUSES = BE_ORDER_STATUSES;
 
 // Rapatkan detail pembayaran agar form kaji ulang bisa menampilkan status terbaru
 const normalizePaymentDetail = (detail = {}, orderNo = '') => {
@@ -56,14 +54,12 @@ const normalizePaymentDetail = (detail = {}, orderNo = '') => {
   };
 };
 
-// Pastikan status akhir mengikuti prioritas: awaiting_review > payment status > status BE apa adanya
+// Utamakan status permintaan; fallback ke status pembayaran jika kosong.
 const deriveOrderStatus = (paymentInfo, orderStatus) => {
   const normalized = normalizeOrderStatus(orderStatus);
+  if (normalized) return normalized;
   const paymentStatus = normalizeOrderStatus(paymentInfo?.status);
-  if (normalized === 'awaiting_review') return normalized;
-  if (paymentStatus) return paymentStatus;
-  if (normalized && BE_STATUSES.includes(normalized)) return normalized;
-  return 'awaiting_review';
+  return paymentStatus || 'draft';
 };
 
 const cloneReviewRows = (rows = []) =>

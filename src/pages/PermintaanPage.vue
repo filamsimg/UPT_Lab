@@ -486,7 +486,6 @@ const cancelableStatuses = new Set([
   'draft',
   'awaiting_review',
   'awaiting_payment',
-  'payment_submitted',
   'payment_rejected',
   'rejected',
 ]);
