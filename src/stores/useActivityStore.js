@@ -3,10 +3,8 @@ import { defineStore } from 'pinia';
 import api from '@/services/apiServices';
 import { isSuperAdminUser } from '@/composables/auth/useAuthorization';
 
-const STORAGE_PREFIX = 'uptlab.activityHistory';
 const MAX_EVENTS = 200;
 const DEFAULT_INCLUDES = ['causer', 'subject'];
-const INITIAL_USER_ID = resolveInitialUserId();
 const HIDDEN_VIEW_ACTIONS = [/\.index$/i, /\.show$/i];
 
 const ACTION_LABELS = {
@@ -36,38 +34,11 @@ const ACTION_LABELS = {
   'codes.create_user_reset_password': 'Kirim Kode Reset Password',
 };
 
-function resolveInitialUserId() {
-  if (typeof window === 'undefined') return null;
-  const rawUser = window.localStorage?.getItem('currentUser');
-  if (!rawUser) return null;
-  try {
-    const parsed = JSON.parse(rawUser);
-    return parsed?.id ?? null;
-  } catch (err) {
-    console.warn('[ActivityStore] gagal parsing currentUser', err);
-    return null;
-  }
-}
-
-function safeParse(json, fallback = []) {
-  try {
-    return JSON.parse(json) ?? fallback;
-  } catch (err) {
-    console.warn('[ActivityStore] gagal parsing riwayat', err);
-    return fallback;
-  }
-}
-
 function createId() {
   if (typeof crypto !== 'undefined' && crypto.randomUUID) {
     return crypto.randomUUID();
   }
   return `act-${Date.now()}-${Math.random().toString(16).slice(2)}`;
-}
-
-function storageKey(userId) {
-  const suffix = userId ? String(userId) : 'guest';
-  return `${STORAGE_PREFIX}.${suffix}`;
 }
 
 function toIsoString(value) {
@@ -271,11 +242,8 @@ function buildQueryParams(options = {}) {
 
 export const useActivityStore = defineStore('activity', {
   state: () => ({
-    activeUserId: INITIAL_USER_ID,
-    events:
-      typeof window !== 'undefined'
-        ? safeParse(window.localStorage?.getItem(storageKey(INITIAL_USER_ID)) || '[]')
-        : [],
+    activeUserId: null,
+    events: [],
     loading: false,
     apiError: '',
     apiStatus: null,
@@ -308,10 +276,7 @@ export const useActivityStore = defineStore('activity', {
   actions: {
 
     hydrate() {
-      if (typeof window === 'undefined') return;
-      this.events = filterVisibleActivities(
-        safeParse(window.localStorage?.getItem(storageKey(this.activeUserId)) || '[]', [])
-      );
+      this.events = [];
     },
 
     setActiveUser(userId) {
@@ -322,35 +287,19 @@ export const useActivityStore = defineStore('activity', {
     },
 
     persist() {
-      if (typeof window === 'undefined') return;
-      this.events = filterVisibleActivities(this.events);
-      window.localStorage?.setItem(storageKey(this.activeUserId), JSON.stringify(this.events));
+      return;
     },
 
-    addEvent(payload = {}) {
-      const entry = normalizeActivity({
-        ...payload,
-        userId: this.activeUserId ?? payload.userId ?? null,
-      });
-      if (shouldHideFromFrontend(entry)) return null;
-      this.events = mergeEvents([entry], this.events);
-      this.persist();
-      return entry;
+    addEvent(_payload = {}) {
+      return null;
     },
 
-    importEvents(list = []) {
-      const normalized = list
-        .map((item) => normalizeActivity(item, { activeUserId: this.activeUserId }))
-        .filter((item) => !shouldHideFromFrontend(item));
-      this.events = filterVisibleActivities(mergeEvents(normalized, this.events));
-      this.persist();
+    importEvents(_list = []) {
+      return;
     },
 
     clear() {
       this.events = [];
-      if (typeof window !== 'undefined') {
-        window.localStorage?.removeItem(storageKey(this.activeUserId));
-      }
     },
 
     async fetchAll(options = {}) {
@@ -370,9 +319,6 @@ export const useActivityStore = defineStore('activity', {
       const viewerIsSuperAdmin =
         options.viewerIsSuperAdmin ?? isSuperAdminUser(options.viewer) ?? false;
       const effectiveOptions = { ...options, viewerId, viewerIsSuperAdmin };
-      const localEvents = this.events.filter(
-        (event) => event?.metadata?.source === 'frontend'
-      );
 
       try {
         const query = buildQueryParams({
@@ -388,8 +334,7 @@ export const useActivityStore = defineStore('activity', {
         );
         const visible = filterSuperAdmin(normalized, viewerIsSuperAdmin);
         const filtered = filterVisibleActivities(visible);
-        const merged = filterVisibleActivities(mergeEvents(filtered, localEvents));
-        this.events = merged;
+        this.events = mergeEvents(filtered, []);
 
         // Sesuaikan pagination: jika setelah filter jumlah item < perPage, anggap halaman terakhir.
         const normalizedPagination = normalizePagination(payload, this.pagination);
