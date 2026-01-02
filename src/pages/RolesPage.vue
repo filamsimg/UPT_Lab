@@ -103,12 +103,6 @@
           <p v-if="roleStore.error" class="text-red-500">
             {{ roleStore.error }}
           </p>
-          <p v-else-if="defaultSuccess" class="text-emerald-600">
-            {{ defaultSuccess }}
-          </p>
-          <p v-else-if="defaultWarning" class="text-amber-600">
-            {{ defaultWarning }}
-          </p>
         </div>
       </div>
 
@@ -162,21 +156,12 @@
                 <span class="h-2 w-2 rounded-full bg-emerald-500"></span>
                 Default
               </span>
-              <button
-                v-else-if="canSetDefault(row)"
-                type="button"
-                class="inline-flex items-center gap-2 rounded-full border border-primary/40 px-3 py-1 text-xs font-semibold text-primary hover:bg-primary/5 transition"
-                :disabled="roleStore.saving"
-                @click="handleSetDefault(row)"
-              >
-                Jadikan default
-              </button>
               <span
                 v-else
                 class="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-xs font-medium text-gray-500"
               >
                 <span class="h-2 w-2 rounded-full bg-gray-300"></span>
-                Tidak didukung
+                Tidak
               </span>
             </div>
           </template>
@@ -409,19 +394,12 @@ const isEdit = ref(false);
 const initialized = ref(false);
 const maxPermissionChip = 3;
 let debounceTimer = null;
-const defaultWarning = ref('');
-const defaultSuccess = ref('');
-const DEFAULT_ELIGIBLE_NAMES = ['customer'];
 const perPageOptions = [10, 25, 50, 100];
 const perPageSelection = ref(roleStore.pagination?.perPage || perPageOptions[0]);
 
 function clearActionMessage() {}
 
 const rows = computed(() => roleStore.roles);
-const currentDefaultRole = computed(() =>
-  roleStore.roles.find((role) => role.isDefault)
-);
-
 const permissionOptions = computed(() => {
   if (permissionStore.permissions.length) return permissionStore.permissions;
   return roleStore.permissionPool;
@@ -432,11 +410,6 @@ const noDataText = computed(() => {
     return 'Role tidak ditemukan untuk kata kunci tersebut.';
   return 'Belum ada role yang terdaftar.';
 });
-
-function canSetDefault(role) {
-  if (!role?.name || !canUpdateRole.value) return false;
-  return DEFAULT_ELIGIBLE_NAMES.includes(role.name.toLowerCase());
-}
 
 const topRoleLabel = computed(() => {
   if (!roleStore.roles.length) return 'Belum tersedia';
@@ -630,8 +603,6 @@ function limitedPermissions(list = []) {
 async function refreshRoles() {
   clearActionMessage();
   if (!canViewRoles.value) return;
-  defaultWarning.value = '';
-  defaultSuccess.value = '';
   await roleStore.fetchRoles({
     page: roleStore.pagination.currentPage,
     search: roleStore.search,
@@ -714,12 +685,14 @@ async function handleDelete(role) {
   if (!canDeleteRole.value) return;
   if (!role?.id) return;
   clearActionMessage();
-  defaultWarning.value = '';
-  defaultSuccess.value = '';
   if (role.isDefault) {
-    defaultWarning.value =
-      `Role ${role.name} adalah role default dan tidak dapat dihapus. ` +
-      'Tetapkan role lain sebagai default terlebih dahulu.';
+    notify({
+      tone: 'warning',
+      title: 'Role default tidak bisa dihapus',
+      message:
+        `Role ${role.name} adalah role default dan tidak dapat dihapus.`,
+      persist: false,
+    });
     return;
   }
   const ok = await openConfirm({
@@ -742,48 +715,12 @@ async function handleDelete(role) {
       err.response?.data?.message ||
       err.message ||
       'Gagal menghapus role. Silakan coba lagi.';
-    defaultWarning.value = message;
     notify({
       tone: 'error',
       title: 'Gagal menghapus role',
       message,
       persist: false,
     });
-  }
-}
-
-async function handleSetDefault(role) {
-  if (!canViewRoles.value) return;
-  if (!canUpdateRole.value) return;
-  if (!role?.id || role.isDefault || !canSetDefault(role)) return;
-  defaultWarning.value = '';
-  defaultSuccess.value = '';
-
-  const currentDefault =
-    currentDefaultRole.value && currentDefaultRole.value.id !== role.id
-      ? currentDefaultRole.value
-      : null;
-
-  const message = currentDefault
-    ? `Role ${currentDefault.name} akan digantikan oleh ${role.name} sebagai default. Lanjutkan?`
-    : `Tetapkan ${role.name} sebagai role default?`;
-
-  const ok = await openConfirm({
-    title: 'Tetapkan role default?',
-    message,
-    confirmLabel: 'Ya, tetapkan',
-    variant: 'primary',
-  });
-  if (!ok) return;
-
-  try {
-    const result = await roleStore.setDefaultRole(role.id);
-    defaultSuccess.value = result.message || `Role ${role.name} kini menjadi default.`;
-  } catch (err) {
-    defaultWarning.value =
-      err.response?.data?.message ||
-      err.message ||
-      'Gagal menetapkan role default.';
   }
 }
 
