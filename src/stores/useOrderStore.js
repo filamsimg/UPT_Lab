@@ -290,6 +290,24 @@ const extractPaymentProofFiles = (medias = [], orderNo = '') => {
   return normalizeTransferFiles(paymentMedias, orderNo);
 };
 
+const normalizeSupportingUploads = (payload = {}) => {
+  const rawFiles = Array.isArray(payload.supportingFiles)
+    ? payload.supportingFiles
+    : payload.supportingFile
+    ? [payload.supportingFile]
+    : [];
+  const files = rawFiles.filter(Boolean);
+  const names = Array.isArray(payload.supportingFileNames)
+    ? payload.supportingFileNames
+    : payload.supportingFileName
+    ? [payload.supportingFileName]
+    : [];
+  return { files, names };
+};
+
+const resolveSupportingFileName = (file, index, names = []) =>
+  ensureString(names[index]) || file?.name || `Dokumen Pendukung ${index + 1}`;
+
 const normalizeTestItem = (item = {}) => {
   const price = toNumber(item.price ?? item.testPrice ?? item.servicePrice, 0);
   const quantity = Math.max(1, toNumber(item.quantity, 1));
@@ -807,7 +825,8 @@ export const useOrderStore = defineStore('order', {
 
     async createOrder(payload = {}) {
       this.loading = true;
-      const supportingFile = payload.supportingFile || null;
+      const { files: supportingFiles, names: supportingFileNames } =
+        normalizeSupportingUploads(payload);
 
       try {
         const body = buildMaterialTestOrderPayload(payload);
@@ -816,15 +835,22 @@ export const useOrderStore = defineStore('order', {
         if (order.orderNo) this.upsertLocal(order);
         recordOrderActivity(order, 'create');
 
-        if (supportingFile && order.orderNo) {
+        if (supportingFiles.length && order.orderNo) {
           try {
-            const formData = new FormData();
-            formData.append('name', 'Dokumen Pendukung');
-            formData.append('file', supportingFile);
-            await api.post(
-              `/api/v1/material-test-orders/${encodeURIComponent(order.orderNo)}/medias`,
-              formData
-            );
+            for (let index = 0; index < supportingFiles.length; index += 1) {
+              const file = supportingFiles[index];
+              if (!file) continue;
+              const formData = new FormData();
+              formData.append(
+                'name',
+                resolveSupportingFileName(file, index, supportingFileNames)
+              );
+              formData.append('file', file);
+              await api.post(
+                `/api/v1/material-test-orders/${encodeURIComponent(order.orderNo)}/medias`,
+                formData
+              );
+            }
             const refreshed = await this.fetchById(order.orderNo);
             return { ok: true, data: refreshed.data || order };
           } catch (uploadErr) {
@@ -867,7 +893,8 @@ export const useOrderStore = defineStore('order', {
       const target = ensureString(orderNo);
       if (!target) return { ok: false, error: 'OrderNo kosong' };
       this.loading = true;
-      const supportingFile = payload?.supportingFile || null;
+      const { files: supportingFiles, names: supportingFileNames } =
+        normalizeSupportingUploads(payload);
       try {
         const updateBody = buildMaterialTestOrderUpdatePayload(payload);
         if (!Object.keys(updateBody).length) {
@@ -880,18 +907,22 @@ export const useOrderStore = defineStore('order', {
         if (updated.orderNo) this.upsertLocal(updated);
         recordOrderActivity(updated, 'update');
 
-        if (supportingFile && updated.orderNo) {
+        if (supportingFiles.length && updated.orderNo) {
           try {
-            const formData = new FormData();
-            formData.append(
-              'name',
-              payload.supportingFileName || 'Dokumen Pendukung'
-            );
-            formData.append('file', supportingFile);
-            await api.post(
-              `/api/v1/material-test-orders/${encodeURIComponent(updated.orderNo)}/medias`,
-              formData
-            );
+            for (let index = 0; index < supportingFiles.length; index += 1) {
+              const file = supportingFiles[index];
+              if (!file) continue;
+              const formData = new FormData();
+              formData.append(
+                'name',
+                resolveSupportingFileName(file, index, supportingFileNames)
+              );
+              formData.append('file', file);
+              await api.post(
+                `/api/v1/material-test-orders/${encodeURIComponent(updated.orderNo)}/medias`,
+                formData
+              );
+            }
             const refreshed = await this.fetchById(updated.orderNo);
             return { ok: true, data: refreshed.data || updated };
           } catch (uploadErr) {

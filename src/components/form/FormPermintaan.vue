@@ -321,10 +321,11 @@
           ></textarea>
           <p v-if="isManualMode" class="text-[11px] font-medium text-rose-600">
             Karena layanan tidak dipilih, catatan dan dokumen pendukung diperlukan agar admin dapat menindaklanjuti.
+            Dokumen dapat diunggah setelah permintaan tersimpan.
           </p>
         </div>
 
-        <div class="flex flex-col gap-1">
+        <div v-if="showSupportingDocs" class="flex flex-col gap-1">
           <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">
             Dokumen Pendukung
             <span
@@ -338,20 +339,51 @@
             <input
               type="file"
               class="w-full text-sm"
+              multiple
               accept=".pdf,.png,.jpg,.jpeg,.doc,.docx"
               @change="handleFileChange"
               :disabled="isReadOnlyMode"
             />
-            <div v-if="form.supportingFileName" class="flex items-center justify-between rounded-lg bg-white px-3 py-2 text-xs text-slate-700">
-              <span class="truncate">{{ form.supportingFileName }}</span>
-              <button
-                v-if="!isReadOnlyMode"
-                type="button"
-                class="text-rose-600 font-semibold hover:text-rose-700"
-                @click="clearFile"
+            <div v-if="hasSelectedSupportingFiles" class="space-y-2">
+              <div
+                v-for="(file, index) in form.supportingFiles"
+                :key="`supporting-${index}`"
+                class="flex items-center justify-between rounded-lg bg-white px-3 py-2 text-xs text-slate-700"
               >
-                Hapus
-              </button>
+                <span class="truncate">{{ file.name }}</span>
+                <button
+                  v-if="!isReadOnlyMode"
+                  type="button"
+                  class="text-rose-600 font-semibold hover:text-rose-700"
+                  @click="removeSupportingFile(index)"
+                >
+                  Hapus
+                </button>
+              </div>
+            </div>
+            <div
+              v-if="existingSupportingDocs.length"
+              class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700"
+            >
+              <p class="text-[11px] text-slate-500">Dokumen tersimpan</p>
+              <ul class="mt-1 space-y-1">
+                <li
+                  v-for="doc in existingSupportingDocs"
+                  :key="doc.id || doc.file_name || doc.fileName || doc.name"
+                  class="truncate"
+                >
+                  <a
+                    v-if="resolveMediaUrl(doc)"
+                    :href="resolveMediaUrl(doc)"
+                    target="_blank"
+                    rel="noopener"
+                    class="text-sky-600 hover:text-sky-700 hover:underline"
+                  >
+                    {{ resolveMediaLabel(doc) }}
+                  </a>
+                  <span v-else>{{ resolveMediaLabel(doc) }}</span>
+                </li>
+              </ul>
             </div>
             <p class="text-[11px] text-slate-500">
               Format: PDF/JPG/PNG/DOC. {{ isManualMode ? 'Wajib dilampirkan jika layanan tidak ada di daftar.' : 'Opsional.' }}
@@ -399,6 +431,7 @@ import { useAuthStore } from '@/stores/useAuthStore';
 import { useConfirmDialog } from '@/stores/useConfirmDialog';
 import api from '@/services/apiServices';
 import { useAuthorization } from '@/composables/auth/useAuthorization';
+import { normalizeOrderStatus } from '@/utils/orderStatus';
 
 // Form permintaan pengujian: mengisi data pemohon, paket kerja, dan ordered_services untuk dikirim ke BE
 const props = defineProps({
@@ -561,6 +594,9 @@ const defaultForm = () => {
     note: '',
     supportingFile: null,
     supportingFileName: '',
+    supportingFiles: [],
+    supportingFileNames: [],
+    medias: [],
     testItems: [],
     ownerUserId: '',
     ownerDisplay: '',
@@ -569,6 +605,31 @@ const defaultForm = () => {
 };
 
 const form = ref(defaultForm());
+
+const allowedSupportingStatuses = new Set(['draft', 'awaiting_review']);
+
+const normalizedStatus = computed(
+  () => normalizeOrderStatus(form.value.status) || 'draft'
+);
+
+const showSupportingDocs = computed(
+  () => isEditMode.value && allowedSupportingStatuses.has(normalizedStatus.value)
+);
+
+const existingSupportingDocs = computed(() => {
+  const items = Array.isArray(form.value.medias) ? form.value.medias : [];
+  return items.filter((media) => isSupportingMedia(media));
+});
+
+const hasSelectedSupportingFiles = computed(
+  () =>
+    Array.isArray(form.value.supportingFiles) &&
+    form.value.supportingFiles.length > 0
+);
+
+const hasSupportingDocs = computed(
+  () => hasSelectedSupportingFiles.value || existingSupportingDocs.value.length > 0
+);
 
 function updateOrderMetadata(entryDate) {
   const year = extractYear(entryDate);
@@ -632,6 +693,9 @@ watch(
         note: val.note || '',
         supportingFile: val.supportingFile || null,
         supportingFileName: val.supportingFileName || val.supporting_file_name || '',
+        supportingFiles: [],
+        supportingFileNames: [],
+        medias: Array.isArray(val.medias) ? val.medias : [],
         ownerUserId: ownerUserId || '',
         ownerDisplay: val.ownerDisplay || ownerLabelFromUser || '',
       };
@@ -822,7 +886,8 @@ const canSave = computed(() => {
   const hasApplicantAddress = Boolean(form.value.address && form.value.address.trim());
   const hasServices = normalizedTestItems.value.length > 0;
   const hasManualNote = Boolean(form.value.note && form.value.note.trim());
-  const hasSupportingFile = Boolean(form.value.supportingFile);
+  const hasSupportingDocsValue = hasSupportingDocs.value;
+  const shouldRequireSupportingDocs = isManualMode.value && showSupportingDocs.value;
 
   if (!ownerSelectionValid.value) return false;
 
@@ -830,7 +895,12 @@ const canSave = computed(() => {
     return false;
   }
 
-  return hasServices || (hasManualNote && hasSupportingFile);
+  if (!hasServices) {
+    if (!hasManualNote) return false;
+    if (shouldRequireSupportingDocs && !hasSupportingDocsValue) return false;
+  }
+
+  return true;
 });
 
 function itemSubtotal(item) {
@@ -869,12 +939,16 @@ function buildPayload() {
     status,
     certificateName,
     note,
-    supportingFile,
-    supportingFileName,
     ownerUserId,
   } = form.value;
 
   const entryDateSafe = form.value.entryDate || todayString();
+  const supportingFiles = Array.isArray(form.value.supportingFiles)
+    ? form.value.supportingFiles.filter(Boolean)
+    : [];
+  const supportingFileNames = supportingFiles
+    .map((file) => (file?.name ? String(file.name) : ''))
+    .filter(Boolean);
 
   return {
     idOrder,
@@ -891,8 +965,10 @@ function buildPayload() {
     workPackage,
     certificateName,
     note,
-    supportingFile,
-    supportingFileName,
+    supportingFiles,
+    supportingFileNames,
+    supportingFile: supportingFiles[0] || null,
+    supportingFileName: supportingFileNames[0] || '',
     ownerUserId,
     status: status || 'draft',
     purpose: summary,
@@ -937,18 +1013,47 @@ function handleSaveDraft() {
 }
 
 function handleFileChange(event) {
-  const file = event?.target?.files?.[0] || null;
-  if (file) {
-    form.value.supportingFile = file;
-    form.value.supportingFileName = file.name;
-  } else {
-    clearFile();
+  const files = Array.from(event?.target?.files || []);
+  if (!files.length) return;
+  form.value.supportingFiles = [...form.value.supportingFiles, ...files];
+  const first = form.value.supportingFiles[0] || null;
+  form.value.supportingFile = first;
+  form.value.supportingFileName = first?.name || '';
+  if (event?.target) {
+    event.target.value = '';
   }
 }
 
-function clearFile() {
-  form.value.supportingFile = null;
-  form.value.supportingFileName = '';
+function removeSupportingFile(index) {
+  form.value.supportingFiles.splice(index, 1);
+  const first = form.value.supportingFiles[0] || null;
+  form.value.supportingFile = first;
+  form.value.supportingFileName = first?.name || '';
+}
+
+function isSupportingMedia(media = {}) {
+  const collection = String(
+    media.collection_name || media.collectionName || ''
+  )
+    .trim()
+    .toLowerCase();
+  if (!collection) return true;
+  if (collection.includes('payment') || collection.includes('refund')) return false;
+  return true;
+}
+
+function resolveMediaLabel(media = {}) {
+  return (
+    media.name ||
+    media.file_name ||
+    media.fileName ||
+    media.filename ||
+    'Dokumen Pendukung'
+  );
+}
+
+function resolveMediaUrl(media = {}) {
+  return media.file_url || media.fileUrl || '';
 }
 
 function normalizeUserRoleName(value) {
