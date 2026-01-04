@@ -506,7 +506,12 @@ const baseMenu = [
         icon: ClipboardDocumentListIcon,
         requiredPermissions: ['material_test_services.index'],
       },
-      { label: 'Kaji Ulang', path: '/kaji-ulang', icon: CheckCircleIcon },
+      {
+        label: 'Kaji Ulang',
+        path: '/kaji-ulang',
+        icon: CheckCircleIcon,
+        requiredPermission: 'material_test_orders.index',
+      },
     ],
   },
   {

@@ -116,7 +116,7 @@
           </div>
         </div>
 
-        <div class="grid gap-3 sm:grid-cols-3">
+        <div class="grid gap-3 sm:grid-cols-2">
           <div class="flex flex-col gap-1">
             <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">No Telepon</label>
             <input
@@ -126,16 +126,6 @@
               placeholder="No kontak"
               :readonly="isReadOnlyMode || (isCustomerUser && !canManageCustomerData)"
             />
-          </div>
-          <div class="flex flex-col gap-1">
-            <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">Tanggal Masuk</label>
-            <input
-              v-model="form.entryDate"
-              type="date"
-              class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-100"
-              :readonly="isReadOnlyMode"
-            />
-            <p class="text-[11px] text-slate-500">Default hari ini (bisa diubah).</p>
           </div>
           <div class="flex flex-col gap-1">
             <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">Jenis Pekerjaan</label>

@@ -54,7 +54,11 @@ const routes = [
   { path: '/dashboard', component: DashboardPage },
   { path: '/profile', component: ProfilePage },
   { path: '/permintaan', component: PermintaanPage },
-  { path: '/kaji-ulang', component: KajiUlangPage },
+  {
+    path: '/kaji-ulang',
+    component: KajiUlangPage,
+    meta: { requiredPermission: 'material_test_orders.index' },
+  },
   { path: '/validasi', component: ValidasiPage },
   { path: '/kartu-kendali', component: KartuKendaliPage },
   { path: '/surat-perintah', component: SuratPerintahPage },

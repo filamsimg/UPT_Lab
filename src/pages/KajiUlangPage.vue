@@ -422,6 +422,7 @@ import { useNotificationCenter } from '@/stores/useNotificationCenter';
 import { copyText } from '@/utils/copyText';
 import { normalizeOrderStatus } from '@/utils/orderStatus';
 import { useRoute, useRouter } from 'vue-router';
+import { useAuthorization } from '@/composables/auth/useAuthorization';
 
 const kajiUlangStore = useKajiUlangStore();
 const testStore = useTestStore();
@@ -430,6 +431,9 @@ const orderStore = useOrderStore();
 const { notify } = useNotificationCenter();
 const route = useRoute();
 const router = useRouter();
+const { hasPermission } = useAuthorization();
+const MTO_PERMISSION = 'material_test_orders.index';
+const canViewKajiUlang = computed(() => hasPermission(MTO_PERMISSION));
 const pushToast = (options = {}) =>
   notify({
     duration: options.duration ?? 4500,
@@ -832,6 +836,16 @@ const tableRows = computed(() =>
 const tests = computed(() => testStore.tests || []);
 
 onMounted(async () => {
+  if (!canViewKajiUlang.value) {
+    pushToast({
+      tone: 'warning',
+      title: 'Akses ditolak',
+      message: 'Anda tidak memiliki izin untuk mengakses Kaji Ulang.',
+      persist: false,
+    });
+    router.replace('/dashboard');
+    return;
+  }
   if (!testStore.tests.length) {
     testStore.fetchAll();
   }
