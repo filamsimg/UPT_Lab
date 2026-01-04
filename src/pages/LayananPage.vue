@@ -78,19 +78,49 @@
           class="rounded-md"
         >
           <template #serviceCategoryLabel="{ value }">
-            <span class="text-sm font-medium text-gray-700">
+            <span class="block text-center text-sm font-medium text-gray-700">
+              {{ value || '-' }}
+            </span>
+          </template>
+
+          <template #code="{ value }">
+            <span class="block text-center text-sm text-gray-700">
+              {{ value || '-' }}
+            </span>
+          </template>
+
+          <template #name="{ value }">
+            <span class="block text-center text-sm text-gray-700">
+              {{ value || '-' }}
+            </span>
+          </template>
+
+          <template #unit="{ value }">
+            <span class="block text-center text-sm text-gray-700">
               {{ value || '-' }}
             </span>
           </template>
 
           <template #price="{ value }">
-            <span class="font-semibold text-surfaceDark">
+            <span class="block text-center font-semibold text-surfaceDark">
               Rp {{ formatCurrency(value) }}
             </span>
           </template>
 
+          <template #methodName="{ value }">
+            <span class="block text-center text-sm text-gray-700">
+              {{ value || '-' }}
+            </span>
+          </template>
+
+          <template #machineName="{ value }">
+            <span class="block text-center text-sm text-gray-700">
+              {{ value || '-' }}
+            </span>
+          </template>
+
           <template #actions="{ row }">
-            <div class="flex justify-left gap-2">
+            <div class="flex w-full items-center justify-center gap-2">
               <button
                 class="p-1.5 rounded-md hover:bg-blue-50 text-primary hover:text-primaryDark transition"
                 @click="editTest(row)"
@@ -335,8 +365,12 @@ import DataTable from '@/components/common/DataTable.vue'
 import FormLayanan from '@/components/form/FormLayanan.vue'
 import FormMasterItem from '@/components/form/FormMasterItem.vue'
 import { useTestStore } from '@/stores/useTestStore'
+import { useConfirmDialog } from '@/stores/useConfirmDialog'
+import { useNotificationCenter } from '@/stores/useNotificationCenter'
 
 const testStore = useTestStore()
+const openConfirm = useConfirmDialog()
+const { notify } = useNotificationCenter()
 
 const categories = [
   { value: 'Testing', label: 'Pengujian' },
@@ -364,14 +398,14 @@ const machineEditData = ref(null)
 const methodEditData = ref(null)
 
 const testColumns = [
-  { field: 'serviceCategoryLabel', title: 'Jenis Layanan', slotName: 'serviceCategoryLabel', isSortable: true },
-  { field: 'code', title: 'Kode', isSortable: true },
-  { field: 'name', title: 'Nama Pengujian', isSortable: true },
-  { field: 'unit', title: 'Satuan' },
-  { field: 'price', title: 'Tarif', slotName: 'price', isSortable: true },
-  { field: 'methodName', title: 'Metode Uji' },
-  { field: 'machineName', title: 'Mesin Uji' },
-  { field: 'actions', title: 'Aksi', slotName: 'actions', sortable: false },
+  { field: 'serviceCategoryLabel', title: 'Jenis Layanan', slotName: 'serviceCategoryLabel', isSortable: true, className: 'text-left md:text-center' },
+  { field: 'code', title: 'Kode', isSortable: true, className: 'text-left md:text-center' },
+  { field: 'name', title: 'Nama Pengujian', isSortable: true, className: 'text-left md:text-center' },
+  { field: 'unit', title: 'Satuan', className: 'text-left md:text-center' },
+  { field: 'price', title: 'Tarif', slotName: 'price', isSortable: true, className: 'text-left md:text-center' },
+  { field: 'methodName', title: 'Metode Uji', className: 'text-left md:text-center' },
+  { field: 'machineName', title: 'Mesin Uji', className: 'text-left md:text-center' },
+  { field: 'actions', title: 'Aksi', slotName: 'actions', sortable: false, className: 'text-left md:text-center' },
 ]
 
 const machineColumns = [
@@ -480,6 +514,52 @@ function formatCurrency(value) {
   return Number(value || 0).toLocaleString('id-ID')
 }
 
+function toCleanString(value) {
+  return typeof value === 'string' ? value.trim() : ''
+}
+
+function resolveServiceName(...sources) {
+  for (const source of sources) {
+    if (!source) continue
+    const name = toCleanString(
+      source.name ||
+        source.test_name ||
+        source.testName ||
+        source.service_name ||
+        source.serviceName
+    )
+    if (name) return name
+  }
+  return ''
+}
+
+function validateServicePayload(payload = {}) {
+  const name = resolveServiceName(payload)
+  const category = toCleanString(
+    payload.category ||
+      payload.service_type ||
+      payload.serviceType ||
+      payload.serviceCategory
+  )
+  const code = toCleanString(payload.code || payload.service_code || payload.serviceCode)
+  const methodId = payload.method || payload.method_id || payload.methodId
+  const machineId = payload.equipment || payload.machine_id || payload.machineId
+
+  if (!name) return 'Nama pengujian wajib diisi.'
+  if (!category || !code || !methodId || !machineId) {
+    return 'Mohon lengkapi data layanan (nama, jenis, kode, metode, dan mesin).'
+  }
+  if (payload.isEdit) {
+    const id = payload.id || payload.service_id || payload.serviceId
+    if (!id) return 'ID layanan tidak ditemukan.'
+  }
+  return ''
+}
+
+function getErrorMessage(err, fallback) {
+  return err?.response?.data?.message || err?.message || fallback
+}
+
 function openCreate() {
   editData.value = null
   showModal.value = true
@@ -492,16 +572,93 @@ function editTest(test) {
 
 // Simpan create/update ke store
 async function handleSaveTest(payload) {
-  if (payload.isEdit) await testStore.updateTest(payload)
-  else await testStore.addTest(payload)
-  showModal.value = false
-  editData.value = null
-  await refreshTests()
+  const validationError = validateServicePayload(payload)
+  if (validationError) {
+    notify({
+      tone: 'warning',
+      title: 'Validasi gagal',
+      message: validationError,
+      persist: false,
+    })
+    return
+  }
+
+  const isEditMode = Boolean(payload?.isEdit)
+  try {
+    const result = isEditMode
+      ? await testStore.updateTest(payload)
+      : await testStore.addTest(payload)
+
+    if (result?.ok === false) {
+      throw new Error(result.error || 'Gagal menyimpan layanan.')
+    }
+
+    const serviceName = resolveServiceName(payload, result?.data) || 'Layanan'
+    notify({
+      tone: 'success',
+      title: isEditMode ? 'Layanan diperbarui' : 'Layanan ditambahkan',
+      message: `${serviceName} berhasil ${isEditMode ? 'diperbarui' : 'ditambahkan'}.`,
+      persist: false,
+    })
+    showModal.value = false
+    editData.value = null
+    await refreshTests()
+  } catch (err) {
+    const message = getErrorMessage(
+      err,
+      isEditMode ? 'Gagal memperbarui layanan.' : 'Gagal menambahkan layanan.'
+    )
+    notify({
+      tone: 'error',
+      title: isEditMode ? 'Gagal memperbarui layanan' : 'Gagal menambahkan layanan',
+      message,
+      persist: false,
+    })
+  }
 }
 
 async function removeTest(id) {
-  if (!id) return
-  await testStore.removeTest(id)
+  if (!id) {
+    notify({
+      tone: 'warning',
+      title: 'ID layanan kosong',
+      message: 'Pilih layanan yang akan dihapus.',
+      persist: false,
+    })
+    return
+  }
+  const target = (tests.value || []).find(
+    (item) => String(item?.id || '') === String(id)
+  )
+  const serviceName = resolveServiceName(target)
+  const ok = await openConfirm({
+    title: 'Hapus layanan?',
+    message: serviceName
+      ? `Layanan ${serviceName} akan dihapus permanen.`
+      : 'Layanan ini akan dihapus permanen.',
+    confirmLabel: 'Hapus',
+    variant: 'danger',
+  })
+  if (!ok) return
+  try {
+    await testStore.removeTest(id)
+    notify({
+      tone: 'success',
+      title: 'Layanan dihapus',
+      message: serviceName
+        ? `${serviceName} berhasil dihapus.`
+        : 'Layanan berhasil dihapus.',
+      persist: false,
+    })
+  } catch (err) {
+    const message = getErrorMessage(err, 'Gagal menghapus layanan.')
+    notify({
+      tone: 'error',
+      title: 'Gagal menghapus layanan',
+      message,
+      persist: false,
+    })
+  }
 }
 
 async function refreshTests() {

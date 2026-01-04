@@ -252,7 +252,6 @@ function handleSubmit() {
     machineId: form.equipment,
     price: toNumber(form.price, 0),
   })
-  resetForm()
 }
 
 function toNumber(value, fallback = 0) {
