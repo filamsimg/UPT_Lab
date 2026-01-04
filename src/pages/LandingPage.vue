@@ -114,7 +114,7 @@
               class="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-2"
             >
               <span class="h-2 w-2 rounded-full bg-emerald-300"></span>
-              ISO/IEC 17025:2017 (KAN) ��� LP-396-IDN
+              ISO/IEC 17025:2017 (KAN) & LP-396-IDN
             </span>
             <span
               class="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-2"
@@ -477,7 +477,7 @@
                 Terakreditasi KAN
               </p>
               <p class="text-sm text-slate-600">
-                Nomor: LP-396-IDN ��� ISO/IEC 17025:2017 (sejak 2008)
+                Nomor: LP-396-IDN ISO/IEC 17025:2017 (sejak 2008)
               </p>
             </div>
             <div class="rounded-2xl border border-slate-100 bg-slate-50 p-4">
@@ -485,7 +485,7 @@
                 TUK Mandiri BNSP
               </p>
               <p class="text-sm text-slate-600">
-                Lisensi: LSP Logam dan Mesin Indonesia ��� Sejak 2017
+                Lisensi: LSP Logam dan Mesin Indonesia Sejak 2017
               </p>
             </div>
           </div>
