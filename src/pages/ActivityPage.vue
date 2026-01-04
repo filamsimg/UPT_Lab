@@ -262,7 +262,7 @@
                     }}</span>
                   </span>
                   <span
-                    v-if="event.metadata?.causer_ip_address"
+                    v-if="canShowIp && event.metadata?.causer_ip_address"
                     class="text-[11px] text-gray-400"
                   >
                     IP {{ event.metadata.causer_ip_address }}
@@ -391,6 +391,7 @@ const canViewAllActivity = computed(() => {
     )
   );
 });
+const canShowIp = computed(() => canViewAllActivity.value);
 
 // Scope fetch: all untuk admin, mine untuk user biasa
 const fetchScope = computed(() => (canViewAllActivity.value ? 'all' : 'mine'));

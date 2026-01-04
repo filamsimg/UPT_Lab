@@ -29,6 +29,17 @@ const ACTION_LABELS = {
   'roles.update': 'Perbarui Role',
   'roles.set_default': 'Atur Role Default',
   'roles.destroy': 'Hapus Role',
+  'material_test_orders.store': 'Permintaan Pengujian dibuat',
+  'material_test_orders.update': 'Permintaan Pengujian diperbarui',
+  'material_test_orders.cancel': 'Permintaan Pengujian dibatalkan',
+  'material_test_orders.reject': 'Permintaan Pengujian ditolak',
+  'material_test_orders.approve': 'Permintaan Pengujian disetujui',
+  'material_test_orders.submit_payment': 'Bukti pembayaran dikirim',
+  'material_test_orders.approve_payment': 'Pembayaran disetujui',
+  'material_test_orders.reject_payment': 'Pembayaran ditolak',
+  'material_test_orders.test': 'Pengujian dimulai',
+  'material_test_orders.complete': 'Pengujian selesai',
+  'material_test_orders.refund': 'Pembayaran direfund',
   'codes.create_user_register_invitation': 'Kirim Kode Undangan',
   'codes.create_user_email_verification': 'Kirim Kode Verifikasi Email',
   'codes.create_user_reset_password': 'Kirim Kode Reset Password',
@@ -95,6 +106,32 @@ function filterVisibleActivities(list = []) {
   return list.filter((item) => !shouldHideFromFrontend(item));
 }
 
+function resolveSubjectLabel(subject, entry = {}, subjectId = '') {
+  const metaName = entry?.metadata?.subjectName;
+  if (metaName) return metaName;
+
+  const subjectName =
+    subject?.name ||
+    subject?.number ||
+    subject?.order_number ||
+    subject?.orderNumber ||
+    subject?.order_code ||
+    subject?.orderCode ||
+    subject?.code ||
+    subject?.email ||
+    subject?.codeable_id ||
+    subject?.value;
+  if (subjectName) return String(subjectName);
+
+  return (
+    entry.subject_name ||
+    entry.subject_email ||
+    entry.referenceId ||
+    subjectId ||
+    ''
+  );
+}
+
 function normalizeActivity(entry = {}, context = {}) {
   const action = entry.action || entry.metadata?.action || entry.type || '';
   const type = deriveType(action, entry.type || 'system');
@@ -121,15 +158,7 @@ function normalizeActivity(entry = {}, context = {}) {
     entry.causer_email ||
     causerId ||
     '';
-  const subjectName =
-    entry.metadata?.subjectName ||
-    subject?.name ||
-    subject?.email ||
-    entry.subject_name ||
-    entry.subject_email ||
-    entry.referenceId ||
-    subjectId ||
-    '';
+  const subjectName = resolveSubjectLabel(subject, entry, subjectId);
 
   return {
     id: entry.id || createId(),
