@@ -38,7 +38,7 @@
                 :list="ownerDataListId"
                 type="text"
                 class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-100 disabled:bg-slate-100"
-                placeholder="Cari nama customer..."
+                placeholder="Cari nama user..."
                 :readonly="isReadOnlyMode"
                 :disabled="isReadOnlyMode"
                 @input="handleOwnerInput"
@@ -46,12 +46,12 @@
                 @blur="handleOwnerBlur"
               />
               <button
-                v-if="!isReadOnlyMode && (form.ownerDisplay || form.ownerUserId)"
+                v-if="!isReadOnlyMode && (form.ownerDisplay || form.ownerSelections.length)"
                 type="button"
                 class="shrink-0 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-100"
                 @click="clearOwner"
               >
-                Hapus
+                Bersihkan
               </button>
             </div>
             <datalist :id="ownerDataListId">
@@ -61,8 +61,25 @@
                 :value="opt.label"
               />
             </datalist>
+            <div v-if="form.ownerSelections.length" class="flex flex-wrap gap-2 pt-1">
+              <div
+                v-for="(owner, index) in form.ownerSelections"
+                :key="`${owner.id || owner.label || 'owner'}-${index}`"
+                class="flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs text-slate-700"
+              >
+                <span class="max-w-[220px] truncate">{{ owner.label }}</span>
+                <button
+                  v-if="!isReadOnlyMode"
+                  type="button"
+                  class="font-semibold text-rose-600 hover:text-rose-700"
+                  @click="removeOwner(index)"
+                >
+                  Hapus
+                </button>
+              </div>
+            </div>
             <p class="text-[11px] text-slate-500">
-              Pilih owner agar order dapat diakses customer. Kosongkan jika owner mengikuti akun pembuat.
+              Pilih satu atau lebih owner agar order dapat diakses customer. Kosongkan jika akun customer belum ada atau akan ditambahkan belakangan.
             </p>
             <p v-if="ownerLoading" class="text-[11px] font-medium text-slate-500">
               Mencari user...
@@ -530,6 +547,7 @@ const showOwnerField = computed(() => !isCustomerUser.value && canLookupUsers.va
 const ownerOptions = ref([]);
 const ownerLoading = ref(false);
 const ownerError = ref('');
+const ownerTouched = ref(false);
 const ownerDataListId = `owner-search-${Math.random().toString(36).slice(2, 8)}`;
 
 let ownerSearchTimeout = null;
@@ -598,7 +616,8 @@ const defaultForm = () => {
     supportingFileNames: [],
     medias: [],
     testItems: [],
-    ownerUserId: '',
+    ownerUserIds: [],
+    ownerSelections: [],
     ownerDisplay: '',
     status: 'draft',
   };
@@ -641,22 +660,7 @@ watch(
   (val) => {
     if (val) {
       const inheritedYear = extractYear(val.entryDate || todayString());
-      const orderUsers = Array.isArray(val.orderUsers || val.order_users)
-        ? val.orderUsers || val.order_users
-        : [];
-      const ownerEntry = orderUsers.find(
-        (item) => String(item?.type || '').trim().toLowerCase() === 'owner'
-      );
-      const ownerUserId =
-        ownerEntry?.userId ||
-        ownerEntry?.user_id ||
-        ownerEntry?.user?.id ||
-        val.ownerUserId ||
-        val.owner_user_id ||
-        '';
-      const ownerLabelFromUser = ownerEntry?.user?.name
-        ? `${ownerEntry.user.name}${ownerEntry.user.email ? ` — ${ownerEntry.user.email}` : ''}`
-        : '';
+      const ownerSelections = resolveOwnerSelections(val);
       form.value = {
         ...defaultForm(),
         ...val,
@@ -696,12 +700,14 @@ watch(
         supportingFiles: [],
         supportingFileNames: [],
         medias: Array.isArray(val.medias) ? val.medias : [],
-        ownerUserId: ownerUserId || '',
-        ownerDisplay: val.ownerDisplay || ownerLabelFromUser || '',
+        ownerUserIds: ownerSelections.map((owner) => owner.id),
+        ownerSelections,
+        ownerDisplay: '',
       };
     } else {
       form.value = defaultForm();
     }
+    ownerTouched.value = false;
     updateOrderMetadata(form.value.entryDate);
   },
   { immediate: true }
@@ -871,10 +877,9 @@ const normalizedTestItems = computed(() =>
 const isManualMode = computed(() => normalizedTestItems.value.length === 0);
 
 const ownerSelectionValid = computed(() => {
-  if (!showOwnerField.value) return true;
+  if (!showOwnerField.value || isReadOnlyMode.value) return true;
   const display = (form.value.ownerDisplay || '').trim();
-  if (!display) return true;
-  return Boolean(form.value.ownerUserId);
+  return !display;
 });
 
 const canSave = computed(() => {
@@ -939,7 +944,6 @@ function buildPayload() {
     status,
     certificateName,
     note,
-    ownerUserId,
   } = form.value;
 
   const entryDateSafe = form.value.entryDate || todayString();
@@ -950,7 +954,26 @@ function buildPayload() {
     .map((file) => (file?.name ? String(file.name) : ''))
     .filter(Boolean);
 
-  return {
+  const ownerIdsFromSelections = Array.isArray(form.value.ownerSelections)
+    ? form.value.ownerSelections.map((item) => item.id).filter(Boolean)
+    : [];
+  const ownerIdsFallback = Array.isArray(form.value.ownerUserIds)
+    ? form.value.ownerUserIds.filter(Boolean)
+    : [];
+  const baseOwnerIds = ownerIdsFromSelections.length
+    ? ownerIdsFromSelections
+    : ownerIdsFallback;
+  const authUserId = resolveAuthUserId(authUser.value);
+  const resolvedOwnerIds = dedupeOwnerIds(
+    !showOwnerField.value && isCustomerUser.value && !isEditMode.value && authUserId
+      ? [...baseOwnerIds, authUserId]
+      : baseOwnerIds
+  );
+  const includeOwnerIds = showOwnerField.value
+    ? (isEditMode.value ? ownerTouched.value : resolvedOwnerIds.length > 0)
+    : (!isEditMode.value && isCustomerUser.value && resolvedOwnerIds.length > 0);
+
+  const payload = {
     idOrder,
     orderNumber: orderNumber ? Number(orderNumber) : null,
     orderYear: orderYear || extractYear(entryDateSafe),
@@ -969,12 +992,15 @@ function buildPayload() {
     supportingFileNames,
     supportingFile: supportingFiles[0] || null,
     supportingFileName: supportingFileNames[0] || '',
-    ownerUserId,
     status: status || 'draft',
     purpose: summary,
     testCategory: summary,
     testItems,
   };
+  if (includeOwnerIds) {
+    payload.ownerUserIds = resolvedOwnerIds;
+  }
+  return payload;
 }
 
 async function submitWith() {
@@ -1079,6 +1105,99 @@ function buildOwnerLabel(user) {
   return name || email || String(user?.id || '').trim();
 }
 
+function normalizeOwnerId(value) {
+  return String(value || '').trim();
+}
+
+function dedupeOwnerIds(ids = []) {
+  const seen = new Set();
+  const result = [];
+  ids.forEach((id) => {
+    const normalized = normalizeOwnerId(id);
+    if (!normalized || seen.has(normalized)) return;
+    seen.add(normalized);
+    result.push(normalized);
+  });
+  return result;
+}
+
+function dedupeOwnerSelections(items = []) {
+  const seen = new Set();
+  const result = [];
+  items.forEach((item) => {
+    const id = normalizeOwnerId(item?.id || item?.value || item);
+    if (!id || seen.has(id)) return;
+    const label = String(item?.label || item?.name || id).trim() || id;
+    seen.add(id);
+    result.push({ id, label });
+  });
+  return result;
+}
+
+function setOwnerSelections(items, markTouched = false) {
+  const next = dedupeOwnerSelections(items);
+  form.value.ownerSelections = next;
+  form.value.ownerUserIds = next.map((item) => item.id);
+  if (markTouched) ownerTouched.value = true;
+}
+
+function addOwnerSelection(entry) {
+  if (!entry) return false;
+  const id = normalizeOwnerId(entry?.id || entry?.value || entry);
+  if (!id) return false;
+  const label = String(entry?.label || entry?.name || id).trim() || id;
+  const next = dedupeOwnerSelections([
+    ...(Array.isArray(form.value.ownerSelections) ? form.value.ownerSelections : []),
+    { id, label },
+  ]);
+  const changed = next.length !== form.value.ownerSelections.length;
+  form.value.ownerSelections = next;
+  form.value.ownerUserIds = next.map((item) => item.id);
+  if (changed) ownerTouched.value = true;
+  return changed;
+}
+
+function removeOwner(index) {
+  const current = Array.isArray(form.value.ownerSelections)
+    ? form.value.ownerSelections
+    : [];
+  const next = current.filter((_, idx) => idx !== index);
+  setOwnerSelections(next, true);
+}
+
+function resolveOwnerSelections(val = {}) {
+  const orderUsers = Array.isArray(val.orderUsers || val.order_users)
+    ? val.orderUsers || val.order_users
+    : [];
+  const ownerEntries = orderUsers.filter(
+    (item) => String(item?.type || '').trim().toLowerCase() === 'owner'
+  );
+  const selections = ownerEntries
+    .map((item) => {
+      const id = normalizeOwnerId(
+        item?.userId || item?.user_id || item?.user?.id
+      );
+      if (!id) return null;
+      const label = item?.user ? buildOwnerLabel(item.user) : id;
+      return { id, label };
+    })
+    .filter(Boolean);
+  if (selections.length) return dedupeOwnerSelections(selections);
+
+  const ownerIdsRaw =
+    val.ownerUserIds ||
+    val.owner_user_ids ||
+    val.ownerUserId ||
+    val.owner_user_id ||
+    [];
+  const ownerIds = Array.isArray(ownerIdsRaw) ? ownerIdsRaw : [ownerIdsRaw];
+  return dedupeOwnerSelections(ownerIds.map((id) => ({ id })));
+}
+
+function resolveAuthUserId(user) {
+  return normalizeOwnerId(user?.id || user?.user_id || user?.userId);
+}
+
 async function searchOwners(keyword) {
   const query = String(keyword || '').trim();
   if (!query || query.length < 2) {
@@ -1104,14 +1223,22 @@ async function searchOwners(keyword) {
 
     const payload = res.data?.data ?? {};
     const items = Array.isArray(payload.items) ? payload.items : [];
-    const mapped = items.map((user) => ({
-      value: user.id,
-      label: buildOwnerLabel(user),
-      raw: user,
-      isCustomer: isCustomerCandidate(user),
-    }));
+    const selectedIds = new Set(
+      Array.isArray(form.value.ownerSelections)
+        ? form.value.ownerSelections.map((item) => item.id)
+        : []
+    );
+    const mapped = items
+      .map((user) => ({
+        value: String(user.id || '').trim(),
+        label: buildOwnerLabel(user),
+        raw: user,
+        isCustomer: isCustomerCandidate(user),
+      }))
+      .filter((item) => item.value && !selectedIds.has(item.value));
     const customers = mapped.filter((item) => item.isCustomer);
-    ownerOptions.value = customers.length ? customers : mapped;
+    const nonCustomers = mapped.filter((item) => !item.isCustomer);
+    ownerOptions.value = customers.length ? [...customers, ...nonCustomers] : mapped;
   } catch (err) {
     if (currentSeq !== ownerSearchSequence) return;
     ownerOptions.value = [];
@@ -1137,7 +1264,8 @@ function scheduleOwnerSearch(keyword) {
 }
 
 function clearOwner() {
-  form.value.ownerUserId = '';
+  if (isReadOnlyMode.value) return;
+  setOwnerSelections([], true);
   form.value.ownerDisplay = '';
   ownerOptions.value = [];
   ownerError.value = '';
@@ -1148,11 +1276,9 @@ function handleOwnerInput() {
   ownerError.value = '';
   const query = String(form.value.ownerDisplay || '').trim();
   if (!query) {
-    form.value.ownerUserId = '';
     ownerOptions.value = [];
     return;
   }
-  form.value.ownerUserId = '';
   scheduleOwnerSearch(query);
 }
 
@@ -1160,7 +1286,6 @@ function handleOwnerSelection() {
   if (!showOwnerField.value) return;
   const label = String(form.value.ownerDisplay || '').trim();
   if (!label) {
-    form.value.ownerUserId = '';
     ownerError.value = '';
     return;
   }
@@ -1169,20 +1294,23 @@ function handleOwnerSelection() {
     (opt) => String(opt.label).trim().toLowerCase() === label.toLowerCase()
   );
   if (found?.value) {
-    form.value.ownerUserId = found.value;
-    form.value.ownerDisplay = found.label;
+    addOwnerSelection(found);
+    form.value.ownerDisplay = '';
+    ownerOptions.value = [];
     ownerError.value = '';
     return;
   }
 
   // Fallback: izinkan tempel ID langsung (ULID).
   if (/^[0-9A-HJKMNP-TV-Z]{20,}$/i.test(label)) {
-    form.value.ownerUserId = label;
+    addOwnerSelection({ id: label, label });
+    form.value.ownerDisplay = '';
+    ownerOptions.value = [];
     ownerError.value = '';
     return;
   }
 
-  form.value.ownerUserId = '';
+  ownerError.value = '';
 }
 
 function handleOwnerBlur() {

@@ -371,6 +371,10 @@ const isCustomer = computed(() =>
 const canViewServices = computed(() =>
   !isCustomer.value || hasPermission('material_test_services.index')
 );
+const canViewAllOrders = computed(() =>
+  hasPermission('material_test_orders.index')
+);
+const currentUserId = computed(() => resolveUserId(authStore.currentUser));
 
 // Query mode routing: ?mode=new|edit|payment|preview&id=ORDER_NO&doc=request|invoice
 const readQueryValue = (value) =>
@@ -403,6 +407,51 @@ function clearRouteQuery(keys = ['mode', 'id', 'doc']) {
     delete query[key];
   });
   router.push({ path: route.path, query });
+}
+
+function resolveUserId(user) {
+  return user?.id || user?.user_id || user?.userId || '';
+}
+
+function normalizeId(value) {
+  const text = String(value || '').trim();
+  return text ? text.toLowerCase() : '';
+}
+
+function extractOrderOwnerIds(order) {
+  if (!order) return [];
+  const orderUsersRaw = Array.isArray(order.orderUsers || order.order_users)
+    ? order.orderUsers || order.order_users
+    : [];
+  const fromUsers = orderUsersRaw
+    .filter((item) => String(item?.type || '').trim().toLowerCase() === 'owner')
+    .map((item) => item?.userId || item?.user_id || item?.user?.id)
+    .filter(Boolean);
+
+  const ownerIdsRaw =
+    order.ownerUserIds ??
+    order.owner_user_ids ??
+    order.ownerUserId ??
+    order.owner_user_id ??
+    [];
+  const ownerIdsList = Array.isArray(ownerIdsRaw) ? ownerIdsRaw : [ownerIdsRaw];
+
+  const combined = [...fromUsers, ...ownerIdsList]
+    .map((id) => normalizeId(id))
+    .filter(Boolean);
+  return Array.from(new Set(combined));
+}
+
+function isOrderOwner(order, userId) {
+  const normalizedUserId = normalizeId(userId);
+  if (!normalizedUserId) return false;
+  return extractOrderOwnerIds(order).includes(normalizedUserId);
+}
+
+function canAccessOrder(order) {
+  if (!order) return false;
+  if (canViewAllOrders.value) return true;
+  return isOrderOwner(order, currentUserId.value);
 }
 
 onMounted(() => {
@@ -492,8 +541,16 @@ const cancelableStatuses = new Set([
   'rejected',
 ]);
 
+const visibleOrders = computed(() => {
+  const orders = Array.isArray(orderStore.orders) ? orderStore.orders : [];
+  if (canViewAllOrders.value) return orders;
+  const userId = normalizeId(currentUserId.value);
+  if (!userId) return [];
+  return orders.filter((order) => isOrderOwner(order, userId));
+});
+
 const tableRows = computed(() =>
-  (orderStore.orders ?? []).map((order, index) => {
+  (visibleOrders.value ?? []).map((order, index) => {
     const idOrder = order.orderNo || order.id || `row-${index}`;
     return {
       ...order,
@@ -641,6 +698,15 @@ async function resolveRowById(orderId) {
   };
 }
 
+function handleOrderAccessDenied(orderId) {
+  notify({
+    tone: 'warning',
+    title: 'Akses Ditolak',
+    message: `Anda tidak memiliki akses ke order ${orderId || '-'}.`,
+    duration: 4000,
+  });
+}
+
 async function openEditById(orderId) {
   const row = await resolveRowById(orderId);
   if (!row) {
@@ -650,6 +716,12 @@ async function openEditById(orderId) {
       message: `Order ${orderId || '-'} tidak ditemukan.`,
       duration: 4000,
     });
+    clearRouteQuery();
+    resetFormState();
+    return;
+  }
+  if (!canAccessOrder(row)) {
+    handleOrderAccessDenied(orderId);
     clearRouteQuery();
     resetFormState();
     return;
@@ -666,6 +738,12 @@ async function openPaymentById(orderId) {
       message: `Order ${orderId || '-'} tidak ditemukan.`,
       duration: 4000,
     });
+    clearRouteQuery();
+    resetPaymentState();
+    return;
+  }
+  if (!canAccessOrder(row)) {
+    handleOrderAccessDenied(orderId);
     clearRouteQuery();
     resetPaymentState();
     return;
@@ -697,6 +775,12 @@ async function openPreviewById(orderId, doc) {
       message: `Order ${orderId || '-'} tidak ditemukan.`,
       duration: 4000,
     });
+    clearRouteQuery();
+    resetPreviewState();
+    return;
+  }
+  if (!canAccessOrder(row)) {
+    handleOrderAccessDenied(orderId);
     clearRouteQuery();
     resetPreviewState();
     return;
