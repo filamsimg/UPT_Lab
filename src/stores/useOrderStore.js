@@ -418,12 +418,16 @@ const normalizeOrder = (entry = {}) => {
         : null,
     }));
 
+  const orderId =
+    ensureString(entry.id) ||
+    ensureString(entry.idOrder) ||
+    ensureString(entry.orderId) ||
+    ensureString(entry.order_id);
+
   const orderNo =
-    entry.idOrder ||
+    orderId ||
     entry.orderNo ||
     entry.order_no ||
-    entry.orderId ||
-    entry.id ||
     '';
 
   const orderCode =
@@ -496,11 +500,27 @@ const normalizeOrder = (entry = {}) => {
   return {
     id: entry.id || orderNo,
     orderNo,
+    orderId: orderId || orderNo,
     orderNumber,
     orderCode,
     orderDisplay: orderCode,
     orderYear,
     entryDate,
+    createdAt: entry.created_at || entry.createdAt || '',
+    updatedAt: entry.updated_at || entry.updatedAt || '',
+    submittedAt: entry.submitted_at || entry.submittedAt || '',
+    approvedAt: entry.approved_at || entry.approvedAt || '',
+    rejectedAt: entry.rejected_at || entry.rejectedAt || '',
+    cancelledAt: entry.cancelled_at || entry.cancelledAt || '',
+    paymentSubmittedAt:
+      entry.payment_submitted_at || entry.paymentSubmittedAt || '',
+    paymentApprovedAt:
+      entry.payment_approved_at || entry.paymentApprovedAt || '',
+    paymentRejectedAt:
+      entry.payment_rejected_at || entry.paymentRejectedAt || '',
+    testingAt: entry.testing_at || entry.testingAt || '',
+    refundedAt: entry.refunded_at || entry.refundedAt || '',
+    completedAt: entry.completed_at || entry.completedAt || '',
     status,
     statusLabel: statusLabels[status] || status,
     customerId: entry.customer_id || entry.customerId || '',

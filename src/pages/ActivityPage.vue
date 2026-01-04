@@ -246,17 +246,17 @@
                     class="text-[11px] font-medium text-primary hover:text-primaryDark"
                     @click="copyCauserId(event)"
                   >
-                    ID:
-                    <span class="font-mono">{{ displayCauserId(event) }}</span>
+                    {{ resolveIdLabel(event) }}:
+                    <span class="font-mono">{{ resolveIdValue(event) }}</span>
                   </button>
                   <span>
-                    Aktor:
+                    {{ resolveActorLabel(event) }}:
                     <span class="font-semibold text-gray-700">{{
-                      displayCauser(event)
+                      resolveActorValue(event)
                     }}</span>
                   </span>
                   <span v-if="displaySubject(event)">
-                    Subject:
+                    {{ resolveSubjectLabel(event) }}:
                     <span class="font-semibold text-gray-700">{{
                       displaySubject(event)
                     }}</span>
@@ -315,6 +315,7 @@
 import { computed, onMounted, ref } from 'vue';
 import { ClockIcon } from '@heroicons/vue/24/outline';
 import { useActivityStore } from '@/stores/useActivityStore';
+import { useOrderStore } from '@/stores/useOrderStore';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useAuthorization } from '@/composables/auth/useAuthorization';
 import { useNotificationCenter } from '@/stores/useNotificationCenter';
@@ -350,12 +351,79 @@ const typeConfig = {
   },
 };
 
+const ORDER_STATUS_EVENTS = [
+  { key: 'createdAt', title: 'Order dibuat', type: 'request', status: 'info' },
+  {
+    key: 'submittedAt',
+    title: 'Permintaan dikirim',
+    type: 'request',
+    status: 'info',
+  },
+  {
+    key: 'approvedAt',
+    title: 'Permintaan disetujui',
+    type: 'request',
+    status: 'success',
+  },
+  {
+    key: 'rejectedAt',
+    title: 'Permintaan ditolak',
+    type: 'request',
+    status: 'error',
+  },
+  {
+    key: 'cancelledAt',
+    title: 'Permintaan dibatalkan',
+    type: 'request',
+    status: 'warning',
+  },
+  {
+    key: 'paymentSubmittedAt',
+    title: 'Pembayaran dikirim',
+    type: 'payment',
+    status: 'info',
+  },
+  {
+    key: 'paymentApprovedAt',
+    title: 'Pembayaran disetujui',
+    type: 'payment',
+    status: 'success',
+  },
+  {
+    key: 'paymentRejectedAt',
+    title: 'Pembayaran ditolak',
+    type: 'payment',
+    status: 'error',
+  },
+  {
+    key: 'testingAt',
+    title: 'Pengujian dimulai',
+    type: 'request',
+    status: 'info',
+  },
+  {
+    key: 'refundedAt',
+    title: 'Refund diproses',
+    type: 'payment',
+    status: 'warning',
+  },
+  {
+    key: 'completedAt',
+    title: 'Order selesai',
+    type: 'request',
+    status: 'success',
+  },
+];
+
+const MAX_MERGED_EVENTS = 200;
+
 const activityStore = useActivityStore();
+const orderStore = useOrderStore();
 const authStore = useAuthStore();
 const { notify } = useNotificationCenter();
 const activeFilter = ref('all');
 const errorDismissed = ref(false);
-const { hasAnyPermission, isSuperAdmin } = useAuthorization();
+const { hasAnyPermission, hasPermission, isSuperAdmin } = useAuthorization();
 
 const normalizeRoleName = (value = '') =>
   String(value || '')
@@ -371,10 +439,23 @@ const isCustomer = computed(() =>
   )
 );
 
+const currentUserId = computed(() => resolveUserId(authStore.currentUser));
+const canViewAllOrders = computed(() =>
+  hasPermission('material_test_orders.index')
+);
+
 const filterUserId = ref('');
 const dateFrom = ref('');
 const dateTo = ref('');
 const page = ref(1);
+
+const visibleOrders = computed(() => {
+  const orders = Array.isArray(orderStore.orders) ? orderStore.orders : [];
+  if (canViewAllOrders.value) return orders;
+  const userId = normalizeId(currentUserId.value);
+  if (!userId) return [];
+  return orders.filter((order) => isOrderOwner(order, userId));
+});
 
 // Cek apakah user boleh melihat semua aktivitas (bukan hanya miliknya)
 const canViewAllActivity = computed(() => {
@@ -395,6 +476,17 @@ const canShowIp = computed(() => canViewAllActivity.value);
 
 // Scope fetch: all untuk admin, mine untuk user biasa
 const fetchScope = computed(() => (canViewAllActivity.value ? 'all' : 'mine'));
+
+const filteredOrders = computed(() => {
+  const orders = visibleOrders.value;
+  if (!canViewAllActivity.value) return orders;
+  const ownerId = normalizeId(filterUserId.value);
+  if (!ownerId) return orders;
+  return orders.filter((order) => {
+    if (normalizeId(order.customerId) === ownerId) return true;
+    return isOrderOwner(order, ownerId);
+  });
+});
 
 // Ambil aktivitas dengan filter/pagination
 async function loadActivities() {
@@ -417,12 +509,151 @@ async function loadActivities() {
   page.value = activityStore.pagination?.currentPage || page.value;
 }
 
+async function loadOrders() {
+  if (orderStore.loading) return;
+  if (orderStore.orders?.length) return;
+  await orderStore.fetchAll();
+}
+
 onMounted(async () => {
   activityStore.hydrate();
-  await loadActivities();
+  await Promise.all([loadActivities(), loadOrders()]);
 });
 
-const stats = computed(() => activityStore.stats);
+function normalizeEventTimestamp(value) {
+  if (!value) return '';
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    return value.toISOString();
+  }
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  return date.toISOString();
+}
+
+function resolveOrderReference(order) {
+  return (
+    order?.orderId ||
+    order?.orderNo ||
+    order?.orderCode ||
+    order?.orderDisplay ||
+    order?.id ||
+    ''
+  );
+}
+
+function resolveOrderSubjectName(order, fallback = '') {
+  return order?.orderId || order?.orderDisplay || order?.orderCode || fallback;
+}
+
+function buildOrderStatusDescription(order, referenceId) {
+  const parts = [];
+  if (referenceId) parts.push(`Order ${referenceId}`);
+  if (order?.customerName) parts.push(`Pemohon: ${order.customerName}`);
+  if (order?.statusLabel) parts.push(`Status: ${order.statusLabel}`);
+  return parts.length ? parts.join(' | ') : 'Riwayat order';
+}
+
+function buildOrderStatusEvents(order = {}) {
+  const referenceId = resolveOrderReference(order);
+  if (!referenceId) return [];
+  const subjectName = resolveOrderSubjectName(order, referenceId);
+  const description = buildOrderStatusDescription(order, referenceId);
+  const owner = resolveOrderOwner(order);
+  const baseMeta = {
+    source: 'order-status',
+    module: 'order',
+    orderNo: order?.orderNo || '',
+    orderId: order?.orderId || referenceId,
+    orderCode: order?.orderCode || order?.orderNumber || '',
+    orderStatus: order.status,
+    orderStatusLabel: order.statusLabel,
+    customerName: order.customerName || '',
+    ownerId: owner.id || '',
+    ownerName: owner.name || '',
+    subjectName,
+    causerName: 'Sistem',
+    causer: { name: 'Sistem' },
+  };
+
+  return ORDER_STATUS_EVENTS.map((eventConfig) => {
+    const rawTimestamp = order[eventConfig.key];
+    const createdAt = normalizeEventTimestamp(rawTimestamp);
+    if (!createdAt) return null;
+    return {
+      id: `order-${referenceId}-${eventConfig.key}-${createdAt}`,
+      type: eventConfig.type,
+      title: eventConfig.title,
+      description,
+      status: eventConfig.status,
+      referenceId,
+      userId: null,
+      metadata: { ...baseMeta },
+      createdAt,
+    };
+  }).filter(Boolean);
+}
+
+function filterEventsByDateRange(events = []) {
+  const hasFrom = Boolean(dateFrom.value);
+  const hasTo = Boolean(dateTo.value);
+  if (!hasFrom && !hasTo) return events;
+  const from = hasFrom ? new Date(`${dateFrom.value}T00:00:00`) : null;
+  const to = hasTo ? new Date(`${dateTo.value}T23:59:59`) : null;
+  return events.filter((event) => {
+    const timestamp = new Date(event.createdAt);
+    if (Number.isNaN(timestamp.getTime())) return false;
+    if (from && timestamp < from) return false;
+    if (to && timestamp > to) return false;
+    return true;
+  });
+}
+
+function buildMergeKey(event) {
+  const reference = event?.referenceId || event?.metadata?.orderNo || '';
+  const title = event?.title || '';
+  const createdAt = event?.createdAt || '';
+  if (!reference && event?.id) return event.id;
+  return `${reference}|${title}|${createdAt}`;
+}
+
+function mergeEvents(activityEvents = [], statusEvents = []) {
+  const map = new Map();
+  (statusEvents || []).forEach((event) => {
+    map.set(buildMergeKey(event), event);
+  });
+  (activityEvents || []).forEach((event) => {
+    map.set(buildMergeKey(event), event);
+  });
+  return Array.from(map.values())
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+    .slice(0, MAX_MERGED_EVENTS);
+}
+
+function summarizeEvents(events = []) {
+  return events.reduce(
+    (acc, event) => {
+      acc.total += 1;
+      if (event.type === 'login') acc.login += 1;
+      else if (event.type === 'request') acc.request += 1;
+      else if (event.type === 'payment') acc.payment += 1;
+      else acc.system += 1;
+      return acc;
+    },
+    { total: 0, login: 0, request: 0, payment: 0, system: 0 }
+  );
+}
+
+const orderStatusEvents = computed(() => {
+  const orders = filteredOrders.value;
+  const events = orders.flatMap((order) => buildOrderStatusEvents(order));
+  return filterEventsByDateRange(events);
+});
+
+const mergedEvents = computed(() =>
+  mergeEvents(activityStore.events, orderStatusEvents.value)
+);
+
+const stats = computed(() => summarizeEvents(mergedEvents.value));
 const apiError = computed(() => activityStore.apiError);
 const isPermissionIssue = computed(() => {
   const status = activityStore.apiStatus;
@@ -432,12 +663,12 @@ const showErrorBanner = computed(
   () => apiError.value && !errorDismissed.value && !isPermissionIssue.value
 );
 
-const hasEvents = computed(() => activityStore.events.length > 0);
+const hasEvents = computed(() => mergedEvents.value.length > 0);
 
 // Filter event berdasarkan tab aktif
 const filteredEvents = computed(() => {
-  if (activeFilter.value === 'all') return activityStore.events;
-  return activityStore.events.filter(
+  if (activeFilter.value === 'all') return mergedEvents.value;
+  return mergedEvents.value.filter(
     (event) => event.type === activeFilter.value
   );
 });
@@ -508,6 +739,76 @@ function formatTime(value) {
   }).format(date);
 }
 
+function resolveUserId(user) {
+  return user?.id || user?.user_id || user?.userId || '';
+}
+
+function normalizeId(value) {
+  const text = String(value || '').trim();
+  return text ? text.toLowerCase() : '';
+}
+
+function extractOrderOwnerIds(order) {
+  if (!order) return [];
+  const orderUsersRaw = Array.isArray(order.orderUsers || order.order_users)
+    ? order.orderUsers || order.order_users
+    : [];
+  const fromUsers = orderUsersRaw
+    .filter((item) => String(item?.type || '').trim().toLowerCase() === 'owner')
+    .map((item) => item?.userId || item?.user_id || item?.user?.id)
+    .filter(Boolean);
+
+  const ownerIdsRaw =
+    order.ownerUserIds ??
+    order.owner_user_ids ??
+    order.ownerUserId ??
+    order.owner_user_id ??
+    [];
+  const ownerIdsList = Array.isArray(ownerIdsRaw) ? ownerIdsRaw : [ownerIdsRaw];
+
+  const combined = [...fromUsers, ...ownerIdsList]
+    .map((id) => normalizeId(id))
+    .filter(Boolean);
+  return Array.from(new Set(combined));
+}
+
+function isOrderOwner(order, userId) {
+  const normalizedUserId = normalizeId(userId);
+  if (!normalizedUserId) return false;
+  return extractOrderOwnerIds(order).includes(normalizedUserId);
+}
+
+function resolveOrderOwner(order) {
+  if (!order) return { id: '', name: '' };
+  const orderUsersRaw = Array.isArray(order.orderUsers || order.order_users)
+    ? order.orderUsers || order.order_users
+    : [];
+  const owners = orderUsersRaw
+    .filter((item) => String(item?.type || '').trim().toLowerCase() === 'owner')
+    .map((item) => {
+      const user = item?.user || null;
+      const id = user?.id || item?.userId || item?.user_id || '';
+      const name = user?.name || '';
+      const email = user?.email || '';
+      return {
+        id,
+        name: name || email || '',
+      };
+    })
+    .filter((item) => item.id || item.name);
+
+  if (owners.length) {
+    return {
+      id: owners[0].id || '',
+      name: owners[0].name || owners[0].id || '',
+    };
+  }
+
+  const fallbackId = order.customerId || '';
+  const fallbackName = order.customerName || fallbackId || '';
+  return { id: fallbackId, name: fallbackName };
+}
+
 function displayCauser(event) {
   return (
     event.metadata?.causer?.name ||
@@ -519,11 +820,46 @@ function displayCauser(event) {
 
 function displaySubject(event) {
   return (
+    event.metadata?.orderId ||
     event.metadata?.subjectName ||
     event.metadata?.subject?.email ||
     event.referenceId ||
     ''
   );
+}
+
+function isOrderStatusEvent(event) {
+  return event?.metadata?.source === 'order-status';
+}
+
+function resolveIdLabel(event) {
+  return isOrderStatusEvent(event) ? 'Owner ID' : 'ID';
+}
+
+function resolveIdValue(event) {
+  if (isOrderStatusEvent(event)) {
+    return event?.metadata?.ownerId || '-';
+  }
+  return displayCauserId(event);
+}
+
+function resolveActorLabel(event) {
+  return isOrderStatusEvent(event) ? 'Owner' : 'Aktor';
+}
+
+function resolveActorValue(event) {
+  if (isOrderStatusEvent(event)) {
+    return (
+      event?.metadata?.ownerName ||
+      event?.metadata?.customerName ||
+      'Sistem'
+    );
+  }
+  return displayCauser(event) || 'Sistem';
+}
+
+function resolveSubjectLabel(event) {
+  return isOrderStatusEvent(event) ? 'Order ID' : 'Subject';
 }
 
 // Bersihkan filter dan muat ulang
@@ -558,7 +894,17 @@ function displayCauserId(event) {
 
 // Salin ID aktor ke clipboard dan beri notifikasi
 async function copyCauserId(event) {
-  const id = displayCauserId(event);
+  const id = resolveIdValue(event);
+  if (!id || id === '-') {
+    notify({
+      tone: 'error',
+      title: 'ID tidak tersedia',
+      message: 'ID tidak tersedia untuk aktivitas ini.',
+      duration: 2000,
+      persist: false,
+    });
+    return;
+  }
   const copied = await copyText(id);
   notify({
     tone: copied ? 'success' : 'error',
