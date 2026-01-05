@@ -24,19 +24,19 @@
         v-if="filterable"
         class="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:gap-3"
       >
-        <label class="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-sm text-gray-600 sm:px-3 sm:py-2">
+        <label class="flex w-full items-center gap-2 rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-sm text-gray-600 sm:w-auto sm:px-3 sm:py-2">
           <CalendarIcon class="h-5 w-5 text-gray-400" />
           <input
             v-model="selectedDate"
             type="date"
-            class="min-w-[160px] border-0 p-0 text-sm text-gray-700 outline-none focus:ring-0"
+            class="flex-1 min-w-0 border-0 p-0 text-sm text-gray-700 outline-none focus:ring-0"
           />
         </label>
 
-        <label class="relative">
+        <label class="relative w-full sm:w-auto">
           <select
             v-model="selectedStatus"
-            class="min-w-[150px] rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-sm text-gray-700 outline-none transition focus:border-primary focus:ring-1 focus:ring-primary/30 sm:px-3 sm:py-2 appearance-none"
+            class="w-full rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-sm text-gray-700 outline-none transition focus:border-primary focus:ring-1 focus:ring-primary/30 sm:min-w-[150px] sm:px-3 sm:py-2 appearance-none"
           >
             <option
               v-for="option in normalizedStatusOptions"
@@ -884,3 +884,4 @@ th.sticky-col {
   @apply bg-gray-50;
 }
 </style>
+
