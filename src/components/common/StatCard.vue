@@ -21,6 +21,8 @@ import {
   ClockIcon,
   BeakerIcon,
   CheckBadgeIcon,
+  BanknotesIcon,
+  ArrowUturnLeftIcon,
 } from '@heroicons/vue/24/outline';
 
 const props = defineProps({
@@ -40,6 +42,8 @@ const iconMap = {
   pending: { icon: ClockIcon, bg: 'bg-warning' },
   testing: { icon: BeakerIcon, bg: 'bg-primary' },
   completed: { icon: CheckBadgeIcon, bg: 'bg-success' },
+  money: { icon: BanknotesIcon, bg: 'bg-success' },
+  refund: { icon: ArrowUturnLeftIcon, bg: 'bg-danger' },
   // Indonesian keys (legacy)
   baru: { icon: ClipboardDocumentListIcon, bg: 'bg-info' },
   menunggu: { icon: ClockIcon, bg: 'bg-warning' },

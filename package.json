@@ -2,7 +2,7 @@
   "type": "module",
   "name": "upt-lab-dashboard",
   "version": "1.0.0",
-  "description": "UPT Laboratorium Perindustrian – Kabupaten Tegal dashboard",
+  "description": "UPT Laboratorium Perindustrian \u2013 Kabupaten Tegal dashboard",
   "private": true,
   "scripts": {
     "dev": "vite",
@@ -14,7 +14,8 @@
     "axios": "^1.5.0",
     "pinia": "^2.1.6",
     "vue": "^3.4.0",
-    "vue-router": "^4.2.4"
+    "vue-router": "^4.2.4",
+    "chart.js": "^4.4.0"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^6.0.1",

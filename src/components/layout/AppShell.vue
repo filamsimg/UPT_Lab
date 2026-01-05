@@ -549,7 +549,16 @@ const baseMenu = [
     label: 'Laporan',
     icon: ChartBarIcon,
     children: [
-      { label: 'Keuangan', path: '/laporan-keuangan', icon: CreditCardIcon },
+      {
+        label: 'Keuangan',
+        path: '/laporan-keuangan',
+        icon: CreditCardIcon,
+        requiredPermissions: [
+          'analytics.index',
+          'analytics.summary',
+          'analytic.index',
+        ],
+      },
     ],
   },
   {

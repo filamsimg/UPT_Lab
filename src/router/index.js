@@ -63,7 +63,17 @@ const routes = [
   { path: '/kartu-kendali', component: KartuKendaliPage },
   { path: '/surat-perintah', component: SuratPerintahPage },
   { path: '/layanan', component: LayananPage },
-  { path: '/laporan-keuangan', component: KeuanganPage },
+  {
+    path: '/laporan-keuangan',
+    component: KeuanganPage,
+    meta: {
+      requiredPermissions: [
+        'analytics.index',
+        'analytics.summary',
+        'analytic.index',
+      ],
+    },
+  },
   { path: '/laporan', component: LaporanPage },
   { path: '/activity', component: ActivityPage },
   {
@@ -93,6 +103,23 @@ const router = createRouter({
   routes,
 });
 
+const normalizePermission = (value) => {
+  if (value == null) return '';
+  return String(value).trim().toLowerCase();
+};
+
+const hasAnyPermission = (permissionSet, list = []) =>
+  list.some((permission) => {
+    const normalized = normalizePermission(permission);
+    return normalized && permissionSet.has(normalized);
+  });
+
+const hasAllPermissions = (permissionSet, list = []) =>
+  list.every((permission) => {
+    const normalized = normalizePermission(permission);
+    return normalized && permissionSet.has(normalized);
+  });
+
 // === NAVIGATION GUARD ===
 router.beforeEach(async (to, from, next) => {
   const authStore = useAuthStore();
@@ -118,15 +145,35 @@ router.beforeEach(async (to, from, next) => {
     return next('/login');
   }
 
-  const requiredPermission = to.meta?.requiredPermission;
-  if (requiredPermission) {
-    const permissionSet = buildPermissionSet(authStore.currentUser);
-    const normalized = requiredPermission.trim().toLowerCase();
-    if (
-      !isSuperAdminUser(authStore.currentUser) &&
-      !permissionSet.has(normalized)
-    ) {
-      return next('/dashboard');
+  const permissionSet = buildPermissionSet(authStore.currentUser);
+  const isSuperAdmin = isSuperAdminUser(authStore.currentUser);
+  if (!isSuperAdmin) {
+    const requiredPermission = to.meta?.requiredPermission;
+    if (requiredPermission) {
+      const normalized = normalizePermission(requiredPermission);
+      if (!normalized || !permissionSet.has(normalized)) {
+        return next('/dashboard');
+      }
+    }
+
+    const requiredPermissions = Array.isArray(to.meta?.requiredPermissions)
+      ? to.meta.requiredPermissions
+      : [];
+    if (requiredPermissions.length) {
+      if (!hasAnyPermission(permissionSet, requiredPermissions)) {
+        return next('/dashboard');
+      }
+    }
+
+    const requiredPermissionsAll = Array.isArray(
+      to.meta?.requiredPermissionsAll
+    )
+      ? to.meta.requiredPermissionsAll
+      : [];
+    if (requiredPermissionsAll.length) {
+      if (!hasAllPermissions(permissionSet, requiredPermissionsAll)) {
+        return next('/dashboard');
+      }
     }
   }
 
