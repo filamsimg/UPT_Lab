@@ -53,7 +53,7 @@
       <!-- Navigation -->
       <nav class="mt-4 flex-1 overflow-y-auto px-1">
         <ul>
-          <li>
+          <li v-if="canViewDashboard">
             <router-link
               to="/dashboard"
               :title="'Dashboard'"
@@ -381,6 +381,7 @@ const openGroup = ref(null);
 const route = useRoute();
 const authStore = useAuthStore();
 const { hasPermission, hasAnyPermission } = useAuthorization();
+const canViewDashboard = computed(() => hasPermission('material_test_orders.index'));
 const hasAllPermissions = (...names) =>
   names.every((perm) => hasPermission(perm));
 const {
@@ -671,4 +672,10 @@ aside::-webkit-scrollbar {
   transform: translateY(-5px);
 }
 </style>
+
+
+
+
+
+
 

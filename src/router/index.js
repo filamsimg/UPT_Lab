@@ -51,7 +51,7 @@ const routes = [
     component: EmailVerificationPage,
     meta: { layout: 'auth', authMode: 'verify-email' },
   },
-  { path: '/dashboard', component: DashboardPage },
+  { path: '/dashboard', component: DashboardPage, meta: { requiredPermission: 'material_test_orders.index' } },
   { path: '/profile', component: ProfilePage },
   { path: '/permintaan', component: PermintaanPage },
   {
@@ -120,6 +120,51 @@ const hasAllPermissions = (permissionSet, list = []) =>
     return normalized && permissionSet.has(normalized);
   });
 
+// === ROUTE ACCESS HELPERS ===
+const canAccessRoute = (route, permissionSet, isSuperAdmin) => {
+  if (!route) return false;
+  if (isSuperAdmin) return true;
+  const meta = route.meta || {};
+  const requiredPermission = meta.requiredPermission;
+  if (requiredPermission) {
+    const normalized = normalizePermission(requiredPermission);
+    if (!normalized || !permissionSet.has(normalized)) {
+      return false;
+    }
+  }
+
+  const requiredPermissions = Array.isArray(meta.requiredPermissions)
+    ? meta.requiredPermissions
+    : [];
+  if (requiredPermissions.length) {
+    if (!hasAnyPermission(permissionSet, requiredPermissions)) {
+      return false;
+    }
+  }
+
+  const requiredPermissionsAll = Array.isArray(meta.requiredPermissionsAll)
+    ? meta.requiredPermissionsAll
+    : [];
+  if (requiredPermissionsAll.length) {
+    if (!hasAllPermissions(permissionSet, requiredPermissionsAll)) {
+      return false;
+    }
+  }
+
+  return true;
+};
+
+const FALLBACK_ROUTES = ['/dashboard', '/permintaan', '/profile'];
+
+const resolveFallbackRoute = (permissionSet, isSuperAdmin) => {
+  for (const path of FALLBACK_ROUTES) {
+    const route = routes.find((item) => item.path === path);
+    if (route && canAccessRoute(route, permissionSet, isSuperAdmin)) {
+      return path;
+    }
+  }
+  return '/login';
+};
 // === NAVIGATION GUARD ===
 router.beforeEach(async (to, from, next) => {
   const authStore = useAuthStore();
@@ -147,12 +192,20 @@ router.beforeEach(async (to, from, next) => {
 
   const permissionSet = buildPermissionSet(authStore.currentUser);
   const isSuperAdmin = isSuperAdminUser(authStore.currentUser);
+  const redirectToFallback = () => {
+    const fallbackRoute = resolveFallbackRoute(permissionSet, isSuperAdmin);
+    if (fallbackRoute && fallbackRoute !== to.path) {
+      return next(fallbackRoute);
+    }
+    return next(false);
+  };
+
   if (!isSuperAdmin) {
     const requiredPermission = to.meta?.requiredPermission;
     if (requiredPermission) {
       const normalized = normalizePermission(requiredPermission);
       if (!normalized || !permissionSet.has(normalized)) {
-        return next('/dashboard');
+        return redirectToFallback();
       }
     }
 
@@ -161,7 +214,7 @@ router.beforeEach(async (to, from, next) => {
       : [];
     if (requiredPermissions.length) {
       if (!hasAnyPermission(permissionSet, requiredPermissions)) {
-        return next('/dashboard');
+        return redirectToFallback();
       }
     }
 
@@ -172,7 +225,7 @@ router.beforeEach(async (to, from, next) => {
       : [];
     if (requiredPermissionsAll.length) {
       if (!hasAllPermissions(permissionSet, requiredPermissionsAll)) {
-        return next('/dashboard');
+        return redirectToFallback();
       }
     }
   }
@@ -181,3 +234,9 @@ router.beforeEach(async (to, from, next) => {
 });
 
 export default router;
+
+
+
+
+
+
