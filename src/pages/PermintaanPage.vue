@@ -168,7 +168,7 @@
             @click="closePreviewModal"
           >
             <span class="sr-only">Tutup</span>
-            X
+            <XMarkIcon class="h-6 w-6" />
           </button>
           <div class="flex flex-col gap-4 sm:flex-row sm:items-center">
             <img
@@ -327,6 +327,7 @@ import {
   XCircleIcon,
   BanknotesIcon,
   DocumentDuplicateIcon,
+  XMarkIcon,
 } from '@heroicons/vue/24/outline';
 import FormPermintaan from '@/components/form/FormPermintaan.vue';
 import FormPayment from '@/components/form/FormPayment.vue';
@@ -785,6 +786,18 @@ async function openPreviewById(orderId, doc) {
     resetPreviewState();
     return;
   }
+  if (!canPrint(row)) {
+    notify({
+      tone: 'warning',
+      title: 'Preview Belum Tersedia',
+      message: 'Preview & cetak hanya tersedia setelah pembayaran terverifikasi.',
+      duration: 4000,
+      persist: false,
+    });
+    clearRouteQuery();
+    resetPreviewState();
+    return;
+  }
   applyPreviewState(row);
 
   const docType = String(doc || '').toLowerCase();
@@ -1131,6 +1144,16 @@ function canPrint(row) {
 
 function openPreviewModal(row) {
   if (!row) return;
+  if (!canPrint(row)) {
+    notify({
+      tone: 'warning',
+      title: 'Preview Belum Tersedia',
+      message: 'Preview & cetak hanya tersedia setelah pembayaran terverifikasi.',
+      duration: 4000,
+      persist: false,
+    });
+    return;
+  }
   updateRouteQuery({ mode: 'preview', id: row.idOrder, doc: null });
 }
 
@@ -1155,6 +1178,16 @@ async function copyId(id) {
 
 function printFromPreview(type, options = {}) {
   if (!previewRequest.value) return;
+  if (!canPrint(previewRequest.value)) {
+    notify({
+      tone: 'warning',
+      title: 'Cetak Tidak Diizinkan',
+      message: 'Cetak hanya tersedia setelah pembayaran terverifikasi.',
+      duration: 4000,
+      persist: false,
+    });
+    return;
+  }
   const docType = String(type || '').toLowerCase();
   if (!options.skipQueryUpdate && docType) {
     const idOrder =
@@ -1174,12 +1207,47 @@ function printFromPreview(type, options = {}) {
   printDocument(previewRequest.value, type);
 }
 
+function normalizeFilenameSegment(value, fallback = 'ORDER') {
+  const raw = String(value || '').trim();
+  if (!raw) return fallback;
+  const cleaned = raw
+    .replace(/[\s\\/]+/g, '-')
+    .replace(/[^A-Za-z0-9_-]+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^[-_]+|[-_]+$/g, '');
+  return cleaned || fallback;
+}
+
+function formatDateForFilename(value) {
+  const raw = String(value || '').trim();
+  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(raw);
+  if (match) return `${match[1]}${match[2]}${match[3]}`;
+  const date = new Date(raw);
+  if (!Number.isNaN(date.getTime())) {
+    return date.toISOString().slice(0, 10).replace(/-/g, '');
+  }
+  return new Date().toISOString().slice(0, 10).replace(/-/g, '');
+}
+
+function buildPrintTitle(row, type = 'request') {
+  const prefix = type === 'invoice' ? 'INV' : 'REQ';
+  const idOrder = row?.idOrder || row?.orderNo || row?.id || '';
+  const safeId = normalizeFilenameSegment(idOrder);
+  const dateSource = row?.entryDate || row?.date || row?.createdAt || '';
+  const datePart = formatDateForFilename(dateSource);
+  return `${prefix}-${safeId}-${datePart}`;
+}
+
 function printDocument(row, type = 'request') {
   if (!row) return;
-  const title = type === 'invoice' ? 'Invoice Pembayaran' : 'Permintaan Pengujian';
+  const formTitle = type === 'invoice' ? 'Invoice Pembayaran' : 'Permintaan Pengujian';
+  const title = buildPrintTitle(row, type);
   const html = buildPermintaanPrintHtml(row, type, {
     logoSrc: logoDinas,
     title,
+    header: {
+      formTitle,
+    },
   });
   const printWindow = window.open('', '_blank', 'width=900,height=650');
   if (!printWindow) {
