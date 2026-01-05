@@ -168,7 +168,7 @@
     ></div>
 
     <!-- Main content -->
-    <div class="flex-1 flex flex-col min-h-screen md:min-h-0">
+    <div class="flex-1 flex flex-col min-h-screen md:min-h-0 min-w-0">
       <!-- Top Navbar -->
       <header
         class="bg-gradient-to-r from-primaryLight to-primaryDark text-white h-16 flex justify-between items-center px-4"
@@ -671,3 +671,4 @@ aside::-webkit-scrollbar {
   transform: translateY(-5px);
 }
 </style>
+

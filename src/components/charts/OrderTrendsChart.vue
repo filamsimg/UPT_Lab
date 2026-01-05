@@ -1,5 +1,5 @@
 <template>
-  <div class="relative h-64 w-full">
+  <div ref="containerRef" class="relative h-full w-full">
     <canvas ref="canvasRef" class="h-full w-full"></canvas>
   </div>
 </template>
@@ -39,7 +39,9 @@ const props = defineProps({
 });
 
 const canvasRef = ref(null);
+const containerRef = ref(null);
 let chartInstance = null;
+let resizeObserver = null;
 
 const formatCompact = (value) => {
   const num = Number(value);
@@ -146,7 +148,24 @@ const renderChart = () => {
   });
 };
 
-onMounted(renderChart);
+const handleResize = () => {
+  if (!chartInstance) return;
+  chartInstance.resize();
+};
+
+onMounted(() => {
+  renderChart();
+  if (typeof ResizeObserver !== 'undefined') {
+    resizeObserver = new ResizeObserver(() => {
+      handleResize();
+    });
+    if (containerRef.value) {
+      resizeObserver.observe(containerRef.value);
+    }
+  } else {
+    window.addEventListener('resize', handleResize);
+  }
+});
 
 watch(
   () => [props.labels, props.sumData, props.countData],
@@ -155,6 +174,12 @@ watch(
 );
 
 onBeforeUnmount(() => {
+  if (resizeObserver) {
+    resizeObserver.disconnect();
+    resizeObserver = null;
+  } else {
+    window.removeEventListener('resize', handleResize);
+  }
   if (chartInstance) {
     chartInstance.destroy();
     chartInstance = null;

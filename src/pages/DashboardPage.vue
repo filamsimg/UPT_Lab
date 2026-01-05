@@ -2,186 +2,135 @@
   <!-- Dashboard ringkasan KPI/statistik -->
   <div>
     <!-- KPI Cards -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4 mb-4 sm:mb-6">
       <StatCard
-        label="Menunggu Kaji Ulang"
-        :value="countByStatus('awaiting_review')"
-        type="pending"
-      />
-      <StatCard
-        label="Menunggu Pembayaran"
-        :value="countByStatus('awaiting_payment')"
-        type="pending"
-      />
-      <StatCard
-        label="Dalam Uji"
-        :value="countByStatus('testing')"
-        type="testing"
-      />
-      <StatCard
-        label="Selesai"
-        :value="countByStatus('completed')"
-        type="completed"
+        v-for="card in kpiCards"
+        :key="card.label"
+        :label="card.label"
+        :value="card.value"
+        :type="card.type"
       />
     </div>
-
-    <!-- Chart Placeholder -->
-    <div
-      class="bg-white rounded-xl shadow-md p-4 h-64 mb-6 flex items-center justify-center text-gray-400"
+    <p
+      v-if="analyticsStore.summaryError && canViewAnalytics"
+      class="mb-4 text-sm text-danger"
     >
-      Chart mingguan (placeholder)
-    </div>
+      {{ analyticsStore.summaryError }}
+    </p>
 
-    <!-- Filters -->
-    <div class="flex flex-col sm:flex-row gap-4 mb-4">
-      <div class="flex-1">
-        <label class="block text-sm font-medium text-gray-700 mb-1"
-          >Cari Customer</label
+    <!-- Chart -->
+    <section class="rounded-xl border border-gray-200 bg-white p-3 shadow-md sm:p-4 mb-6">
+      <div class="mb-4 space-y-4">
+        <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h3 class="text-base sm:text-lg font-semibold text-primaryDark">
+              Tren Order Selesai {{ trendTitle }}
+            </h3>
+            <p class="text-xs text-gray-500">
+              Total pendapatan dan jumlah order selesai per periode.
+            </p>
+            <p class="text-[11px] text-gray-400">
+              Kosongkan tanggal untuk menampilkan semua data.
+            </p>
+          </div>
+        </div>
+        <div
+          v-if="canViewAnalytics"
+          class="flex flex-col gap-2 rounded-xl border border-gray-200 bg-gray-50 p-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3 sm:p-4"
         >
-        <input
-          v-model="filters.search"
-          type="text"
-          placeholder="Nama customer..."
-          class="border border-gray-300 rounded-md px-3 py-2 w-full focus:ring-2 focus:ring-blue-500"
+          <label
+            class="flex w-full items-center gap-2 rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-sm text-gray-600 sm:w-auto sm:px-3 sm:py-2"
+          >
+            <AdjustmentsHorizontalIcon class="h-5 w-5 text-gray-400" />
+            <span class="sr-only">Group tren</span>
+            <select
+              v-model="analyticsFilters.group"
+              class="flex-1 min-w-0 border-0 bg-transparent p-0 text-sm text-gray-700 outline-none focus:ring-0"
+            >
+              <option
+                v-for="option in groupOptions"
+                :key="option.value"
+                :value="option.value"
+              >
+                {{ option.label }}
+              </option>
+            </select>
+          </label>
+          <label
+            class="flex w-full items-center gap-2 rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-sm text-gray-600 sm:w-auto sm:px-3 sm:py-2"
+          >
+            <CalendarIcon class="h-5 w-5 text-gray-400" />
+            <span class="sr-only">Dari tanggal</span>
+            <input
+              v-model="analyticsFilters.dateFrom"
+              type="date"
+              class="flex-1 min-w-0 border-0 bg-transparent p-0 text-sm text-gray-700 outline-none focus:ring-0"
+            />
+          </label>
+          <label
+            class="flex w-full items-center gap-2 rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-sm text-gray-600 sm:w-auto sm:px-3 sm:py-2"
+          >
+            <CalendarIcon class="h-5 w-5 text-gray-400" />
+            <span class="sr-only">Sampai tanggal</span>
+            <input
+              v-model="analyticsFilters.dateTo"
+              type="date"
+              class="flex-1 min-w-0 border-0 bg-transparent p-0 text-sm text-gray-700 outline-none focus:ring-0"
+            />
+          </label>
+          <div class="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center sm:justify-end">
+            <button
+              type="button"
+              class="inline-flex w-full items-center justify-center rounded-md bg-gradient-to-r from-primaryLight to-primaryDark px-3 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-90 sm:w-auto"
+              @click="applyAnalyticsFilters"
+            >
+              Terapkan
+            </button>
+            <button
+              type="button"
+              class="inline-flex w-full items-center justify-center rounded-md border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-600 transition hover:border-primary/50 hover:text-primaryDark sm:w-auto"
+              @click="resetAnalyticsFilters"
+            >
+              Reset
+            </button>
+          </div>
+        </div>
+        <div v-if="canViewAnalytics" class="flex flex-wrap items-center gap-3 text-xs text-gray-500">
+          <span class="inline-flex items-center gap-2">
+            <span class="h-3 w-3 rounded-sm bg-primaryLight/80"></span>
+            Total (Rp)
+          </span>
+          <span class="inline-flex items-center gap-2">
+            <span class="h-3 w-3 rounded-sm bg-gray-300"></span>
+            Jumlah order
+          </span>
+        </div>
+      </div>
+
+      <div v-if="!canViewAnalytics" class="text-sm text-gray-500 py-6 text-center">
+        Anda tidak memiliki izin analytics.
+      </div>
+      <div v-else-if="analyticsStore.trendsLoading" class="text-center text-gray-500 py-6">
+        Memuat tren order...
+      </div>
+      <div v-else-if="analyticsStore.trendsError" class="text-sm text-danger">
+        {{ analyticsStore.trendsError }}
+      </div>
+      <div v-else-if="!hasTrendData" class="text-center text-gray-500 py-6 text-sm">
+        Belum ada data tren.
+      </div>
+      <div v-else class="h-56 sm:h-64 overflow-hidden">
+        <OrderTrendsChart
+          :labels="trendLabels"
+          :sum-data="trendSumData"
+          :count-data="trendCountData"
         />
       </div>
-      <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1"
-          >Status</label
-        >
-        <select
-          v-model="filters.status"
-          class="border border-gray-300 rounded-md px-3 py-2 w-full focus:ring-2 focus:ring-blue-500"
-        >
-          <option value="">Semua</option>
-          <option value="awaiting_review">Menunggu Kaji Ulang</option>
-          <option value="awaiting_payment">Menunggu Pembayaran</option>
-          <option value="testing">Dalam Uji</option>
-          <option value="completed">Selesai</option>
-        </select>
-      </div>
-    </div>
-
-    <!-- Orders Table -->
-    <div class="bg-white border border-gray-200 rounded-xl shadow-md p-4 mb-8">
-      <h3 class="text-lg font-semibold mb-3 text-primaryDark">Daftar Order</h3>
-
-      <div v-if="isLoading" class="text-center text-gray-500 py-6">
-        Memuat data...
-      </div>
-
-      <template v-else>
-        <div v-if="!visibleOrders.length" class="text-center text-gray-500 py-6 text-sm">
-          Belum ada data order.
-        </div>
-
-        <div v-else>
-          <!-- Mobile Cards -->
-          <div class="space-y-3 md:hidden">
-            <article
-              v-for="order in visibleOrders"
-              :key="order.id || order.orderNo"
-              class="rounded-2xl border border-gray-100 bg-gradient-to-b from-white to-gray-50/80 p-4 shadow-sm"
-            >
-              <div class="flex items-start justify-between gap-3">
-                <div>
-                  <p class="text-xs uppercase tracking-wide text-gray-500">No Order</p>
-                  <p class="text-base font-semibold text-surfaceDark">
-                    {{ order.orderNo || '-' }}
-                  </p>
-                </div>
-                <Badge :status="order.status" />
-              </div>
-
-              <dl class="mt-3 space-y-2 text-sm text-gray-600">
-                <div class="flex justify-between gap-4">
-                  <dt class="font-medium text-gray-500">Customer</dt>
-                  <dd class="text-right font-semibold text-surfaceDark">
-                    {{ order.customerName || '-' }}
-                  </dd>
-                </div>
-                <div class="flex justify-between gap-4">
-                  <dt class="font-medium text-gray-500">Komoditi</dt>
-                  <dd class="text-right">
-                    {{ order.commodity || '-' }}
-                  </dd>
-                </div>
-                <div class="flex justify-between gap-4">
-                  <dt class="font-medium text-gray-500">Tanggal Masuk</dt>
-                  <dd class="text-right">
-                    {{ order.date || '-' }}
-                  </dd>
-                </div>
-                <div class="flex justify-between gap-4">
-                  <dt class="font-medium text-gray-500">Sisa Bayar</dt>
-                  <dd class="text-right font-semibold text-primary">
-                    Rp {{ Number(order.remaining || 0).toLocaleString('id-ID') }}
-                  </dd>
-                </div>
-              </dl>
-
-              <router-link
-                v-if="order?.id"
-                :to="{ path: '/kaji-ulang', query: { orderId: order.id } }"
-                class="mt-4 inline-flex items-center text-xs font-semibold text-primary hover:text-primaryDark"
-              >
-                Lihat Detail 
-              </router-link>
-            </article>
-          </div>
-
-          <!-- Desktop table -->
-          <div class="hidden overflow-x-auto md:block">
-            <table class="min-w-full text-sm text-left text-gray-600">
-              <thead class="bg-gray-50 text-gray-700 uppercase text-xs">
-                <tr>
-                  <th class="px-4 py-3">No Order</th>
-                  <th class="px-4 py-3">Customer</th>
-                  <th class="px-4 py-3">Komoditi</th>
-                  <th class="px-4 py-3">Status</th>
-                  <th class="px-4 py-3">Tgl Masuk</th>
-                  <th class="px-4 py-3">Sisa Bayar</th>
-                  <th class="px-4 py-3">Aksi</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr
-                  v-for="order in visibleOrders"
-                  :key="order.id || order.orderNo"
-                  class="border-b last:border-b-0"
-                >
-                  <td class="px-4 py-3 font-medium text-gray-900">
-                    {{ order.orderNo || '-' }}
-                  </td>
-                  <td class="px-4 py-3">{{ order.customerName || '-' }}</td>
-                  <td class="px-4 py-3">{{ order.commodity || '-' }}</td>
-                  <td class="px-4 py-3">
-                    <Badge :status="order.status" />
-                  </td>
-                  <td class="px-4 py-3">{{ order.date || '-' }}</td>
-                  <td class="px-4 py-3">
-                    Rp {{ Number(order.remaining || 0).toLocaleString('id-ID') }}
-                  </td>
-                  <td class="px-4 py-3">
-                    <router-link
-                      v-if="order?.id"
-                      :to="{ path: '/kaji-ulang', query: { orderId: order.id } }"
-                      class="text-blue-600 hover:underline text-xs font-semibold"
-                    >
-                      Detail
-                    </router-link>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </template>
-    </div>
+    </section>
 
     <!-- Recent Activity -->
-    <div class="bg-white border border-gray-200 rounded-xl shadow-md p-4">
-      <h3 class="text-lg font-semibold mb-3 text-primaryDark">
+    <div class="rounded-xl border border-gray-200 bg-white p-3 shadow-md sm:p-4">
+      <h3 class="text-base sm:text-lg font-semibold mb-3 text-primaryDark">
         Aktivitas Terbaru
       </h3>
 
@@ -233,9 +182,9 @@
               <thead class="bg-gray-50 text-gray-700 uppercase text-xs">
                 <tr>
                   <th class="px-4 py-3">Tanggal</th>
-                  <th class="px-4 py-3">Causer</th>
+                  <th class="px-4 py-3">Aktor</th>
                   <th class="px-4 py-3">Aksi</th>
-                  <th class="px-4 py-3">Subject / Ref</th>
+                  <th class="px-4 py-3">Subject</th>
                   <th class="px-4 py-3">IP</th>
                 </tr>
               </thead>
@@ -264,22 +213,31 @@
 
 <script setup>
 import { reactive, computed, ref, onMounted } from 'vue';
+import { AdjustmentsHorizontalIcon, CalendarIcon } from '@heroicons/vue/24/outline';
 import { useKajiUlangStore } from '@/stores/useKajiUlangStore';
-import { useCustomerStore } from '@/stores/useCustomerStore';
+import { useAnalyticsStore } from '@/stores/useAnalyticsStore';
 import { useActivityStore } from '@/stores/useActivityStore';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useAuthorization } from '@/composables/auth/useAuthorization';
 import StatCard from '@/components/common/StatCard.vue';
-import Badge from '@/components/common/Badge.vue';
+import OrderTrendsChart from '@/components/charts/OrderTrendsChart.vue';
 
 // === Store setup ===
 const orderStore = useKajiUlangStore();
-const customerStore = useCustomerStore();
+const analyticsStore = useAnalyticsStore();
 const activityStore = useActivityStore();
 const authStore = useAuthStore();
 const { hasAnyPermission, isSuperAdmin } = useAuthorization();
-  // Loading indikator untuk tabel
-  // Flag loading data order
+const DEFAULT_TREND_GROUP = 'month';
+const canViewAnalytics = computed(() =>
+  isSuperAdmin.value ||
+    hasAnyPermission(
+      'analytics.index',
+      'analytics.summary',
+      'analytics.trends',
+      'analytic.index'
+    )
+);
 const isLoading = ref(true);
 const canViewAllActivity = computed(() =>
   isSuperAdmin.value ||
@@ -294,13 +252,66 @@ const canViewAllActivity = computed(() =>
 );
 const activityScope = computed(() => (canViewAllActivity.value ? 'all' : 'mine'));
 
+// === Filters (analytics trends) ===
+const analyticsFilters = reactive({
+  dateFrom: '',
+  dateTo: '',
+  group: DEFAULT_TREND_GROUP,
+});
+
+const groupOptions = [
+  { value: 'date', label: 'Harian' },
+  { value: 'month', label: 'Bulanan' },
+  { value: 'year', label: 'Tahunan' },
+];
+
+const getDefaultRange = () => {
+  return { dateFrom: '', dateTo: '' };
+};
+
+const applyDefaultRange = () => {
+  const { dateFrom, dateTo } = getDefaultRange();
+  analyticsFilters.dateFrom = dateFrom;
+  analyticsFilters.dateTo = dateTo;
+};
+
+const normalizeDateRange = () => {
+  const from = analyticsFilters.dateFrom;
+  const to = analyticsFilters.dateTo;
+  if (from && to && from > to) {
+    return { dateFrom: to, dateTo: from };
+  }
+  return { dateFrom: from, dateTo: to };
+};
+
+const applyAnalyticsFilters = async () => {
+  const { dateFrom, dateTo } = normalizeDateRange();
+  if (dateFrom !== analyticsFilters.dateFrom) analyticsFilters.dateFrom = dateFrom;
+  if (dateTo !== analyticsFilters.dateTo) analyticsFilters.dateTo = dateTo;
+  if (!canViewAnalytics.value) return;
+  await analyticsStore.fetchOrderTrends({
+    dateFrom,
+    dateTo,
+    group: analyticsFilters.group,
+    force: true,
+  });
+};
+
+const resetAnalyticsFilters = async () => {
+  analyticsFilters.group = DEFAULT_TREND_GROUP;
+  applyDefaultRange();
+  await applyAnalyticsFilters();
+};
+
 // === Fetch data on mount ===
 onMounted(async () => {
   try {
     activityStore.setActiveUser(authStore.currentUser?.id ?? null);
-    await Promise.all([
+    if (!analyticsFilters.dateFrom && !analyticsFilters.dateTo) {
+      applyDefaultRange();
+    }
+    const tasks = [
       orderStore.fetchAll?.(),
-      customerStore.fetchAll?.(),
       activityStore.fetchAll?.({
         scope: activityScope.value,
         viewer: authStore.currentUser,
@@ -309,61 +320,116 @@ onMounted(async () => {
         canViewAll: canViewAllActivity.value,
         include: ['causer', 'subject'],
       }),
-    ]);
+    ];
+    if (canViewAnalytics.value) {
+      tasks.push(
+        analyticsStore.fetchSummary({ force: true }),
+        analyticsStore.fetchOrderTrends({
+          dateFrom: analyticsFilters.dateFrom,
+          dateTo: analyticsFilters.dateTo,
+          group: analyticsFilters.group,
+          force: true,
+        })
+      );
+    }
+    await Promise.all(tasks);
   } finally {
     isLoading.value = false;
   }
 });
 
-// === Lookup customer name ===
-const customerMap = computed(() => {
-  const map = {};
-  (customerStore.customers || []).forEach((c) => {
-    map[c.id] = c.name;
-  });
-  return map;
-});
-
-// === Filters ===
-  // Filter pencarian tabel order
-  // Filter pencarian customer & status
-const filters = reactive({
-  search: '',
-  status: '',
-});
-
 // === KPI ===
-  // Hitung jumlah order per status
-  // Hitung jumlah order per status
 function countByStatus(status) {
   return (orderStore.orders || []).filter((o) => o.status === status).length;
 }
 
-// === Flatten Orders ===
-const flattenedOrders = computed(() =>
-  (orderStore.orders || []).map((o) => ({
-    ...o,
-    customerName: customerMap.value[o.customerId] ?? '',
-  }))
+const resolveKpiValue = (field, fallbackStatus) => {
+  if (canViewAnalytics.value) {
+    if (analyticsStore.summaryLoading) return '...';
+    if (analyticsStore.summaryError) return countByStatus(fallbackStatus);
+    const value = Number(analyticsStore.summary?.[field] ?? 0);
+    return Number.isFinite(value) ? value : 0;
+  }
+  return countByStatus(fallbackStatus);
+};
+
+const kpiCards = computed(() => [
+  {
+    label: 'Menunggu Kaji Ulang',
+    value: resolveKpiValue('awaiting_review_order_count', 'awaiting_review'),
+    type: 'pending',
+  },
+  {
+    label: 'Menunggu Pembayaran',
+    value: resolveKpiValue('awaiting_payment_order_count', 'awaiting_payment'),
+    type: 'pending',
+  },
+  {
+    label: 'Proses Pengujian',
+    value: resolveKpiValue('testing_order_count', 'testing'),
+    type: 'testing',
+  },
+  {
+    label: 'Selesai',
+    value: resolveKpiValue('completed_order_count', 'completed'),
+    type: 'completed',
+  },
+]);
+
+const trendTitle = computed(() => {
+  if (analyticsFilters.group === 'year') return 'Tahunan';
+  if (analyticsFilters.group === 'date') return 'Harian';
+  return 'Bulanan';
+});
+
+const trendGroup = computed(
+  () => analyticsStore.trendsParams?.group || analyticsFilters.group || DEFAULT_TREND_GROUP
 );
 
-// === Filtered Orders ===
-const filteredOrders = computed(() =>
-  flattenedOrders.value.filter((o) => {
-    const matchSearch = filters.search
-      ? o.customerName?.toLowerCase().includes(filters.search.toLowerCase())
-      : true;
-    const matchStatus = filters.status ? o.status === filters.status : true;
-    return matchSearch && matchStatus;
-  })
-);
+const formatTrendLabel = (value, group) => {
+  if (!value) return '-';
+  const text = String(value);
+  if (group === 'year') return text.slice(0, 4);
+  if (group === 'month') {
+    const parts = text.split('-');
+    if (parts.length >= 2) {
+      const [year, month] = parts;
+      const date = new Date(`${year}-${month}-01T00:00:00Z`);
+      if (!Number.isNaN(date.getTime())) {
+        return new Intl.DateTimeFormat('id-ID', {
+          month: 'short',
+          year: '2-digit',
+        }).format(date);
+      }
+    }
+  }
+  const parsed = new Date(text);
+  if (!Number.isNaN(parsed.getTime())) {
+    return new Intl.DateTimeFormat('id-ID', {
+      day: '2-digit',
+      month: 'short',
+    }).format(parsed);
+  }
+  return text;
+};
+
+const trendSeries = computed(() => {
+  const items = Array.isArray(analyticsStore.orderTrends)
+    ? analyticsStore.orderTrends
+    : [];
+  return items.map((item, index) => ({
+    label: formatTrendLabel(item.period || `${index}`, trendGroup.value),
+    sum: Number(item.sum) || 0,
+    count: Number(item.count) || 0,
+  }));
+});
+
+const trendLabels = computed(() => trendSeries.value.map((item) => item.label));
+const trendSumData = computed(() => trendSeries.value.map((item) => item.sum));
+const trendCountData = computed(() => trendSeries.value.map((item) => item.count));
+const hasTrendData = computed(() => trendSeries.value.length > 0);
 
 const rowsPerPage = 5;
-  // Orders yang sudah difilter/search
-  // Orders yang sudah difilter
-const visibleOrders = computed(() =>
-  filteredOrders.value.slice(0, rowsPerPage)
-);
 
 // === Recent Activities ===
 const recentActivities = computed(() => {
@@ -410,3 +476,4 @@ const visibleActivities = computed(() => recentActivities.value);
   color: #075985;
 }
 </style>
+
