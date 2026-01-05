@@ -238,7 +238,7 @@
                   v-model="item.objectName"
                   type="text"
                   class="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-100"
-                  placeholder="cth. Beton Kolom A"
+                  placeholder="cth. Beton"
                   :readonly="isReadOnlyMode"
                 />
               </div>

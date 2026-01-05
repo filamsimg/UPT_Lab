@@ -366,13 +366,27 @@ const normalizeTestItem = (item = {}) => {
     price,
     quantity,
     lineTotal: toNumber(item.line_total ?? item.lineTotal ?? price * quantity, 0),
-    methodId: item.method_id || item.methodId || '',
+    methodId:
+      ensureString(item.method_id) ||
+      ensureString(item.methodId) ||
+      ensureString(item.method?.id) ||
+      ensureString(item.service?.method_id) ||
+      ensureString(item.service?.methodId) ||
+      ensureString(item.service?.method?.id) ||
+      '',
     methodName:
-      item.method_name ||
-      item.methodName ||
-      item.method?.name ||
-      item.method?.MethodName ||
-      item.method ||
+      ensureString(item.method_name) ||
+      ensureString(item.methodName) ||
+      ensureString(item.method?.name) ||
+      ensureString(item.method?.MethodName) ||
+      ensureString(item.method) ||
+      ensureString(item.service?.method_name) ||
+      ensureString(item.service?.methodName) ||
+      ensureString(item.service?.method?.name) ||
+      ensureString(item.service?.method?.MethodName) ||
+      ensureString(item.service?.method?.title) ||
+      ensureString(item.service?.method?.label) ||
+      ensureString(item.service?.method?.code) ||
       '',
     machineId: item.machine_id || item.machineId || '',
     // Simpan nomor sampel dari BE (sample_number/sample_code) sebagai sampleCode + alias sampleNo
@@ -798,6 +812,7 @@ export const useOrderStore = defineStore('order', {
       query.append('include', 'work_category');
       query.append('include', 'ordered_services.evaluation');
       query.append('include', 'ordered_services.service');
+      query.append('include', 'ordered_services.service.method');
       query.append('include', 'medias');
         query.set('sort', 'created_at');
         const res = await api.get(`/api/v1/material-test-orders?${query.toString()}`);
@@ -827,6 +842,7 @@ export const useOrderStore = defineStore('order', {
       includes.append('include', 'work_category');
       includes.append('include', 'ordered_services.evaluation');
       includes.append('include', 'ordered_services.service');
+      includes.append('include', 'ordered_services.service.method');
       includes.append('include', 'medias');
         const res = await api.get(
           `/api/v1/material-test-orders/${encodeURIComponent(query)}?${includes.toString()}`

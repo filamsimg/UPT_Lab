@@ -577,6 +577,7 @@ const resolveYearFromDate = (value) => {
 
 const form = reactive({
   orderNo: '',
+  orderCode: '',
   orderNumber: null,
   orderYear: '',
   sampleNo: '',
@@ -1041,6 +1042,7 @@ function applyOrderToForm(order) {
     order.orderYear || resolveYearFromDate(order.date || order.entryDate);
   Object.assign(form, {
     orderNo: order.orderNo || '',
+    orderCode: order.orderCode || order.orderDisplay || order.order_code || order.number || '',
     orderNumber: order.orderNumber ?? null,
     orderYear: derivedYear,
     sampleNo: order.sampleNo || '',
@@ -1059,6 +1061,7 @@ function applyOrderToForm(order) {
 function resetForm() {
   Object.assign(form, {
     orderNo: '',
+    orderCode: '',
     orderNumber: null,
     orderYear: '',
     sampleNo: '',
@@ -1438,6 +1441,7 @@ function saveDraft() {
     return;
   }
   kajiUlangStore.updateOrder(editingOrderId.value, {
+    orderCode: form.orderCode,
     orderNumber: form.orderNumber,
     orderYear: form.orderYear,
     customerName: form.customerName,
@@ -1488,6 +1492,7 @@ async function approveReview() {
   const invoiceDetail = buildInvoiceDetail();
   if (editingOrderId.value) {
     kajiUlangStore.updateOrder(editingOrderId.value, {
+      orderCode: form.orderCode,
       orderNumber: form.orderNumber,
       orderYear: form.orderYear,
       customerName: form.customerName,
@@ -1508,6 +1513,7 @@ async function approveReview() {
   } else {
     const created = kajiUlangStore.addOrder({
       orderNo: form.orderNo,
+      orderCode: form.orderCode,
       orderNumber: form.orderNumber,
       orderYear: form.orderYear,
       date: form.date,

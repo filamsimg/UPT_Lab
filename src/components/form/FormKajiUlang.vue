@@ -479,14 +479,32 @@ const lookupDisabled = computed(() => props.isEditing || !props.form.orderNo || 
 const resolveMethod = (item) => {
  // Ambil nama metode uji
   if (!item) return '-'
-  const method =
+  const direct =
     item.method_name ||
     item.methodName ||
     item.method?.name ||
     item.method ||
+    item.service?.method?.name ||
+    item.service?.method_name ||
+    item.service?.methodName ||
     ''
-  const text = String(method || '').trim()
-  return text || '-'
+  const text = String(direct || '').trim()
+  if (text) return text
+
+  const testId = item.serviceId || item.service_id || item.testId || item.id
+  if (testId && Array.isArray(props.tests)) {
+    const test = props.tests.find((entry) => entry.id === testId)
+    const fallback =
+      test?.methodName ||
+      test?.method?.name ||
+      test?.method?.title ||
+      test?.method?.label ||
+      ''
+    const fallbackText = String(fallback || '').trim()
+    if (fallbackText) return fallbackText
+  }
+
+  return '-'
 }
 
 const sanitizeTestName = (value) => {
