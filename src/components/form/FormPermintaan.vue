@@ -1,15 +1,21 @@
 <template>
   <!-- Form permintaan pengujian: data pemohon, paket kerja, daftar uji -->
   <div class="rounded-2xl border border-slate-200 bg-white shadow-sm">
-    <div class="flex flex-col gap-2 border-b border-slate-100 px-4 py-4 md:flex-row md:items-center md:justify-between md:px-6">
-      
+    <div
+      class="flex flex-col gap-2 border-b border-slate-100 px-4 py-4 md:flex-row md:items-center md:justify-between md:px-6"
+    >
       <div>
-        <p class="text-xs font-semibold uppercase tracking-[0.35em] text-slate-500">Form Permintaan</p>
+        <p
+          class="text-xs font-semibold uppercase tracking-[0.35em] text-slate-500"
+        >
+          Form Permintaan
+        </p>
         <h1 class="text-xl font-semibold text-slate-900 md:text-2xl">
           {{ isEdit ? 'Ubah Permintaan' : 'Permintaan Baru' }}
         </h1>
         <p class="text-sm text-slate-500">
-          Isi data permintaan dan rincian pengujian. Simpan sebagai draft atau kirim untuk diteruskan ke kaji ulang.
+          Isi data permintaan dan rincian pengujian. Simpan sebagai draft atau
+          kirim untuk diteruskan ke kaji ulang.
         </p>
       </div>
       <div class="flex flex-wrap gap-2">
@@ -23,13 +29,19 @@
       </div>
     </div>
 
-    <form @submit.prevent="handleSubmit" class="space-y-6 px-4 py-5 md:px-6 lg:px-8">
-      
+    <form
+      @submit.prevent="handleSubmit"
+      class="space-y-6 px-4 py-5 md:px-6 lg:px-8"
+    >
       <!-- Informasi utama -->
-      <section class="space-y-4 rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+      <section
+        class="space-y-4 rounded-2xl border border-slate-200 bg-slate-50/70 p-4"
+      >
         <div v-if="showOwnerField" class="grid gap-3 sm:grid-cols-1">
           <div class="flex flex-col gap-1">
-            <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            <label
+              class="text-xs font-semibold uppercase tracking-wide text-slate-500"
+            >
               Owner (Customer)
             </label>
             <div class="flex items-center gap-2">
@@ -46,7 +58,10 @@
                 @blur="handleOwnerBlur"
               />
               <button
-                v-if="!isReadOnlyMode && (form.ownerDisplay || form.ownerSelections.length)"
+                v-if="
+                  !isReadOnlyMode &&
+                  (form.ownerDisplay || form.ownerSelections.length)
+                "
                 type="button"
                 class="shrink-0 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-100"
                 @click="clearOwner"
@@ -61,7 +76,10 @@
                 :value="opt.label"
               />
             </datalist>
-            <div v-if="form.ownerSelections.length" class="flex flex-wrap gap-2 pt-1">
+            <div
+              v-if="form.ownerSelections.length"
+              class="flex flex-wrap gap-2 pt-1"
+            >
               <div
                 v-for="(owner, index) in form.ownerSelections"
                 :key="`${owner.id || owner.label || 'owner'}-${index}`"
@@ -79,9 +97,14 @@
               </div>
             </div>
             <p class="text-[11px] text-slate-500">
-              Pilih satu atau lebih owner agar order dapat diakses customer. Kosongkan jika akun customer belum ada atau akan ditambahkan belakangan.
+              Pilih satu atau lebih owner agar order dapat diakses customer.
+              Kosongkan jika akun customer belum ada atau akan ditambahkan
+              belakangan.
             </p>
-            <p v-if="ownerLoading" class="text-[11px] font-medium text-slate-500">
+            <p
+              v-if="ownerLoading"
+              class="text-[11px] font-medium text-slate-500"
+            >
               Mencari user...
             </p>
             <p v-if="ownerError" class="text-[11px] font-medium text-rose-600">
@@ -96,56 +119,76 @@
           </div>
         </div>
         <div class="grid gap-3 sm:grid-cols-2">
-          <div class="flex flex-col gap-1">
-            <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">Nama Pemohon</label>
-            <input
-              v-model="form.customerName"
-              type="text"
-              class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-100"
-              placeholder="Nama pemohon"
-              :readonly="isReadOnlyMode || (isCustomerUser && !canManageCustomerData)"
-            />
+          <div class="flex flex-col gap-3">
+            <div class="flex flex-col gap-1">
+              <label
+                class="text-xs font-semibold uppercase tracking-wide text-slate-500"
+                >Nama Pemohon</label
+              >
+              <input
+                v-model="form.customerName"
+                type="text"
+                class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-100"
+                placeholder="Nama pemohon"
+                :readonly="
+                  isReadOnlyMode || (isCustomerUser && !canManageCustomerData)
+                "
+              />
+            </div>
           </div>
           <div class="flex flex-col gap-1">
-            <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">Email Customer</label>
+            <label
+              class="text-xs font-semibold uppercase tracking-wide text-slate-500"
+              >Email Customer</label
+            >
             <input
               v-model="form.customerEmail"
               type="email"
               class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-100"
               placeholder="Email customer"
-              :readonly="isReadOnlyMode || (isCustomerUser && !canManageCustomerData)"
+              :readonly="
+                isReadOnlyMode || (isCustomerUser && !canManageCustomerData)
+              "
             />
           </div>
-        </div>
-
-        
-
-        <div class="grid gap-3 sm:grid-cols-1">
-          <div class="flex flex-col gap-1">
-            <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">Sertifikasi / Laporan Atas Nama</label>
+          <div class="flex flex-col gap-1 sm:col-span-2">
+            <label
+              class="text-xs font-semibold uppercase tracking-wide text-slate-500"
+              >Nama Perusahaan</label
+            >
             <input
-              v-model="form.certificateName"
+              v-model="form.companyName"
               type="text"
               class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-100"
-              placeholder="Nama yang dicantumkan pada sertifikat/laporan"
-              :readonly="isReadOnlyMode"
+              placeholder="Nama perusahaan/instansi"
+              :readonly="
+                isReadOnlyMode || (isCustomerUser && !canManageCustomerData)
+              "
             />
           </div>
         </div>
 
         <div class="grid gap-3 sm:grid-cols-2">
           <div class="flex flex-col gap-1">
-            <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">No Telepon</label>
+            <label
+              class="text-xs font-semibold uppercase tracking-wide text-slate-500"
+              >No Telepon</label
+            >
             <input
               v-model="form.phoneNumber"
               type="text"
               class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-100"
               placeholder="No kontak"
-              :readonly="isReadOnlyMode || (isCustomerUser && !canManageCustomerData)"
+              :readonly="
+                isReadOnlyMode || (isCustomerUser && !canManageCustomerData)
+              "
             />
           </div>
           <div class="flex flex-col gap-1">
-            <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">Jenis Pekerjaan</label>
+            <label
+              class="text-xs font-semibold uppercase tracking-wide text-slate-500"
+              >Jenis Pekerjaan</label
+            >
             <select
               v-model="form.workCategoryId"
               class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-100"
@@ -160,31 +203,84 @@
                 {{ cat.label }}
               </option>
             </select>
-            
           </div>
         </div>
 
         <div class="flex flex-col gap-1">
-          <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">Alamat</label>
+          <label
+            class="text-xs font-semibold uppercase tracking-wide text-slate-500"
+            >Alamat lengkap</label
+          >
           <textarea
             v-model="form.address"
             rows="2"
             class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-100"
-            placeholder="Alamat lengkap"
-            :readonly="isReadOnlyMode || Boolean(form.addressId) || (isCustomerUser && !canManageCustomerData)"
+            placeholder="Alamat lengkap Pemohon"
+            :readonly="
+              isReadOnlyMode || Boolean(form.addressId)
+            "
           ></textarea>
           <p v-if="form.addressId" class="text-[11px] text-emerald-600">
             Alamat berasal dari data customer.
           </p>
         </div>
+
+        <div class="rounded-xl border border-slate-200 bg-white p-3">
+          <div
+            class="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between"
+          >
+            <p
+              class="text-xs font-semibold uppercase tracking-wide text-slate-800"
+            >
+              Sertifikat Atas Nama
+            </p>
+            <p class="text-[11px] text-slate-500">
+              Isi jika berbeda dari nama pemohon.
+            </p>
+          </div>
+          <div class="mt-2 grid gap-2 sm:grid-cols-2">
+            <div class="flex flex-col gap-1 sm:col-span-2">
+              <label
+                class="text-xs font-semibold uppercase tracking-wide text-slate-500"
+                >Nama</label
+              >
+              <input
+                v-model="form.certificateName"
+                type="text"
+                class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-100"
+                placeholder="Nama pada sertifikat"
+                :readonly="isReadOnlyMode"
+              />
+            </div>
+            <div class="flex flex-col gap-1 sm:col-span-2">
+              <label
+                class="text-xs font-semibold uppercase tracking-wide text-slate-500"
+                >Alamat Lengkap
+              </label>
+              <textarea
+                v-model="form.certificateAddress"
+                rows="2"
+                class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-100"
+                placeholder="Alamat pada sertifikat"
+                :readonly="isReadOnlyMode"
+              ></textarea>
+            </div>
+          </div>
+        </div>
       </section>
 
       <!-- Detail Pengujian -->
       <section class="space-y-3">
-        <div class="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+        <div
+          class="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between"
+        >
           <div>
-            <h2 class="text-lg font-semibold text-slate-900">Detail Pengujian</h2>
-            <p class="text-xs text-slate-500">Tambah pengujian dan sesuaikan data sampel.</p>
+            <h2 class="text-lg font-semibold text-slate-900">
+              Detail Pengujian
+            </h2>
+            <p class="text-xs text-slate-500">
+              Tambah pengujian dan sesuaikan data sampel.
+            </p>
           </div>
           <button
             v-if="!isReadOnlyMode"
@@ -197,7 +293,10 @@
         </div>
 
         <div v-if="testOptions.length" class="space-y-4">
-          <div v-if="!form.testItems.length" class="rounded-xl border border-dashed border-slate-300 px-4 py-6 text-center text-sm text-slate-500">
+          <div
+            v-if="!form.testItems.length"
+            class="rounded-xl border border-dashed border-slate-300 px-4 py-6 text-center text-sm text-slate-500"
+          >
             Belum ada pengujian yang dipilih.
           </div>
 
@@ -207,91 +306,105 @@
             class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm space-y-3"
           >
             <div class="overflow-x-auto">
-              <div class="grid w-full min-w-full gap-3 md:grid-cols-[5fr_3fr_2fr_2fr_2fr_auto] md:items-end">
-              <div class="flex flex-col gap-1">
-                <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Cari Pengujian
-                </label>
-                <input
-                  :list="`test-search-${index}`"
-                  v-model="item.selectedLabel"
-                  @change="handleTestSelection(index)"
-                  @blur="handleTestBlur(index)"
-                  type="text"
-                  class="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-100"
-                  placeholder="Ketik minimal 3 huruf untuk mencari pengujian..."
-                  :disabled="isReadOnlyMode"
-                />
-                <datalist :id="`test-search-${index}`">
-                  <option
-                    v-for="opt in testOptions"
-                    :key="opt.value"
-                    :value="opt.label"
+              <div
+                class="grid w-full min-w-full gap-3 md:grid-cols-[5fr_3fr_2fr_2fr_2fr_auto] md:items-end"
+              >
+                <div class="flex flex-col gap-1">
+                  <label
+                    class="text-xs font-semibold uppercase tracking-wide text-slate-500"
+                  >
+                    Cari Pengujian
+                  </label>
+                  <input
+                    :list="`test-search-${index}`"
+                    v-model="item.selectedLabel"
+                    @change="handleTestSelection(index)"
+                    @blur="handleTestBlur(index)"
+                    type="text"
+                    class="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-100"
+                    placeholder="Ketik minimal 3 huruf untuk mencari pengujian..."
+                    :disabled="isReadOnlyMode"
                   />
-                </datalist>
-              </div>
-              <div class="flex flex-col gap-1">
-                <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Nama Sampel
-                </label>
-                <input
-                  v-model="item.objectName"
-                  type="text"
-                  class="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-100"
-                  placeholder="cth. Beton"
-                  :readonly="isReadOnlyMode"
-                />
-              </div>
-              <div class="flex flex-col gap-1">
-                <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Tarif (Rp)
-                </label>
-                <input
-                  v-model="item.price"
-                  type="text"
-                  readonly
-                  class="rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm text-right text-slate-700 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-100"
-                  placeholder="0"
-                />
-              </div>
-              <div class="flex flex-col gap-1">
-                <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Satuan
-                </label>
-                <input
-                  v-model="item.unit"
-                  type="text"
-                  readonly
-                  class="rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm text-slate-700 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-100"
-                  placeholder="-"
-                />
-              </div>
-              <div class="flex flex-col gap-1">
-                <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Jumlah Sampel
-                </label>
-                <input
-                  v-model.number="item.quantity"
-                  type="number"
-                  min="1"
-                  class="rounded-lg border border-slate-300 px-3 py-2 text-sm text-right text-slate-700 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-100"
-                  placeholder="1"
-                  :disabled="isReadOnlyMode"
-                />
-              </div>
-              <div class="flex items-end justify-end">
-                <button
-                  v-if="!isReadOnlyMode"
-                  type="button"
-                  class="rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-rose-600 transition hover:bg-rose-50"
-                  @click="removeTestItem(index)"
-                >
-                  Hapus
-                </button>
-              </div>
+                  <datalist :id="`test-search-${index}`">
+                    <option
+                      v-for="opt in testOptions"
+                      :key="opt.value"
+                      :value="opt.label"
+                    />
+                  </datalist>
+                </div>
+                <div class="flex flex-col gap-1">
+                  <label
+                    class="text-xs font-semibold uppercase tracking-wide text-slate-500"
+                  >
+                    Nama Sampel
+                  </label>
+                  <input
+                    v-model="item.objectName"
+                    type="text"
+                    class="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-100"
+                    placeholder="cth. Beton"
+                    :readonly="isReadOnlyMode"
+                  />
+                </div>
+                <div class="flex flex-col gap-1">
+                  <label
+                    class="text-xs font-semibold uppercase tracking-wide text-slate-500"
+                  >
+                    Tarif (Rp)
+                  </label>
+                  <input
+                    v-model="item.price"
+                    type="text"
+                    readonly
+                    class="rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm text-right text-slate-700 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-100"
+                    placeholder="0"
+                  />
+                </div>
+                <div class="flex flex-col gap-1">
+                  <label
+                    class="text-xs font-semibold uppercase tracking-wide text-slate-500"
+                  >
+                    Satuan
+                  </label>
+                  <input
+                    v-model="item.unit"
+                    type="text"
+                    readonly
+                    class="rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm text-slate-700 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-100"
+                    placeholder="-"
+                  />
+                </div>
+                <div class="flex flex-col gap-1">
+                  <label
+                    class="text-xs font-semibold uppercase tracking-wide text-slate-500"
+                  >
+                    Jumlah Sampel
+                  </label>
+                  <input
+                    v-model.number="item.quantity"
+                    type="number"
+                    min="1"
+                    class="rounded-lg border border-slate-300 px-3 py-2 text-sm text-right text-slate-700 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-100"
+                    placeholder="1"
+                    :disabled="isReadOnlyMode"
+                  />
+                </div>
+                <div class="flex items-end justify-end">
+                  <button
+                    v-if="!isReadOnlyMode"
+                    type="button"
+                    class="rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-rose-600 transition hover:bg-rose-50"
+                    @click="removeTestItem(index)"
+                  >
+                    Hapus
+                  </button>
+                </div>
               </div>
             </div>
-            <div class="flex flex-wrap items-center justify-between border-t border-dashed pt-3 text-xs text-slate-600">
+            <div
+              class="flex flex-wrap items-center justify-between border-t border-dashed pt-3 text-xs text-slate-600"
+            >
               <span class="text-slate-500">
                 Pilih pengujian dari daftar agar tarif terisi otomatis.
               </span>
@@ -301,15 +414,22 @@
             </div>
           </div>
         </div>
-        <div v-else class="rounded-xl border border-dashed border-slate-300 px-4 py-6 text-center text-sm text-slate-500">
-          Data pengujian belum tersedia. Tambah pengujian di halaman layanan terlebih dahulu.
+        <div
+          v-else
+          class="rounded-xl border border-dashed border-slate-300 px-4 py-6 text-center text-sm text-slate-500"
+        >
+          Data pengujian belum tersedia. Tambah pengujian di halaman layanan
+          terlebih dahulu.
         </div>
       </section>
 
       <!-- Informasi tambahan -->
       <section class="space-y-3">
         <div class="flex flex-col gap-1">
-          <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">Paket Pekerjaan</label>
+          <label
+            class="text-xs font-semibold uppercase tracking-wide text-slate-500"
+            >Paket Pekerjaan</label
+          >
           <input
             v-model="form.workPackage"
             type="text"
@@ -320,13 +440,19 @@
         </div>
 
         <div class="flex flex-col gap-1">
-          <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">
+          <label
+            class="text-xs font-semibold uppercase tracking-wide text-slate-500"
+          >
             Catatan
             <span
               class="text-[11px] font-semibold normal-case tracking-normal"
               :class="isManualMode ? 'text-rose-600' : 'text-slate-400'"
             >
-              ({{ isManualMode ? 'wajib jika layanan tidak ada di daftar' : 'opsional' }})
+              ({{
+                isManualMode
+                  ? 'wajib jika layanan tidak ada di daftar'
+                  : 'opsional'
+              }})
             </span>
           </label>
           <textarea
@@ -337,22 +463,31 @@
             :readonly="isReadOnlyMode"
           ></textarea>
           <p v-if="isManualMode" class="text-[11px] font-medium text-rose-600">
-            Karena layanan tidak dipilih, catatan dan dokumen pendukung diperlukan agar admin dapat menindaklanjuti.
-            Dokumen dapat diunggah setelah permintaan tersimpan.
+            Karena layanan tidak dipilih, catatan dan dokumen pendukung
+            diperlukan agar admin dapat menindaklanjuti. Dokumen dapat diunggah
+            setelah permintaan tersimpan.
           </p>
         </div>
 
         <div v-if="showSupportingDocs" class="flex flex-col gap-1">
-          <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">
+          <label
+            class="text-xs font-semibold uppercase tracking-wide text-slate-500"
+          >
             Dokumen Pendukung
             <span
               class="text-[11px] font-semibold normal-case tracking-normal"
               :class="isManualMode ? 'text-rose-600' : 'text-slate-400'"
             >
-              ({{ isManualMode ? 'wajib jika layanan tidak ada di daftar' : 'opsional' }})
+              ({{
+                isManualMode
+                  ? 'wajib jika layanan tidak ada di daftar'
+                  : 'opsional'
+              }})
             </span>
           </label>
-          <div class="flex flex-col gap-2 rounded-lg border border-dashed border-slate-300 bg-slate-50/70 p-3">
+          <div
+            class="flex flex-col gap-2 rounded-lg border border-dashed border-slate-300 bg-slate-50/70 p-3"
+          >
             <input
               type="file"
               class="w-full text-sm"
@@ -403,14 +538,21 @@
               </ul>
             </div>
             <p class="text-[11px] text-slate-500">
-              Format: PDF/JPG/PNG/DOC. {{ isManualMode ? 'Wajib dilampirkan jika layanan tidak ada di daftar.' : 'Opsional.' }}
+              Format: PDF/JPG/PNG/DOC.
+              {{
+                isManualMode
+                  ? 'Wajib dilampirkan jika layanan tidak ada di daftar.'
+                  : 'Opsional.'
+              }}
             </p>
           </div>
         </div>
       </section>
 
       <!-- Aksi -->
-      <div class="flex flex-col gap-2 border-t border-slate-100 pt-3 sm:flex-row sm:items-center sm:justify-end sm:gap-3">
+      <div
+        class="flex flex-col gap-2 border-t border-slate-100 pt-3 sm:flex-row sm:items-center sm:justify-end sm:gap-3"
+      >
         <button
           type="button"
           class="inline-flex w-full items-center justify-center rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 sm:w-auto"
@@ -469,7 +611,7 @@ const isEditMode = computed(() => props.isEdit);
 const isReadOnlyMode = computed(() => Boolean(props.readOnly));
 
 const statusLabels = {
- // Label status untuk badge
+  // Label status untuk badge
   draft: 'Draft',
   awaiting_review: 'Menunggu Kaji Ulang',
   awaiting_payment: 'Menunggu Pembayaran',
@@ -484,13 +626,13 @@ const statusLabels = {
 };
 
 const testOptions = computed(() =>
- // Opsi pencarian pengujian dari store
+  // Opsi pencarian pengujian dari store
   (testStore.tests || []).map((test) => {
-      const segments = [test.name || null, test.code || null].filter(Boolean);
-      const label =
-        segments.length > 0
-          ? segments.join(' - ')
-          : test.name || test.code || 'Pengujian';
+    const segments = [test.name || null, test.code || null].filter(Boolean);
+    const label =
+      segments.length > 0
+        ? segments.join(' - ')
+        : test.name || test.code || 'Pengujian';
     return {
       value: test.id,
       label,
@@ -542,13 +684,17 @@ const canLookupUsers = computed(() =>
   hasAnyPermission('users.index', 'users.show', 'user.read', 'users.read')
 );
 
-const showOwnerField = computed(() => !isCustomerUser.value && canLookupUsers.value);
+const showOwnerField = computed(
+  () => !isCustomerUser.value && canLookupUsers.value
+);
 
 const ownerOptions = ref([]);
 const ownerLoading = ref(false);
 const ownerError = ref('');
 const ownerTouched = ref(false);
-const ownerDataListId = `owner-search-${Math.random().toString(36).slice(2, 8)}`;
+const ownerDataListId = `owner-search-${Math.random()
+  .toString(36)
+  .slice(2, 8)}`;
 
 let ownerSearchTimeout = null;
 let ownerSearchSequence = 0;
@@ -600,6 +746,7 @@ const defaultForm = () => {
     customerId: '',
     customerEmail: '',
     customerName: '',
+    companyName: '',
     phoneNumber: '',
     address: '',
     addressId: '',
@@ -609,6 +756,7 @@ const defaultForm = () => {
     workCategoryId: '',
     workPackage: '',
     certificateName: '',
+    certificateAddress: '',
     note: '',
     supportingFile: null,
     supportingFileName: '',
@@ -632,7 +780,8 @@ const normalizedStatus = computed(
 );
 
 const showSupportingDocs = computed(
-  () => isEditMode.value && allowedSupportingStatuses.has(normalizedStatus.value)
+  () =>
+    isEditMode.value && allowedSupportingStatuses.has(normalizedStatus.value)
 );
 
 const existingSupportingDocs = computed(() => {
@@ -647,7 +796,8 @@ const hasSelectedSupportingFiles = computed(
 );
 
 const hasSupportingDocs = computed(
-  () => hasSelectedSupportingFiles.value || existingSupportingDocs.value.length > 0
+  () =>
+    hasSelectedSupportingFiles.value || existingSupportingDocs.value.length > 0
 );
 
 function updateOrderMetadata(entryDate) {
@@ -691,12 +841,17 @@ watch(
           manualPrice: Boolean(item.manualPrice),
         })),
         certificateName: val.certificateName || val.certificate_name || '',
+        certificateAddress:
+          val.certificateAddress || val.certificate_address || '',
         customerId: val.customerId || val.customer_id || '',
-        customerEmail: val.customerEmail || val.customer_email || val.email || '',
+        companyName: val.companyName || val.company_name || '',
+        customerEmail:
+          val.customerEmail || val.customer_email || val.email || '',
         addressId: val.addressId || val.address_id || '',
         note: val.note || '',
         supportingFile: val.supportingFile || null,
-        supportingFileName: val.supportingFileName || val.supporting_file_name || '',
+        supportingFileName:
+          val.supportingFileName || val.supporting_file_name || '',
         supportingFiles: [],
         supportingFileNames: [],
         medias: Array.isArray(val.medias) ? val.medias : [],
@@ -745,15 +900,9 @@ function resolveTestName(testId) {
     typeof testStore.getTestById === 'function'
       ? testStore.getTestById(testId)
       : (testStore.tests || []).find((t) => t.id === testId);
-    if (!test) return testId || 'Pengujian';
-    return (
-      test.name ||
-      test.code ||
-      test.id ||
-      testId ||
-      'Pengujian'
-    );
-  }
+  if (!test) return testId || 'Pengujian';
+  return test.name || test.code || test.id || testId || 'Pengujian';
+}
 
 function resolveTestUnit(testId) {
   const test =
@@ -883,20 +1032,37 @@ const ownerSelectionValid = computed(() => {
 });
 
 const canSave = computed(() => {
- // Validasi minimal data pemohon
-  const hasCustomer = Boolean(form.value.customerName && form.value.customerName.trim());
-  const hasWorkCategory = Boolean(form.value.workCategoryId && String(form.value.workCategoryId).trim());
-  const hasApplicantEmail = Boolean(form.value.customerEmail && form.value.customerEmail.trim());
-  const hasApplicantPhone = Boolean(form.value.phoneNumber && String(form.value.phoneNumber).trim());
-  const hasApplicantAddress = Boolean(form.value.address && form.value.address.trim());
+  // Validasi minimal data pemohon
+  const hasCustomer = Boolean(
+    form.value.customerName && form.value.customerName.trim()
+  );
+  const hasWorkCategory = Boolean(
+    form.value.workCategoryId && String(form.value.workCategoryId).trim()
+  );
+  const hasApplicantEmail = Boolean(
+    form.value.customerEmail && form.value.customerEmail.trim()
+  );
+  const hasApplicantPhone = Boolean(
+    form.value.phoneNumber && String(form.value.phoneNumber).trim()
+  );
+  const hasApplicantAddress = Boolean(
+    form.value.address && form.value.address.trim()
+  );
   const hasServices = normalizedTestItems.value.length > 0;
   const hasManualNote = Boolean(form.value.note && form.value.note.trim());
   const hasSupportingDocsValue = hasSupportingDocs.value;
-  const shouldRequireSupportingDocs = isManualMode.value && showSupportingDocs.value;
+  const shouldRequireSupportingDocs =
+    isManualMode.value && showSupportingDocs.value;
 
   if (!ownerSelectionValid.value) return false;
 
-  if (!hasCustomer || !hasWorkCategory || !hasApplicantEmail || !hasApplicantPhone || !hasApplicantAddress) {
+  if (
+    !hasCustomer ||
+    !hasWorkCategory ||
+    !hasApplicantEmail ||
+    !hasApplicantPhone ||
+    !hasApplicantAddress
+  ) {
     return false;
   }
 
@@ -912,8 +1078,8 @@ function itemSubtotal(item) {
   const lineTotal =
     item.lineTotal ??
     item.line_total ??
-    (Math.max(0, Number(item.price) || 0) *
-      Math.max(1, Number(item.quantity) || 1));
+    Math.max(0, Number(item.price) || 0) *
+      Math.max(1, Number(item.quantity) || 1);
   return Math.max(0, Number(lineTotal) || 0);
 }
 
@@ -922,7 +1088,7 @@ function formatCurrency(value) {
 }
 
 function buildPayload() {
- // Bentuk payload untuk BE (ordered_services, applicant info)
+  // Bentuk payload untuk BE (ordered_services, applicant info)
   const testItems = normalizedTestItems.value;
   const summary = testItems.length
     ? testItems.map((item) => `${item.testName} (${item.quantity})`).join(', ')
@@ -935,6 +1101,7 @@ function buildPayload() {
     entryDate,
     customerId,
     customerName,
+    companyName,
     customerEmail,
     phoneNumber,
     addressId,
@@ -943,6 +1110,7 @@ function buildPayload() {
     workPackage,
     status,
     certificateName,
+    certificateAddress,
     note,
   } = form.value;
 
@@ -965,13 +1133,18 @@ function buildPayload() {
     : ownerIdsFallback;
   const authUserId = resolveAuthUserId(authUser.value);
   const resolvedOwnerIds = dedupeOwnerIds(
-    !showOwnerField.value && isCustomerUser.value && !isEditMode.value && authUserId
+    !showOwnerField.value &&
+      isCustomerUser.value &&
+      !isEditMode.value &&
+      authUserId
       ? [...baseOwnerIds, authUserId]
       : baseOwnerIds
   );
   const includeOwnerIds = showOwnerField.value
-    ? (isEditMode.value ? ownerTouched.value : resolvedOwnerIds.length > 0)
-    : (!isEditMode.value && isCustomerUser.value && resolvedOwnerIds.length > 0);
+    ? isEditMode.value
+      ? ownerTouched.value
+      : resolvedOwnerIds.length > 0
+    : !isEditMode.value && isCustomerUser.value && resolvedOwnerIds.length > 0;
 
   const payload = {
     idOrder,
@@ -980,6 +1153,7 @@ function buildPayload() {
     entryDate: entryDate || entryDateSafe,
     customerId,
     customerName,
+    companyName,
     customerEmail,
     phoneNumber,
     addressId,
@@ -987,6 +1161,7 @@ function buildPayload() {
     workCategoryId,
     workPackage,
     certificateName,
+    certificateAddress,
     note,
     supportingFiles,
     supportingFileNames,
@@ -1013,13 +1188,15 @@ function handleSubmit() {
 }
 
 async function submitWithStatus(status) {
-  const nextStatus = typeof status === 'string' && status.trim() ? status.trim() : 'draft';
+  const nextStatus =
+    typeof status === 'string' && status.trim() ? status.trim() : 'draft';
   const confirmed = await openConfirm({
-    title: nextStatus === 'draft'
-      ? 'Simpan sebagai draft?'
-      : isEditMode.value
-      ? 'Simpan perubahan permintaan?'
-      : 'Kirim permintaan?',
+    title:
+      nextStatus === 'draft'
+        ? 'Simpan sebagai draft?'
+        : isEditMode.value
+        ? 'Simpan perubahan permintaan?'
+        : 'Kirim permintaan?',
     message:
       nextStatus === 'draft'
         ? 'Draft akan tersimpan dan bisa dikirim belakangan.'
@@ -1030,11 +1207,14 @@ async function submitWithStatus(status) {
 
   const payload = buildPayload();
   payload.status = nextStatus;
-  emit('submit', { action: nextStatus === 'draft' ? 'draft' : 'submit', data: payload });
+  emit('submit', {
+    action: nextStatus === 'draft' ? 'draft' : 'submit',
+    data: payload,
+  });
 }
 
 function handleSaveDraft() {
- // Emit draft tanpa memaksa validasi lanjut
+  // Emit draft tanpa memaksa validasi lanjut
   submitWithStatus('draft');
 }
 
@@ -1058,13 +1238,12 @@ function removeSupportingFile(index) {
 }
 
 function isSupportingMedia(media = {}) {
-  const collection = String(
-    media.collection_name || media.collectionName || ''
-  )
+  const collection = String(media.collection_name || media.collectionName || '')
     .trim()
     .toLowerCase();
   if (!collection) return true;
-  if (collection.includes('payment') || collection.includes('refund')) return false;
+  if (collection.includes('payment') || collection.includes('refund'))
+    return false;
   return true;
 }
 
@@ -1147,7 +1326,9 @@ function addOwnerSelection(entry) {
   if (!id) return false;
   const label = String(entry?.label || entry?.name || id).trim() || id;
   const next = dedupeOwnerSelections([
-    ...(Array.isArray(form.value.ownerSelections) ? form.value.ownerSelections : []),
+    ...(Array.isArray(form.value.ownerSelections)
+      ? form.value.ownerSelections
+      : []),
     { id, label },
   ]);
   const changed = next.length !== form.value.ownerSelections.length;
@@ -1170,7 +1351,10 @@ function resolveOwnerSelections(val = {}) {
     ? val.orderUsers || val.order_users
     : [];
   const ownerEntries = orderUsers.filter(
-    (item) => String(item?.type || '').trim().toLowerCase() === 'owner'
+    (item) =>
+      String(item?.type || '')
+        .trim()
+        .toLowerCase() === 'owner'
   );
   const selections = ownerEntries
     .map((item) => {
@@ -1238,14 +1422,14 @@ async function searchOwners(keyword) {
       .filter((item) => item.value && !selectedIds.has(item.value));
     const customers = mapped.filter((item) => item.isCustomer);
     const nonCustomers = mapped.filter((item) => !item.isCustomer);
-    ownerOptions.value = customers.length ? [...customers, ...nonCustomers] : mapped;
+    ownerOptions.value = customers.length
+      ? [...customers, ...nonCustomers]
+      : mapped;
   } catch (err) {
     if (currentSeq !== ownerSearchSequence) return;
     ownerOptions.value = [];
     ownerError.value =
-      err?.response?.data?.message ||
-      err?.message ||
-      'Gagal mencari user.';
+      err?.response?.data?.message || err?.message || 'Gagal mencari user.';
   } finally {
     if (currentSeq === ownerSearchSequence) {
       ownerLoading.value = false;
