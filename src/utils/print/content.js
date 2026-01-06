@@ -381,21 +381,106 @@ function buildKajiUlangItemsTable(order) {
   `;
 }
 
+function normalizeEvaluationValue(value) {
+  if (value === true || value === false) return value;
+  if (value === 1) return true;
+  if (value === 0) return false;
+  return null;
+}
+
+function summarizeEvaluationField(items, field, labels) {
+  const values = items
+    .map((item) => normalizeEvaluationValue(item?.evaluation?.[field]))
+    .filter((value) => value === true || value === false);
+  if (!values.length) return '';
+  const hasTrue = values.includes(true);
+  const hasFalse = values.includes(false);
+  if (hasTrue && hasFalse) return labels.mixed || 'Sebagian';
+  return hasTrue ? labels.true : labels.false;
+}
+
+function buildDerivedEvaluationRows(items = []) {
+  if (!Array.isArray(items) || !items.length) return [];
+  return [
+    {
+      topic: 'Peralatan',
+      result: summarizeEvaluationField(items, 'is_equipment_available', {
+        true: 'Ada',
+        false: 'Tidak Ada',
+      }),
+    },
+    {
+      topic: 'Personel',
+      result: summarizeEvaluationField(items, 'is_personnel_available', {
+        true: 'Ada',
+        false: 'Tidak Ada',
+      }),
+    },
+    {
+      topic: 'Waktu',
+      result: summarizeEvaluationField(items, 'is_time_available', {
+        true: 'Cukup',
+        false: 'Tidak Cukup',
+      }),
+    },
+    {
+      topic: 'Kondisi',
+      result: summarizeEvaluationField(items, 'is_test_ready', {
+        true: 'Siap Uji',
+        false: 'Prepare Sampel',
+      }),
+    },
+    {
+      topic: 'Laboratorium Subkontrak',
+      result: summarizeEvaluationField(items, 'is_subcontract_lab_available', {
+        true: 'Ada',
+        false: 'Tidak Ada',
+      }),
+    },
+  ];
+}
+
+function mergeEvaluationRows(providedRows = [], derivedRows = []) {
+  if (!providedRows.length) return derivedRows;
+  if (!derivedRows.length) return providedRows;
+  const derivedMap = new Map(
+    derivedRows.map((row) => [row.topic, row.result])
+  );
+  const merged = providedRows.map((row) => {
+    const topic = row?.topic || '';
+    const resultText =
+      typeof row?.result === 'string' ? row.result.trim() : row?.result;
+    const derivedResult = derivedMap.get(topic);
+    const result = resultText ? row.result : derivedResult || row.result;
+    return { ...row, result };
+  });
+  const knownTopics = new Set(merged.map((row) => row.topic));
+  derivedRows.forEach((row) => {
+    if (!knownTopics.has(row.topic)) merged.push(row);
+  });
+  return merged;
+}
+
 function buildKajiUlangEvaluationTable(order) {
-  const rows =
-    (Array.isArray(order.kajiUlangRows) && order.kajiUlangRows.length
+  const providedRows =
+    Array.isArray(order.kajiUlangRows) && order.kajiUlangRows.length
       ? order.kajiUlangRows
-      : [
-          { topic: 'Peralatan', result: order.evaluation?.equipment || '' },
-          { topic: 'Personel', result: order.evaluation?.personnel || '' },
-          { topic: 'Waktu', result: order.evaluation?.time || '' },
-          { topic: 'Kondisi', result: order.evaluation?.condition || '' },
-          {
-            topic: 'Laboratorium Subkontrak',
-            result: order.evaluation?.subcontract || '',
-          },
-          { topic: 'Metode Uji', result: order.evaluation?.method || '' },
-        ]) || [];
+      : [];
+  const derivedRows = buildDerivedEvaluationRows(order.testItems);
+  const rows = mergeEvaluationRows(providedRows, derivedRows);
+  if (!rows.length) {
+    rows.push(
+      { topic: 'Peralatan', result: order.evaluation?.equipment || '' },
+      { topic: 'Personel', result: order.evaluation?.personnel || '' },
+      { topic: 'Waktu', result: order.evaluation?.time || '' },
+      { topic: 'Kondisi', result: order.evaluation?.condition || '' },
+      {
+        topic: 'Laboratorium Subkontrak',
+        result: order.evaluation?.subcontract || '',
+      },
+      { topic: 'Metode Uji', result: order.evaluation?.method || '' }
+    );
+  }
   if (!rows.length) return '';
   return `
     <table class="evaluation-table">

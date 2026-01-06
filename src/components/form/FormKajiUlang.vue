@@ -6,10 +6,20 @@
         <div>
           <p class="text-xs font-semibold uppercase tracking-[0.35em] text-slate-500">Form Kaji Ulang</p>
           <h1 class="text-2xl font-semibold text-slate-900 md:text-3xl">
-            {{ isEditing ? 'Ubah Data Kaji Ulang' : 'Tambah Kaji Ulang' }}
+            {{
+              isPreview
+                ? 'Preview Kaji Ulang'
+                : isEditing
+                ? 'Ubah Data Kaji Ulang'
+                : 'Tambah Kaji Ulang'
+            }}
           </h1>
           <p class="text-sm text-slate-500">
-            Isi evaluasi kaji ulang untuk permintaan dengan status menunggu kaji ulang .
+            {{
+              isPreview
+                ? 'Tinjau detail kaji ulang yang sudah tersimpan.'
+                : 'Isi evaluasi kaji ulang untuk permintaan dengan status menunggu kaji ulang.'
+            }}
           </p>
         </div>
         <button
@@ -27,7 +37,7 @@
           <div class="flex w-full items-center gap-2">
             <input
               v-model="form.orderNo"
-              :readonly="isEditing"
+              :readonly="isEditing || isPreview"
               type="text"
               placeholder="Contoh: ORD-202501-001"
               class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-100 disabled:bg-slate-100"
@@ -35,13 +45,13 @@
             <button
               type="button"
               class="inline-flex shrink-0 items-center justify-center rounded-lg bg-sky-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-sky-600 disabled:cursor-not-allowed disabled:bg-slate-300"
-              :disabled="lookupDisabled"
+              :disabled="lookupDisabled || isPreview"
               @click="$emit('lookup-order', form.orderNo)"
             >
               {{ lookupLoading ? 'Mencari...' : 'Cari' }}
             </button>
           </div>
-          <p v-if="!isEditing" class="text-xs text-slate-500">
+          <p v-if="!isEditing && !isPreview" class="text-xs text-slate-500">
             Masukkan ID order dari permintaan yang ingin dikaji ulang.
           </p>
         </div>
@@ -58,6 +68,7 @@
               <input
                 v-model="form.date"
                 type="date"
+                :disabled="isPreview"
                 class="rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm text-slate-700 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-100"
               />
             </div>
@@ -221,6 +232,7 @@
                 <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">Peralatan</label>
                 <select
                   v-model="item.evaluation.is_equipment_available"
+                  :disabled="isPreview"
                   class="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-100"
                 >
                   <option :value="null">Pilih hasil</option>
@@ -232,6 +244,7 @@
                 <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">Personel</label>
                 <select
                   v-model="item.evaluation.is_personnel_available"
+                  :disabled="isPreview"
                   class="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-100"
                 >
                   <option :value="null">Pilih hasil</option>
@@ -243,6 +256,7 @@
                 <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">Waktu</label>
                 <select
                   v-model="item.evaluation.is_time_available"
+                  :disabled="isPreview"
                   class="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-100"
                 >
                   <option :value="null">Pilih hasil</option>
@@ -254,6 +268,7 @@
                 <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">Kondisi Sampel</label>
                 <select
                   v-model="item.evaluation.is_test_ready"
+                  :disabled="isPreview"
                   class="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-100"
                 >
                   <option :value="null">Pilih hasil</option>
@@ -265,6 +280,7 @@
                 <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">Laboratorium Subkontrak</label>
                 <select
                   v-model="item.evaluation.is_subcontract_lab_available"
+                  :disabled="isPreview"
                   class="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-100"
                 >
                   <option :value="null">Pilih hasil</option>
@@ -286,12 +302,13 @@
           v-model="form.note"
           rows="4"
           placeholder="Tambahkan catatan atau rekomendasi lain yang diperlukan."
+          :readonly="isPreview"
           class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm text-slate-700 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-100"
         ></textarea>
       </section>
     </main>
 
-    <footer class="border-t border-slate-200 bg-white px-4 py-4 md:px-8">
+    <footer v-if="!isPreview" class="border-t border-slate-200 bg-white px-4 py-4 md:px-8">
       <div class="flex flex-col gap-3 sm:flex-row sm:justify-end">
         <button
           type="button"
@@ -346,6 +363,10 @@ const props = defineProps({
     default: () => [],
   },
   isEditing: {
+    type: Boolean,
+    default: false,
+  },
+  isPreview: {
     type: Boolean,
     default: false,
   },
@@ -473,8 +494,15 @@ const lineSubtotal = (item) => {
   return Math.max(0, Number(direct) || 0)
 }
 
-const lookupDisabled = computed(() => props.isEditing || !props.form.orderNo || !props.form.orderNo.trim() || props.lookupLoading)
- // Disable lookup ketika editing atau input kosong
+const lookupDisabled = computed(
+  () =>
+    props.isPreview ||
+    props.isEditing ||
+    !props.form.orderNo ||
+    !props.form.orderNo.trim() ||
+    props.lookupLoading
+)
+// Disable lookup ketika editing atau input kosong
 
 const resolveMethod = (item) => {
  // Ambil nama metode uji

@@ -109,6 +109,14 @@
               <PrinterIcon class="h-5 w-5" />
             </button>
             <button
+              v-if="row.canPreview"
+              class="rounded-md bg-sky-50 p-1.5 text-sky-600 transition hover:bg-sky-100 hover:text-sky-800"
+              @click="openPreviewForm(row)"
+              title="Preview Form Kaji Ulang"
+            >
+              <DocumentMagnifyingGlassIcon class="h-5 w-5" />
+            </button>
+            <button
               v-if="row.canReviewPayment"
               class="rounded-md bg-blue-50 p-1.5 text-blue-600 transition hover:bg-blue-100 hover:text-blue-800"
               @click="openPaymentReview(row)"
@@ -167,6 +175,7 @@
       :kajiUlangRows="reviewRows"
       :tests="tests"
       :isEditing="isEditing"
+      :isPreview="isPreview"
       :lookup-loading="lookupLoading"
       :lookup-error="lookupError"
       @lookup-order="lookupOrder"
@@ -402,16 +411,17 @@ import { reactive, ref, computed, onMounted, watch } from 'vue';
 import DataTable from '@/components/common/DataTable.vue';
 import Badge from '@/components/common/Badge.vue';
 import FormKajiUlang from '@/components/form/FormKajiUlang.vue';
-import {
-  PencilIcon,
-  EyeIcon,
-  XCircleIcon,
-  PrinterIcon,
-  DocumentDuplicateIcon,
-  BeakerIcon,
-  CheckCircleIcon,
-  ArrowUturnLeftIcon,
-} from '@heroicons/vue/24/outline';
+  import {
+    PencilIcon,
+    EyeIcon,
+    XCircleIcon,
+    PrinterIcon,
+    DocumentDuplicateIcon,
+    DocumentMagnifyingGlassIcon,
+    BeakerIcon,
+    CheckCircleIcon,
+    ArrowUturnLeftIcon,
+  } from '@heroicons/vue/24/outline';
 import logoDinas from '@/assets/LOGO DINAS KAB TEGAL.webp';
 import { buildKajiUlangPrintHtml } from '@/utils/printTemplates';
 import { useKajiUlangStore } from '@/stores/useKajiUlangStore';
@@ -443,6 +453,7 @@ const pushToast = (options = {}) =>
 const showForm = ref(false);
 const editingOrderId = ref(null);
 const isEditing = ref(false);
+const isPreview = ref(false);
 const lookupLoading = ref(false);
 const lookupError = ref('');
 const showReviewModal = ref(false);
@@ -801,38 +812,51 @@ const buildSampleCodes = (order = {}) => {
   });
 };
 
-const tableRows = computed(() =>
-  kajiUlangStore.orders
-    // Draft tidak masuk tabel kaji ulang.
-    .filter(
-      (order) =>
-        !['draft', 'cancelled'].includes(normalizeOrderStatus(order.status))
-    )
-    .map((order, index) => {
-      const sampleCodes = buildSampleCodes(order);
-      const normalizedStatus = normalizeOrderStatus(order.status);
-      // Konsolidasi status: gunakan status permintaan sebagai satu sumber
-      return {
-        id: order.id,
-        orderNo: order.orderNo,
-        __rowKey: order.id || order.orderNo || `row-${index}`,
-        sampleNo: sampleCodes.join(', ') || order.sampleNo || '',
-        sampleCodes,
-        date: resolveLatestDate(order),
-        customerName: order.customerName || '',
-        status: resolveDisplayStatus(order),
-        testItems: order.testItems || [],
-        testNameSummary: buildTestNameSummary(order.testItems),
-        paymentInfo: order.paymentInfo,
-        canReviewPayment: normalizedStatus === 'payment_submitted',
-        canOpenForm: !['completed', 'testing', 'payment_approved'].includes(normalizedStatus),
-        canMarkTesting: normalizedStatus === 'payment_approved',
-        canComplete: normalizedStatus === 'testing',
-        canRefund: ['payment_approved', 'testing', 'completed'].includes(normalizedStatus),
-        canCancel: cancelableStatuses.has(normalizedStatus),
-      };
-    })
-);
+  const lockedStatuses = new Set([
+    'awaiting_payment',
+    'payment_submitted',
+    'payment_approved',
+    'payment_rejected',
+    'testing',
+    'completed',
+    'refunded',
+  ]);
+  const refundableStatuses = new Set(['payment_approved', 'testing', 'completed']);
+
+  const tableRows = computed(() =>
+    kajiUlangStore.orders
+      // Draft tidak masuk tabel kaji ulang.
+      .filter(
+        (order) =>
+          !['draft', 'cancelled'].includes(normalizeOrderStatus(order.status))
+      )
+      .map((order, index) => {
+        const sampleCodes = buildSampleCodes(order);
+        const normalizedStatus = normalizeOrderStatus(order.status);
+        const isLockedStatus = lockedStatuses.has(normalizedStatus);
+        // Konsolidasi status: gunakan status permintaan sebagai satu sumber
+        return {
+          id: order.id,
+          orderNo: order.orderNo,
+          __rowKey: order.id || order.orderNo || `row-${index}`,
+          sampleNo: sampleCodes.join(', ') || order.sampleNo || '',
+          sampleCodes,
+          date: resolveLatestDate(order),
+          customerName: order.customerName || '',
+          status: resolveDisplayStatus(order),
+          testItems: order.testItems || [],
+          testNameSummary: buildTestNameSummary(order.testItems),
+          paymentInfo: order.paymentInfo,
+          canReviewPayment: normalizedStatus === 'payment_submitted',
+          canOpenForm: !isLockedStatus,
+          canPreview: isLockedStatus,
+          canMarkTesting: normalizedStatus === 'payment_approved',
+          canComplete: normalizedStatus === 'testing',
+          canRefund: refundableStatuses.has(normalizedStatus),
+          canCancel: cancelableStatuses.has(normalizedStatus),
+        };
+      })
+  );
 
 const tests = computed(() => testStore.tests || []);
 
@@ -860,6 +884,7 @@ onMounted(async () => {
 
 function resetFormState() {
   showForm.value = false;
+  isPreview.value = false;
   resetForm();
   resetRefundState();
 }
@@ -881,6 +906,7 @@ function applyNewFormState() {
   resetReviewState();
   resetRefundState();
   resetForm();
+  isPreview.value = false;
   showForm.value = true;
 }
 
@@ -910,28 +936,30 @@ function canReviewPayment(order) {
   return normalizeOrderStatus(order?.status) === 'payment_submitted';
 }
 
-async function openEditById(orderId) {
-  const order = await resolveOrderById(orderId);
-  if (!order) {
-    pushToast({
-      tone: 'warning',
+  async function openEditById(orderId) {
+    const order = await resolveOrderById(orderId);
+    if (!order) {
+      pushToast({
+        tone: 'warning',
       title: 'Order Tidak Ditemukan',
       message: `Order ${orderId || '-'} tidak ditemukan.`,
     });
-    clearRouteQuery();
-    resetFormState();
-    return;
-  }
-  if (['payment_approved', 'completed', 'testing'].includes(order.status)) {
-    pushToast({
-      tone: 'warning',
-      title: 'Belum Bisa Dibuka',
-      message: 'Order sudah terkunci karena pembayaran selesai.',
-    });
-    clearRouteQuery();
-    resetFormState();
-    return;
-  }
+      clearRouteQuery();
+      resetFormState();
+      return;
+    }
+    isPreview.value = false;
+    const normalizedStatus = normalizeOrderStatus(order.status);
+    if (lockedStatuses.has(normalizedStatus)) {
+      pushToast({
+        tone: 'warning',
+        title: 'Belum Bisa Dibuka',
+        message: 'Order sudah terkunci setelah lolos kaji ulang.',
+      });
+      clearRouteQuery();
+      resetFormState();
+      return;
+    }
   isEditing.value = true;
   lookupError.value = '';
   lookupLoading.value = false;
@@ -1085,20 +1113,20 @@ function handleAdd() {
   updateRouteQuery({ mode: 'new', id: null });
 }
 
-function handleEdit(row) {
-  const order =
-    kajiUlangStore.orders.find((o) => o.id === row.id) ||
-    kajiUlangStore.orders.find((o) => o.orderNo === row.orderNo);
-  if (!order) return;
-  const normalizedStatus = normalizeOrderStatus(order.status);
-  if (['payment_approved', 'completed', 'testing'].includes(normalizedStatus)) {
-    pushToast({
-      tone: 'warning',
-      title: 'Belum Bisa Dibuka',
-      message: 'Order sudah terkunci karena pembayaran selesai.',
-    });
-    return;
-  }
+  function handleEdit(row) {
+    const order =
+      kajiUlangStore.orders.find((o) => o.id === row.id) ||
+      kajiUlangStore.orders.find((o) => o.orderNo === row.orderNo);
+    if (!order) return;
+    const normalizedStatus = normalizeOrderStatus(order.status);
+    if (lockedStatuses.has(normalizedStatus)) {
+      pushToast({
+        tone: 'warning',
+        title: 'Belum Bisa Dibuka',
+        message: 'Order sudah terkunci setelah lolos kaji ulang.',
+      });
+      return;
+    }
   updateRouteQuery({ mode: 'edit', id: order.orderNo || order.id });
 }
 
@@ -1239,31 +1267,65 @@ function openRefundModal(row) {
   showRefundModal.value = true;
 }
 
-function closeRefundModal() {
-  resetRefundState();
-}
-
-function printKajiUlang(row) {
-  const order =
-    kajiUlangStore.orders.find((o) => o.id === row.id) ||
-    kajiUlangStore.orders.find((o) => o.orderNo === row.orderNo);
-  if (!order) {
-    pushToast({
-      tone: 'error',
-      title: 'Data Tidak Ditemukan',
-      message: 'Order kaji ulang tidak tersedia untuk dicetak.',
-    });
-    return;
+  function closeRefundModal() {
+    resetRefundState();
   }
-  const html = buildKajiUlangPrintHtml(order, {
-    logoSrc: logoDinas,
-    title:
-      order.status === 'rejected' || order.status === 'cancelled'
-        ? 'Berita Acara Kaji Ulang (Ditolak)'
-        : 'Berita Acara Kaji Ulang',
-  });
-  openPrintWindow(html);
-}
+
+  function resolveKajiUlangOrder(row) {
+    if (!row) return null;
+    return (
+      kajiUlangStore.orders.find((o) => o.id === row.id) ||
+      kajiUlangStore.orders.find((o) => o.orderNo === row.orderNo) ||
+      null
+    );
+  }
+
+  function buildKajiUlangPrintTitle(order) {
+    const normalizedStatus = normalizeOrderStatus(order?.status);
+    return normalizedStatus === 'rejected' || normalizedStatus === 'cancelled'
+      ? 'Berita Acara Kaji Ulang (Ditolak)'
+      : 'Berita Acara Kaji Ulang';
+  }
+
+  function buildKajiUlangHtml(order) {
+    return buildKajiUlangPrintHtml(order, {
+      logoSrc: logoDinas,
+      title: buildKajiUlangPrintTitle(order),
+    });
+  }
+
+  function openPreviewForm(row) {
+    const order = resolveKajiUlangOrder(row);
+    if (!order) {
+      pushToast({
+        tone: 'error',
+        title: 'Data Tidak Ditemukan',
+        message: 'Order kaji ulang tidak tersedia untuk dipreview.',
+      });
+      return;
+    }
+    isPreview.value = true;
+    isEditing.value = false;
+    lookupError.value = '';
+    lookupLoading.value = false;
+    applyOrderToForm(order);
+    editingOrderId.value = order.id ?? order.orderNo ?? null;
+    showForm.value = true;
+  }
+
+  function printKajiUlang(row) {
+    const order = resolveKajiUlangOrder(row);
+    if (!order) {
+      pushToast({
+        tone: 'error',
+        title: 'Data Tidak Ditemukan',
+        message: 'Order kaji ulang tidak tersedia untuk dicetak.',
+      });
+      return;
+    }
+    const html = buildKajiUlangHtml(order);
+    openPrintWindow(html);
+  }
 
 async function approvePaymentEvidence() {
   if (!reviewingOrder.value) return;
