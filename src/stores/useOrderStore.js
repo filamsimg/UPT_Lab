@@ -982,6 +982,36 @@ export const useOrderStore = defineStore('order', {
       }
     },
 
+    async updateServiceEvaluation(orderNo, evaluationId, payload = {}) {
+      const target = ensureString(orderNo);
+      const evalId = ensureString(evaluationId);
+      if (!target) return { ok: false, error: 'OrderNo kosong' };
+      if (!evalId) return { ok: false, error: 'ID evaluasi kosong' };
+      this.loading = true;
+      try {
+        const encodedOrder = encodeURIComponent(target);
+        const encodedEval = encodeURIComponent(evalId);
+        const url = `/api/v1/material-test-orders/${encodedOrder}/service-evaluations/${encodedEval}`;
+        const res = await api.put(url, payload);
+        const payloadData =
+          res?.data?.data?.material_test_order || res?.data?.data || {};
+        const updated = normalizeOrder(payloadData);
+        if (updated.orderNo) this.upsertLocal(updated);
+        return { ok: true, data: updated };
+      } catch (err) {
+        const status = err?.response?.status;
+        const message =
+          err?.response?.data?.message ||
+          err?.response?.data?.error ||
+          err?.message ||
+          'Gagal memperbarui evaluasi layanan.';
+        this.error = message;
+        return { ok: false, error: message, status, details: err?.response?.data || null };
+      } finally {
+        this.loading = false;
+      }
+    },
+
     async _runStatusAction(orderNo, action, { formData } = {}) {
       const target = ensureString(orderNo);
       if (!target) return { ok: false, error: 'OrderNo kosong' };

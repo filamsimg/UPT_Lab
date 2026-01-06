@@ -465,7 +465,7 @@ const refundingOrder = ref(null);
 const refundFile = ref(null);
 const refundError = ref('');
 
-// Query mode routing: ?mode=new|edit|payment&id=ORDER_NO
+// Query mode routing: ?mode=new|edit|payment|preview&id=ORDER_NO
 const readQueryValue = (value) =>
   Array.isArray(value) ? value[0] ?? '' : value ?? '';
 const routeMode = computed(() =>
@@ -509,15 +509,31 @@ const evaluationFields = [
   'is_subcontract_lab_available',
 ];
 
+const isEvaluationItemComplete = (item = {}) => {
+  const ev = item?.evaluation || {};
+  return evaluationFields.every(
+    (field) => ev[field] === true || ev[field] === false
+  );
+};
+
+const resolveEvaluationId = (item = {}) =>
+  item?.evaluation?.id || item?.evaluation_id || item?.evaluationId || '';
+
+const buildServiceEvaluationPayload = (item = {}) => {
+  const evaluation = item?.evaluation || {};
+  return {
+    is_equipment_available: evaluation.is_equipment_available,
+    is_personnel_available: evaluation.is_personnel_available,
+    is_time_available: evaluation.is_time_available,
+    is_test_ready: evaluation.is_test_ready,
+    is_subcontract_lab_available: evaluation.is_subcontract_lab_available,
+  };
+};
+
 const isEvaluationComplete = (items = []) =>
   Array.isArray(items) &&
   items.length > 0 &&
-  items.every((item) => {
-    const ev = item?.evaluation || {};
-    return evaluationFields.every(
-      (field) => ev[field] === true || ev[field] === false
-    );
-  });
+  items.every((item) => isEvaluationItemComplete(item));
 
 const cloneTestItems = (items = []) =>
   items.map((item) => ({
@@ -575,6 +591,71 @@ function buildInvoiceDetail() {
     outstanding,
     transferFiles: baseInfo.transferFiles || [],
     testRows: items,
+  };
+}
+
+async function syncServiceEvaluations({ strict = false } = {}) {
+  const orderNo = String(form.orderNo || '').trim();
+  if (!orderNo) {
+    return { ok: false, error: 'ID order kosong.' };
+  }
+  const items = Array.isArray(form.testItems) ? form.testItems : [];
+  if (!items.length) {
+    return { ok: false, error: 'Data pengujian belum tersedia.' };
+  }
+
+  const incompleteItems = items.filter((item) => !isEvaluationItemComplete(item));
+  if (strict && incompleteItems.length) {
+    return { ok: false, error: 'Evaluasi kaji ulang belum lengkap.' };
+  }
+
+  const candidates = strict
+    ? items
+    : items.filter((item) => isEvaluationItemComplete(item));
+  const missingEvaluation = candidates.filter(
+    (item) => !resolveEvaluationId(item)
+  );
+  if (strict && missingEvaluation.length) {
+    return { ok: false, error: 'ID evaluasi layanan belum tersedia.' };
+  }
+
+  const updateItems = candidates.filter((item) => resolveEvaluationId(item));
+  if (!updateItems.length) {
+    return {
+      ok: true,
+      updated: 0,
+      skipped: items.length,
+      missing: missingEvaluation.length,
+      incomplete: incompleteItems.length,
+    };
+  }
+
+  const results = await Promise.allSettled(
+    updateItems.map((item) =>
+      orderStore.updateServiceEvaluation(
+        orderNo,
+        resolveEvaluationId(item),
+        buildServiceEvaluationPayload(item)
+      )
+    )
+  );
+
+  const failures = results.filter(
+    (result) => result.status === 'rejected' || !result.value?.ok
+  );
+  const error =
+    failures[0]?.value?.error ||
+    failures[0]?.reason?.message ||
+    'Gagal menyimpan evaluasi layanan.';
+
+  return {
+    ok: failures.length === 0,
+    updated: updateItems.length - failures.length,
+    failed: failures.length,
+    skipped: items.length - updateItems.length,
+    missing: missingEvaluation.length,
+    incomplete: incompleteItems.length,
+    error: failures.length ? error : '',
   };
 }
 
@@ -941,7 +1022,7 @@ function canReviewPayment(order) {
     if (!order) {
       pushToast({
         tone: 'warning',
-      title: 'Order Tidak Ditemukan',
+        title: 'Order Tidak Ditemukan',
       message: `Order ${orderId || '-'} tidak ditemukan.`,
     });
       clearRouteQuery();
@@ -964,9 +1045,41 @@ function canReviewPayment(order) {
   lookupError.value = '';
   lookupLoading.value = false;
   applyOrderToForm(order);
-  editingOrderId.value = order.id;
-  showForm.value = true;
-}
+    editingOrderId.value = order.id;
+    showForm.value = true;
+  }
+
+  async function openPreviewById(orderId) {
+    const order = await resolveOrderById(orderId);
+    if (!order) {
+      pushToast({
+        tone: 'warning',
+        title: 'Order Tidak Ditemukan',
+        message: `Order ${orderId || '-'} tidak ditemukan.`,
+      });
+      clearRouteQuery();
+      resetFormState();
+      return;
+    }
+    const normalizedStatus = normalizeOrderStatus(order.status);
+    if (!lockedStatuses.has(normalizedStatus)) {
+      pushToast({
+        tone: 'warning',
+        title: 'Preview Belum Tersedia',
+        message: 'Order belum lolos kaji ulang.',
+      });
+      clearRouteQuery();
+      resetFormState();
+      return;
+    }
+    isPreview.value = true;
+    isEditing.value = false;
+    lookupError.value = '';
+    lookupLoading.value = false;
+    applyOrderToForm(order);
+    editingOrderId.value = order.id ?? order.orderNo ?? null;
+    showForm.value = true;
+  }
 
 async function openPaymentReviewById(orderId) {
   const order = await resolveOrderById(orderId);
@@ -1036,24 +1149,41 @@ watch(
       return;
     }
 
-    if (mode === 'payment') {
-      resetFormState();
-      if (!id) {
-        pushToast({
-          tone: 'warning',
-          title: 'ID Order Kosong',
-          message: 'Masukkan id order pada query untuk review pembayaran.',
-        });
-        clearRouteQuery();
-        resetReviewState();
-        return;
-      }
-      await openPaymentReviewById(id);
+  if (mode === 'payment') {
+    resetFormState();
+    if (!id) {
+      pushToast({
+        tone: 'warning',
+        title: 'ID Order Kosong',
+        message: 'Masukkan id order pada query untuk review pembayaran.',
+      });
+      clearRouteQuery();
+      resetReviewState();
       return;
     }
+    await openPaymentReviewById(id);
+    return;
+  }
 
+  if (mode === 'preview') {
     resetReviewState();
-    resetFormState();
+    resetRefundState();
+    if (!id) {
+      pushToast({
+        tone: 'warning',
+        title: 'ID Order Kosong',
+        message: 'Masukkan id order pada query untuk preview.',
+      });
+      clearRouteQuery();
+      resetFormState();
+      return;
+    }
+    await openPreviewById(id);
+    return;
+  }
+
+  resetReviewState();
+  resetFormState();
   },
   { immediate: true }
 );
@@ -1304,13 +1434,16 @@ function openRefundModal(row) {
       });
       return;
     }
-    isPreview.value = true;
-    isEditing.value = false;
-    lookupError.value = '';
-    lookupLoading.value = false;
-    applyOrderToForm(order);
-    editingOrderId.value = order.id ?? order.orderNo ?? null;
-    showForm.value = true;
+    const normalizedStatus = normalizeOrderStatus(order.status);
+    if (!lockedStatuses.has(normalizedStatus)) {
+      pushToast({
+        tone: 'warning',
+        title: 'Preview Belum Tersedia',
+        message: 'Order belum lolos kaji ulang.',
+      });
+      return;
+    }
+    updateRouteQuery({ mode: 'preview', id: order.orderNo || order.id });
   }
 
   function printKajiUlang(row) {
@@ -1485,7 +1618,7 @@ async function lookupOrder(orderNo) {
   }
 }
 
-function saveDraft() {
+async function saveDraft() {
   if (!form.orderNo) {
     pushToast({
       tone: 'warning',
@@ -1518,6 +1651,25 @@ function saveDraft() {
     rows: reviewRows,
     note: form.note,
   });
+  const evaluationResult = await syncServiceEvaluations({ strict: false });
+  if (!evaluationResult.ok) {
+    pushToast({
+      tone: 'warning',
+      title: 'Draft Disimpan',
+      message:
+        evaluationResult.error ||
+        'Draft tersimpan, tetapi evaluasi layanan gagal diperbarui.',
+    });
+    return;
+  }
+  if (evaluationResult.skipped) {
+    pushToast({
+      tone: 'warning',
+      title: 'Draft Disimpan',
+      message: `Draft tersimpan, tetapi ${evaluationResult.skipped} evaluasi belum lengkap sehingga belum dikirim ke server.`,
+    });
+    return;
+  }
   pushToast({
     tone: 'success',
     title: 'Draft Disimpan',
@@ -1548,6 +1700,17 @@ async function approveReview() {
       title: 'Evaluasi Belum Lengkap',
       message:
         'Lengkapi evaluasi kaji ulang untuk semua pengujian sebelum meloloskan.',
+    });
+    return;
+  }
+  const evaluationResult = await syncServiceEvaluations({ strict: true });
+  if (!evaluationResult.ok) {
+    pushToast({
+      tone: 'error',
+      title: 'Gagal Menyimpan Evaluasi',
+      message:
+        evaluationResult.error ||
+        'Evaluasi layanan belum berhasil disimpan ke server.',
     });
     return;
   }

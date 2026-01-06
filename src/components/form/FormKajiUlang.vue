@@ -64,15 +64,6 @@
         <div class="space-y-4 lg:col-span-2">
           <div class="grid gap-4 sm:grid-cols-2">
             <div class="flex flex-col gap-1">
-              <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">Tanggal Permintaan</label>
-              <input
-                v-model="form.date"
-                type="date"
-                :disabled="isPreview"
-                class="rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm text-slate-700 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-100"
-              />
-            </div>
-            <div class="flex flex-col gap-1">
               <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">No. Order</label>
               <div class="rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-800">
                 {{ displayOrderCode }}
@@ -204,7 +195,8 @@
 
       <section class="space-y-4">
         <div class="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-          <h2 class="text-lg font-semibold text-slate-900">Evaluasi Kaji Ulang</h2>
+          <h2 class="text-lg font-semibold text-slate-900">
+             Kaji Ulang</h2>
           <p class="text-xs text-slate-500">
             Lengkapi ketersediaan peralatan, personel, waktu, kondisi, dan lab subkontrak per pengujian.
           </p>
@@ -230,63 +222,223 @@
             <div class="grid gap-3 sm:grid-cols-2">
               <div class="flex flex-col gap-1">
                 <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">Peralatan</label>
-                <select
-                  v-model="item.evaluation.is_equipment_available"
-                  :disabled="isPreview"
-                  class="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-100"
+                <div
+                  class="grid grid-cols-2 gap-2 rounded-xl border border-slate-200 bg-slate-50 p-2"
+                  :class="isPreview ? 'pointer-events-none opacity-60' : ''"
                 >
-                  <option :value="null">Pilih hasil</option>
-                  <option :value="true">Ada</option>
-                  <option :value="false">Tidak Ada</option>
-                </select>
+                  <div class="relative">
+                    <input
+                      :id="`equipment-yes-${idx}`"
+                      v-model="item.evaluation.is_equipment_available"
+                      :disabled="isPreview"
+                      :name="`equipment-${idx}`"
+                      :value="true"
+                      type="radio"
+                      class="peer sr-only"
+                    />
+                    <label
+                      :for="`equipment-yes-${idx}`"
+                      class="flex items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-600 transition peer-checked:border-emerald-200 peer-checked:bg-emerald-50 peer-checked:text-emerald-700 peer-checked:shadow-sm"
+                      :class="isPreview ? 'cursor-not-allowed' : 'cursor-pointer'"
+                    >
+                      Ada
+                    </label>
+                  </div>
+                  <div class="relative">
+                    <input
+                      :id="`equipment-no-${idx}`"
+                      v-model="item.evaluation.is_equipment_available"
+                      :disabled="isPreview"
+                      :name="`equipment-${idx}`"
+                      :value="false"
+                      type="radio"
+                      class="peer sr-only"
+                    />
+                    <label
+                      :for="`equipment-no-${idx}`"
+                      class="flex items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-600 transition peer-checked:border-amber-200 peer-checked:bg-amber-50 peer-checked:text-amber-700 peer-checked:shadow-sm"
+                      :class="isPreview ? 'cursor-not-allowed' : 'cursor-pointer'"
+                    >
+                      Tidak Ada
+                    </label>
+                  </div>
+                </div>
               </div>
               <div class="flex flex-col gap-1">
                 <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">Personel</label>
-                <select
-                  v-model="item.evaluation.is_personnel_available"
-                  :disabled="isPreview"
-                  class="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-100"
+                <div
+                  class="grid grid-cols-2 gap-2 rounded-xl border border-slate-200 bg-slate-50 p-2"
+                  :class="isPreview ? 'pointer-events-none opacity-60' : ''"
                 >
-                  <option :value="null">Pilih hasil</option>
-                  <option :value="true">Ada</option>
-                  <option :value="false">Tidak Ada</option>
-                </select>
+                  <div class="relative">
+                    <input
+                      :id="`personnel-yes-${idx}`"
+                      v-model="item.evaluation.is_personnel_available"
+                      :disabled="isPreview"
+                      :name="`personnel-${idx}`"
+                      :value="true"
+                      type="radio"
+                      class="peer sr-only"
+                    />
+                    <label
+                      :for="`personnel-yes-${idx}`"
+                      class="flex items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-600 transition peer-checked:border-emerald-200 peer-checked:bg-emerald-50 peer-checked:text-emerald-700 peer-checked:shadow-sm"
+                      :class="isPreview ? 'cursor-not-allowed' : 'cursor-pointer'"
+                    >
+                      Ada
+                    </label>
+                  </div>
+                  <div class="relative">
+                    <input
+                      :id="`personnel-no-${idx}`"
+                      v-model="item.evaluation.is_personnel_available"
+                      :disabled="isPreview"
+                      :name="`personnel-${idx}`"
+                      :value="false"
+                      type="radio"
+                      class="peer sr-only"
+                    />
+                    <label
+                      :for="`personnel-no-${idx}`"
+                      class="flex items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-600 transition peer-checked:border-amber-200 peer-checked:bg-amber-50 peer-checked:text-amber-700 peer-checked:shadow-sm"
+                      :class="isPreview ? 'cursor-not-allowed' : 'cursor-pointer'"
+                    >
+                      Tidak Ada
+                    </label>
+                  </div>
+                </div>
               </div>
               <div class="flex flex-col gap-1">
                 <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">Waktu</label>
-                <select
-                  v-model="item.evaluation.is_time_available"
-                  :disabled="isPreview"
-                  class="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-100"
+                <div
+                  class="grid grid-cols-2 gap-2 rounded-xl border border-slate-200 bg-slate-50 p-2"
+                  :class="isPreview ? 'pointer-events-none opacity-60' : ''"
                 >
-                  <option :value="null">Pilih hasil</option>
-                  <option :value="true">Cukup</option>
-                  <option :value="false">Tidak Cukup</option>
-                </select>
+                  <div class="relative">
+                    <input
+                      :id="`time-yes-${idx}`"
+                      v-model="item.evaluation.is_time_available"
+                      :disabled="isPreview"
+                      :name="`time-${idx}`"
+                      :value="true"
+                      type="radio"
+                      class="peer sr-only"
+                    />
+                    <label
+                      :for="`time-yes-${idx}`"
+                      class="flex items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-600 transition peer-checked:border-emerald-200 peer-checked:bg-emerald-50 peer-checked:text-emerald-700 peer-checked:shadow-sm"
+                      :class="isPreview ? 'cursor-not-allowed' : 'cursor-pointer'"
+                    >
+                      Ada
+                    </label>
+                  </div>
+                  <div class="relative">
+                    <input
+                      :id="`time-no-${idx}`"
+                      v-model="item.evaluation.is_time_available"
+                      :disabled="isPreview"
+                      :name="`time-${idx}`"
+                      :value="false"
+                      type="radio"
+                      class="peer sr-only"
+                    />
+                    <label
+                      :for="`time-no-${idx}`"
+                      class="flex items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-600 transition peer-checked:border-amber-200 peer-checked:bg-amber-50 peer-checked:text-amber-700 peer-checked:shadow-sm"
+                      :class="isPreview ? 'cursor-not-allowed' : 'cursor-pointer'"
+                    >
+                      Tidak Ada
+                    </label>
+                  </div>
+                </div>
               </div>
               <div class="flex flex-col gap-1">
                 <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">Kondisi Sampel</label>
-                <select
-                  v-model="item.evaluation.is_test_ready"
-                  :disabled="isPreview"
-                  class="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-100"
+                <div
+                  class="grid grid-cols-2 gap-2 rounded-xl border border-slate-200 bg-slate-50 p-2"
+                  :class="isPreview ? 'pointer-events-none opacity-60' : ''"
                 >
-                  <option :value="null">Pilih hasil</option>
-                  <option :value="true">Siap Uji</option>
-                  <option :value="false">Prepare Sampel</option>
-                </select>
+                  <div class="relative">
+                    <input
+                      :id="`sample-yes-${idx}`"
+                      v-model="item.evaluation.is_test_ready"
+                      :disabled="isPreview"
+                      :name="`sample-${idx}`"
+                      :value="true"
+                      type="radio"
+                      class="peer sr-only"
+                    />
+                    <label
+                      :for="`sample-yes-${idx}`"
+                      class="flex items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-600 transition peer-checked:border-emerald-200 peer-checked:bg-emerald-50 peer-checked:text-emerald-700 peer-checked:shadow-sm"
+                      :class="isPreview ? 'cursor-not-allowed' : 'cursor-pointer'"
+                    >
+                      Siap Uji
+                    </label>
+                  </div>
+                  <div class="relative">
+                    <input
+                      :id="`sample-no-${idx}`"
+                      v-model="item.evaluation.is_test_ready"
+                      :disabled="isPreview"
+                      :name="`sample-${idx}`"
+                      :value="false"
+                      type="radio"
+                      class="peer sr-only"
+                    />
+                    <label
+                      :for="`sample-no-${idx}`"
+                      class="flex items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-600 transition peer-checked:border-amber-200 peer-checked:bg-amber-50 peer-checked:text-amber-700 peer-checked:shadow-sm"
+                      :class="isPreview ? 'cursor-not-allowed' : 'cursor-pointer'"
+                    >
+                      Prepare Sampel
+                    </label>
+                  </div>
+                </div>
               </div>
               <div class="flex flex-col gap-1 sm:col-span-2">
                 <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">Laboratorium Subkontrak</label>
-                <select
-                  v-model="item.evaluation.is_subcontract_lab_available"
-                  :disabled="isPreview"
-                  class="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-100"
+                <div
+                  class="grid grid-cols-2 gap-2 rounded-xl border border-slate-200 bg-slate-50 p-2"
+                  :class="isPreview ? 'pointer-events-none opacity-60' : ''"
                 >
-                  <option :value="null">Pilih hasil</option>
-                  <option :value="true">Ada</option>
-                  <option :value="false">Tidak Ada</option>
-                </select>
+                  <div class="relative">
+                    <input
+                      :id="`lab-yes-${idx}`"
+                      v-model="item.evaluation.is_subcontract_lab_available"
+                      :disabled="isPreview"
+                      :name="`lab-${idx}`"
+                      :value="true"
+                      type="radio"
+                      class="peer sr-only"
+                    />
+                    <label
+                      :for="`lab-yes-${idx}`"
+                      class="flex items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-600 transition peer-checked:border-emerald-200 peer-checked:bg-emerald-50 peer-checked:text-emerald-700 peer-checked:shadow-sm"
+                      :class="isPreview ? 'cursor-not-allowed' : 'cursor-pointer'"
+                    >
+                      Ada
+                    </label>
+                  </div>
+                  <div class="relative">
+                    <input
+                      :id="`lab-no-${idx}`"
+                      v-model="item.evaluation.is_subcontract_lab_available"
+                      :disabled="isPreview"
+                      :name="`lab-${idx}`"
+                      :value="false"
+                      type="radio"
+                      class="peer sr-only"
+                    />
+                    <label
+                      :for="`lab-no-${idx}`"
+                      class="flex items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-600 transition peer-checked:border-amber-200 peer-checked:bg-amber-50 peer-checked:text-amber-700 peer-checked:shadow-sm"
+                      :class="isPreview ? 'cursor-not-allowed' : 'cursor-pointer'"
+                    >
+                      Tidak Ada
+                    </label>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
