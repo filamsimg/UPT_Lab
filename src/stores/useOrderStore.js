@@ -540,6 +540,12 @@ const normalizeOrder = (entry = {}) => {
     customerId: entry.customer_id || entry.customerId || '',
     customerName:
       entry.customerName || entry.customer_name || entry.applicant_name || '',
+    companyName:
+      entry.companyName ||
+      entry.company_name ||
+      entry.applicantCompanyName ||
+      entry.applicant_company_name ||
+      '',
     customerPhone:
       entry.phoneNumber ||
       entry.customerPhone ||
@@ -587,6 +593,12 @@ const normalizeOrder = (entry = {}) => {
       entry.certificateName ||
       entry.certificate_name ||
       entry.recipient_name ||
+      '',
+    certificateAddress:
+      entry.certificateAddress ||
+      entry.certificate_address ||
+      entry.recipientFullAddress ||
+      entry.recipient_full_address ||
       '',
     paymentInfo,
     testItems,
@@ -678,11 +690,21 @@ const buildMaterialTestOrderBasePayload = (payload = {}) => {
 
   const applicantName =
     payload.applicant_name || payload.customerName || payload.customer_name || '';
+  const applicantCompanyName =
+    payload.applicant_company_name ||
+    payload.companyName ||
+    payload.company_name ||
+    '';
   const recipientName =
     payload.recipient_name ||
     payload.certificateName ||
     payload.certificate_name ||
     applicantName;
+  const recipientFullAddress =
+    payload.recipient_full_address ||
+    payload.certificateAddress ||
+    payload.certificate_address ||
+    '';
 
   const rawDate =
     payload.entered_at ||
@@ -697,6 +719,7 @@ const buildMaterialTestOrderBasePayload = (payload = {}) => {
     work_package_name:
       payload.work_package_name || payload.workPackageName || payload.workPackage || '',
     applicant_name: applicantName,
+    applicant_company_name: applicantCompanyName,
     applicant_phone_number:
       payload.applicant_phone_number ||
       payload.phoneNumber ||
@@ -710,6 +733,7 @@ const buildMaterialTestOrderBasePayload = (payload = {}) => {
     applicant_note:
       payload.applicant_note || payload.note || '',
     recipient_name: recipientName,
+    recipient_full_address: recipientFullAddress,
     entered_at: enteredAt,
     ...((ownerIdsProvided || ownerUserIds.length)
       ? { owner_user_ids: ownerUserIds }

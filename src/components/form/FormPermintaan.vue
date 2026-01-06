@@ -842,9 +842,18 @@ watch(
         })),
         certificateName: val.certificateName || val.certificate_name || '',
         certificateAddress:
-          val.certificateAddress || val.certificate_address || '',
+          val.certificateAddress ||
+          val.certificate_address ||
+          val.recipientFullAddress ||
+          val.recipient_full_address ||
+          '',
         customerId: val.customerId || val.customer_id || '',
-        companyName: val.companyName || val.company_name || '',
+        companyName:
+          val.companyName ||
+          val.company_name ||
+          val.applicantCompanyName ||
+          val.applicant_company_name ||
+          '',
         customerEmail:
           val.customerEmail || val.customer_email || val.email || '',
         addressId: val.addressId || val.address_id || '',
