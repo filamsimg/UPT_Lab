@@ -14,13 +14,13 @@
         class="block text-sm font-medium text-gray-700 mb-2"
         for="search"
       >
-        Cari ID / No Order
+        Cari ID Order
       </label>
       <input
         id="search"
         v-model="searchTerm"
         type="text"
-        placeholder="Contoh: ORD-202501-001"
+        placeholder="Contoh: 01KENW3HWK3BEV7DKEQ6CTA9NA"
         class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
       />
       <p class="mt-2 text-xs text-gray-500">
@@ -37,19 +37,19 @@
             v-for="order in filteredOrders"
             :key="order.orderNo || order.id"
             type="button"
-            class="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-primary/5"
+            class="flex w-full flex-col items-start justify-between gap-2 px-3 py-2 text-left text-sm hover:bg-primary/5 sm:flex-row sm:items-center"
             @click="selectOrder(order)"
           >
-            <div>
+            <div class="min-w-0">
               <p class="font-semibold text-surfaceDark">
                 {{ order.orderNo || '-' }}
               </p>
-              <p class="text-xs text-gray-500">
+              <p class="text-xs text-gray-500 break-words">
                 ID: {{ order.id || '-' }} - Pemohon: {{ order.customerName || '-' }}
               </p>
             </div>
             <span
-              class="text-xs rounded-full bg-primary/10 px-2 py-1 text-primary"
+              class="text-xs rounded-full bg-primary/10 px-2 py-1 text-primary sm:shrink-0"
             >
               {{ resolveStatusLabel(order) }}
             </span>
@@ -65,31 +65,81 @@
       <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div class="rounded-lg border border-gray-200 bg-gray-50 p-3">
           <p class="text-xs text-gray-500">ID Order</p>
-          <p class="text-sm font-semibold text-surfaceDark">
+          <p class="text-sm font-semibold text-surfaceDark break-words">
             {{ selectedOrder.orderNo || selectedOrder.id || '-' }}
           </p>
         </div>
         <div class="rounded-lg border border-gray-200 bg-gray-50 p-3">
           <p class="text-xs text-gray-500">Nomor Order</p>
-          <p class="text-sm font-semibold text-surfaceDark">
+          <p class="text-sm font-semibold text-surfaceDark break-words">
             {{ selectedOrder.orderCode || selectedOrder.orderDisplay || '-' }}
           </p>
         </div>
         <div class="rounded-lg border border-gray-200 bg-gray-50 p-3">
           <p class="text-xs text-gray-500">Tanggal</p>
-          <p class="text-sm font-semibold text-surfaceDark">
+          <p class="text-sm font-semibold text-surfaceDark break-words">
             {{ formatDisplayDate(selectedOrder.entryDate || selectedOrder.date) }}
           </p>
         </div>
         <div class="rounded-lg border border-gray-200 bg-gray-50 p-3">
           <p class="text-xs text-gray-500">Pemohon</p>
-          <p class="text-sm font-semibold text-surfaceDark">
+          <p class="text-sm font-semibold text-surfaceDark break-words">
             {{ selectedOrder.customerName || '-' }}
           </p>
         </div>
       </div>
 
-      <div class="overflow-auto">
+      <div class="space-y-3 sm:hidden">
+        <article
+          v-for="(item, index) in selectedItems"
+          :key="`uji-card-${index}`"
+          class="rounded-lg border border-gray-200 bg-white p-3 shadow-sm"
+        >
+          <div class="flex items-center justify-between gap-3">
+            <p class="text-xs text-gray-500">Pengujian #{{ index + 1 }}</p>
+            <span class="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">
+              Qty {{ item.quantity || 1 }}
+            </span>
+          </div>
+          <p class="mt-1 text-sm font-semibold text-surfaceDark break-words">
+            {{ resolveTestName(item) || '-' }}
+          </p>
+          <div class="mt-2 grid grid-cols-2 gap-3 text-xs text-gray-600">
+            <div class="col-span-2">
+              <p class="text-[10px] font-semibold uppercase tracking-wide text-gray-400">
+                Nama Sampel
+              </p>
+              <p class="text-sm text-surfaceDark break-words">
+                {{ item.objectName || '-' }}
+              </p>
+            </div>
+            <div>
+              <p class="text-[10px] font-semibold uppercase tracking-wide text-gray-400">
+                Kode Sampel
+              </p>
+              <p class="text-sm text-surfaceDark break-words">
+                {{ resolveSampleCode(item) }}
+              </p>
+            </div>
+            <div>
+              <p class="text-[10px] font-semibold uppercase tracking-wide text-gray-400">
+                Metode Uji
+              </p>
+              <p class="text-sm text-surfaceDark break-words">
+                {{ resolveMethod(item) }}
+              </p>
+            </div>
+          </div>
+        </article>
+        <div
+          v-if="!selectedItems.length"
+          class="rounded-lg border border-dashed border-gray-200 bg-gray-50 p-4 text-center text-sm text-gray-500"
+        >
+          Tidak ada data pengujian.
+        </div>
+      </div>
+
+      <div class="hidden overflow-auto sm:block">
         <table class="min-w-full text-sm border border-gray-200">
           <thead class="bg-gray-50">
             <tr>
@@ -103,7 +153,7 @@
           </thead>
           <tbody>
             <tr
-              v-for="(item, index) in selectedOrder.testItems || []"
+              v-for="(item, index) in selectedItems"
               :key="`uji-${index}`"
               class="odd:bg-white even:bg-gray-50"
             >
@@ -116,7 +166,7 @@
               <td class="border-b px-3 py-2">{{ resolveSampleCode(item) }}</td>
               <td class="border-b px-3 py-2">{{ resolveMethod(item) }}</td>
             </tr>
-            <tr v-if="!(selectedOrder.testItems || []).length">
+            <tr v-if="!selectedItems.length">
               <td
                 class="border-b px-3 py-3 text-center text-gray-500"
                 colspan="6"
@@ -130,7 +180,7 @@
 
       <div class="flex justify-end">
         <button
-          class="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-90"
+          class="inline-flex w-full items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-90 sm:w-auto"
           @click="printKajiUlang"
         >
           Cetak Formulir
@@ -147,11 +197,13 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import { useOrderStore } from '@/stores/useOrderStore';
+import { useTestStore } from '@/stores/useTestStore';
 import { buildKajiUlangPrintHtml } from '@/utils/printTemplates';
 import { normalizeOrderStatus, toOrderStatusLabel } from '@/utils/orderStatus';
 import logoDinas from '@/assets/LOGO DINAS KAB TEGAL.webp';
 
 const orderStore = useOrderStore();
+const testStore = useTestStore();
 const searchTerm = ref('');
 const selectedOrder = ref(null);
 const allowedStatuses = new Set([
@@ -171,6 +223,9 @@ const allowedStatusLabels = new Set(
 onMounted(() => {
   if (!orderStore.orders.length) {
     orderStore.fetchAll();
+  }
+  if (!testStore.tests.length) {
+    testStore.fetchTests({ perPage: 200, skipLoading: true });
   }
 });
 
@@ -206,6 +261,8 @@ const filteredOrders = computed(() => {
   });
 });
 
+const selectedItems = computed(() => selectedOrder.value?.testItems || []);
+
 function selectOrder(order) {
   selectedOrder.value = order;
   searchTerm.value = order.orderNo || order.orderCode || '';
@@ -239,14 +296,64 @@ function resolveSampleCode(item = {}) {
 }
 
 function resolveMethod(item = {}) {
-  return (
-    item.methodName ||
-    item.method ||
-    item.method_name ||
-    item.service?.method_name ||
-    item.service?.method?.name ||
-    '-'
-  );
+  const candidates = [
+    item.methodName,
+    item.method_name,
+    item.method?.name,
+    item.method?.method_name,
+    item.method?.MethodName,
+    item.method?.title,
+    item.method?.label,
+    item.method?.code,
+    item.method,
+    item.service?.method_name,
+    item.service?.methodName,
+    item.service?.method?.name,
+    item.service?.method?.method_name,
+    item.service?.method?.MethodName,
+    item.service?.method?.title,
+    item.service?.method?.label,
+    item.service?.method?.code,
+    item.service?.method,
+  ];
+  for (const candidate of candidates) {
+    if (typeof candidate === 'string') {
+      const text = candidate.trim();
+      if (text) return text;
+    }
+    if (typeof candidate === 'number') return String(candidate);
+  }
+  const testId =
+    item.serviceId ||
+    item.service_id ||
+    item.testId ||
+    item.test_id ||
+    item.orderedServiceId ||
+    item.ordered_service_id ||
+    item.id ||
+    '';
+  if (testId) {
+    const test = (testStore.tests || []).find((entry) => entry.id === testId);
+    if (test) {
+      const fallback =
+        test.methodName ||
+        test.method_name ||
+        test.test_method ||
+        test.method?.name ||
+        test.method?.method_name ||
+        test.method?.MethodName ||
+        test.method?.title ||
+        test.method?.label ||
+        test.method?.code ||
+        test.method ||
+        '';
+      if (typeof fallback === 'string') {
+        const fallbackText = fallback.trim();
+        if (fallbackText) return fallbackText;
+      }
+    }
+  }
+  return '-';
 }
 
 function resolveStatusLabel(order) {
@@ -263,6 +370,7 @@ function printKajiUlang() {
   if (!selectedOrder.value) return;
   const html = buildKajiUlangPrintHtml(selectedOrder.value, {
     logoSrc: logoDinas,
+    tests: testStore.tests,
   });
   openPrintWindow(html);
 }

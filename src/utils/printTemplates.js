@@ -11,7 +11,7 @@ export function buildKajiUlangPrintHtml(order = {}, options = {}) {
   const baseTitle = 'Formulir Permohonan';
   const { titleForHead } = prepareTitle(options, baseTitle);
   const headerContent = buildKajiUlangHeader(options.logoSrc || options.logo);
-  const bodyContent = buildKajiUlangBody(order);
+  const bodyContent = buildKajiUlangBody(order, options);
 
   return buildPrintLayout({
     title: titleForHead,

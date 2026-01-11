@@ -28,6 +28,13 @@ export function formatCurrency(value) {
   return `Rp ${formatNumber(value)}`;
 }
 
+function toText(value) {
+  if (value === null || value === undefined) return '';
+  if (typeof value === 'string') return value.trim();
+  if (typeof value === 'number') return String(value);
+  return '';
+}
+
 export function buildPrintLayout({
   title,
   styles,
@@ -40,8 +47,11 @@ export function buildPrintLayout({
 }) {
   const frameStyleParts = [];
   if (contentBorder) frameStyleParts.push(`--content-border:${contentBorder}`);
-  if (contentPadding) frameStyleParts.push(`--content-padding:${contentPadding}`);
-  const frameStyle = frameStyleParts.length ? ` style="${frameStyleParts.join(';')}"` : '';
+  if (contentPadding)
+    frameStyleParts.push(`--content-padding:${contentPadding}`);
+  const frameStyle = frameStyleParts.length
+    ? ` style="${frameStyleParts.join(';')}"`
+    : '';
 
   return `
     <!DOCTYPE html>
@@ -167,7 +177,8 @@ function formatOrderNumber(row) {
   if (typeof explicit === 'string' && explicit.trim()) {
     return explicit.trim();
   }
-  if (explicit === null || explicit === undefined || explicit === '') return '-';
+  if (explicit === null || explicit === undefined || explicit === '')
+    return '-';
 
   const numeric = Number(explicit);
   if (Number.isFinite(numeric)) return String(numeric).padStart(3, '0');
@@ -201,6 +212,54 @@ function resolveTestName(item = {}) {
     item.service?.name ||
     ''
   );
+}
+
+function resolveMethodName(item = {}) {
+  const candidates = [
+    item.methodName,
+    item.method_name,
+    item.method?.name,
+    item.method?.method_name,
+    item.method?.MethodName,
+    item.method?.title,
+    item.method?.label,
+    item.method?.code,
+    item.method,
+    item.service?.method_name,
+    item.service?.methodName,
+    item.service?.method?.name,
+    item.service?.method?.method_name,
+    item.service?.method?.MethodName,
+    item.service?.method?.title,
+    item.service?.method?.label,
+    item.service?.method?.code,
+    item.service?.method,
+  ];
+  for (const candidate of candidates) {
+    const text = toText(candidate);
+    if (text) return text;
+  }
+  return '';
+}
+
+function resolveMethodFromTest(test = {}) {
+  const candidates = [
+    test.methodName,
+    test.method_name,
+    test.test_method,
+    test.method?.name,
+    test.method?.method_name,
+    test.method?.MethodName,
+    test.method?.title,
+    test.method?.label,
+    test.method?.code,
+    test.method,
+  ];
+  for (const candidate of candidates) {
+    const text = toText(candidate);
+    if (text) return text;
+  }
+  return '';
 }
 
 function buildTestNameSummary(items = []) {
@@ -255,19 +314,24 @@ function resolveSampleCodes(order, items = []) {
   return order.sampleNo || '';
 }
 
-function buildMethodList(items = []) {
+function buildMethodList(items = [], tests = []) {
   const methods = items
-    .map(
-      (item) =>
-        item.methodName ||
-        item.method ||
-        item.methodName ||
-        item.method_name ||
-        item.service?.method_name ||
-        item.service?.method?.name ||
-        ''
-    )
-    .map((value) => String(value || '').trim())
+    .map((item) => {
+      const direct = resolveMethodName(item);
+      if (direct) return direct;
+      const testId =
+        item.serviceId ||
+        item.service_id ||
+        item.testId ||
+        item.test_id ||
+        item.orderedServiceId ||
+        item.ordered_service_id ||
+        item.id ||
+        '';
+      if (!testId || !Array.isArray(tests)) return '';
+      const match = tests.find((entry) => entry.id === testId);
+      return match ? resolveMethodFromTest(match) : '';
+    })
     .filter(Boolean);
   return Array.from(new Set(methods)).join(', ');
 }
@@ -317,7 +381,10 @@ function buildSampleTable(items = [], rowCount = KAJI_ULANG_SAMPLE_ROWS) {
   const rows = [];
   for (let i = 0; i < rowCount; i += 1) {
     const item = items[i] || {};
-    const quantity = item.quantity !== undefined ? Math.max(1, Number(item.quantity) || 1) : '';
+    const quantity =
+      item.quantity !== undefined
+        ? Math.max(1, Number(item.quantity) || 1)
+        : '';
     const quantityText = quantity ? formatNumber(quantity) : '';
     const description =
       item.objectName ||
@@ -332,8 +399,16 @@ function buildSampleTable(items = [], rowCount = KAJI_ULANG_SAMPLE_ROWS) {
         <td>${sanitize(description)}</td>
         <td class="text-center"></td>
         <td class="text-center"></td>
-        ${i === 0 ? `<td class="signature-cell" rowspan="${rowCount}"><div class="signature-line"></div></td>` : ''}
-        ${i === 0 ? `<td class="signature-cell" rowspan="${rowCount}"><div class="signature-line"></div></td>` : ''}
+        ${
+          i === 0
+            ? `<td class="signature-cell" rowspan="${rowCount}"><div class="signature-line"></div></td>`
+            : ''
+        }
+        ${
+          i === 0
+            ? `<td class="signature-cell" rowspan="${rowCount}"><div class="signature-line"></div></td>`
+            : ''
+        }
       </tr>
     `);
   }
@@ -360,8 +435,9 @@ function buildSampleTable(items = [], rowCount = KAJI_ULANG_SAMPLE_ROWS) {
   `;
 }
 
-export function buildKajiUlangBody(order = {}) {
+export function buildKajiUlangBody(order = {}, options = {}) {
   const items = Array.isArray(order.testItems) ? order.testItems : [];
+  const tests = Array.isArray(options.tests) ? options.tests : [];
   const customerName = order.customerName || '';
   const companyName = order.companyName || '';
   const address =
@@ -373,13 +449,12 @@ export function buildKajiUlangBody(order = {}) {
   const objectUji = resolveObjectUji(order);
   const serviceType = resolveServiceType(order);
   const totalQuantity = sumQuantities(items);
-  const totalCost =
-    Number(order.paymentInfo?.total) || sumCosts(items);
+  const totalCost = Number(order.paymentInfo?.total) || sumCosts(items);
   const orderNumber = formatOrderNumber(order);
   const orderNo =
     orderNumber && orderNumber !== '-' ? orderNumber : order.orderNo || '';
   const sampleCodes = resolveSampleCodes(order, items);
-  const methodList = buildMethodList(items);
+  const methodList = buildMethodList(items, tests);
   const conditionLabel = resolveConditionLabel(items);
   const noteText = order.kajiUlangNote || order.note || '';
   const peralatanState = resolveCheckState(items, 'is_equipment_available');
@@ -409,7 +484,10 @@ export function buildKajiUlangBody(order = {}) {
       <table class="line-table">
         ${buildLineRow('Objek Uji', objectUji)}
         ${buildLineRow('Jenis Pelayanan', serviceType)}
-        ${buildLineRow('Jumlah Benda Uji', totalQuantity ? formatNumber(totalQuantity) : '')}
+        ${buildLineRow(
+          'Jumlah Benda Uji',
+          totalQuantity ? formatNumber(totalQuantity) : ''
+        )}
       </table>
     </section>
 
@@ -434,7 +512,10 @@ export function buildKajiUlangBody(order = {}) {
                 ${buildCheckboxRow('Personel', personelState)}
                 ${buildCheckboxRow('Waktu', waktuState)}
                 ${buildCheckboxRow('Laboratorium Subkontrak', labState)}
-                ${buildCheckboxRow('Pengambilan sisa sampel uji', pengambilanState)}
+                ${buildCheckboxRow(
+                  'Pengambilan sisa sampel uji',
+                  pengambilanState
+                )}
                 <tr>
                   <td colspan="3" class="note-box">
                     <span class="note-label">Catatan :</span>
@@ -448,16 +529,21 @@ export function buildKajiUlangBody(order = {}) {
             <table class="line-table review-info">
               ${buildLineRow('No. Order', orderNo)}
               ${buildLineRow('No. Sampel', sampleCodes)}
-              ${buildLineRow('Biaya', totalCost ? formatCurrency(totalCost) : '')}
-              ${buildLineRow('Jumlah Benda Uji', totalQuantity ? formatNumber(totalQuantity) : '')}
+              ${buildLineRow(
+                'Biaya',
+                totalCost ? formatCurrency(totalCost) : ''
+              )}
+              ${buildLineRow(
+                'Jumlah Benda Uji',
+                totalQuantity ? formatNumber(totalQuantity) : ''
+              )}
               ${buildLineRow('Metode Uji', methodList)}
               <tr>
-                <td class="line-label">Kondisi*)</td>
+                <td class="line-label">Kondisi</td>
                 <td class="line-colon">:</td>
                 <td>${sanitize(kondisiText)}</td>
               </tr>
             </table>
-            <div class="note-small">*) Coret yang tidak perlu</div>
           </td>
         </tr>
       </table>
@@ -490,11 +576,17 @@ export function buildKajiUlangBody(order = {}) {
     <section class="receipt">
       <div class="receipt-title">SURAT TANDA TERIMA BARANG</div>
       <table class="line-table">
-        ${buildLineRow('Tanggal', formatFullDate(order.entryDate || order.date || order.createdAt))}
+        ${buildLineRow(
+          'Tanggal',
+          formatFullDate(order.entryDate || order.date || order.createdAt)
+        )}
         ${buildLineRow('Nomor Order', orderNo)}
         ${buildLineRow('Nama Pelanggan', customerName)}
         ${buildLineRow('Jenis Pengujian &', buildTestNameSummary(items))}
-        ${buildLineRow('Jumlah Pengujian', totalQuantity ? formatNumber(totalQuantity) : '')}
+        ${buildLineRow(
+          'Jumlah Pengujian',
+          totalQuantity ? formatNumber(totalQuantity) : ''
+        )}
       </table>
       ${buildSampleTable(items, KAJI_ULANG_SAMPLE_ROWS)}
       <p class="receipt-note">* Surat tanda terima ini wajib dibawa ketika pengambilan sertifikat</p>
@@ -550,7 +642,13 @@ function formatMonthYear(value) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) {
     const now = new Date();
-    return `${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()}`;
+    return `${String(now.getMonth() + 1).padStart(
+      2,
+      '0'
+    )}/${now.getFullYear()}`;
   }
-  return `${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()}`;
+  return `${String(date.getMonth() + 1).padStart(
+    2,
+    '0'
+  )}/${date.getFullYear()}`;
 }

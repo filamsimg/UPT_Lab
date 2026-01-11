@@ -538,17 +538,17 @@ const baseMenu = [
     icon: BriefcaseIcon,
     children: [
       {
-        label: 'Kaji Ulang',
+        label: 'Cetak Kaji Ulang',
         path: '/cetak-kaji-ulang',
         icon: CheckCircleIcon,
       },
       {
-        label: 'Formulir Pengujian',
+        label: 'Cetak Formulir Pengujian',
         path: '/cetak-formulir-pengujian',
         icon: IdentificationIcon,
       },
       {
-        label: 'Permintaan Pengujian',
+        label: 'Cetak Permintaan Pengujian',
         path: '/cetak-permintaan-pengujian',
         icon: ClipboardDocumentListIcon,
       },
