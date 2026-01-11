@@ -537,13 +537,21 @@ const baseMenu = [
     label: 'Cetak',
     icon: BriefcaseIcon,
     children: [
-      { label: 'Validasi', path: '/validasi', icon: CheckCircleIcon },
       {
-        label: 'Kartu Kendali',
-        path: '/kartu-kendali',
+        label: 'Kaji Ulang',
+        path: '/cetak-kaji-ulang',
+        icon: CheckCircleIcon,
+      },
+      {
+        label: 'Formulir Pengujian',
+        path: '/cetak-formulir-pengujian',
         icon: IdentificationIcon,
       },
-      { label: 'Surat Perintah', path: '/surat-perintah', icon: BriefcaseIcon },
+      {
+        label: 'Permintaan Pengujian',
+        path: '/cetak-permintaan-pengujian',
+        icon: ClipboardDocumentListIcon,
+      },
     ],
   },
   {

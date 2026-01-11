@@ -102,13 +102,6 @@
         <template #actions="{ row }">
           <div class="flex justify-center gap-2 text-surfaceDark">
             <button
-              class="rounded-md bg-slate-50 p-1.5 text-slate-600 transition hover:bg-slate-100 hover:text-slate-800"
-              @click="printKajiUlang(row)"
-              title="Cetak Berita Acara"
-            >
-              <PrinterIcon class="h-5 w-5" />
-            </button>
-            <button
               v-if="row.canPreview"
               class="rounded-md bg-sky-50 p-1.5 text-sky-600 transition hover:bg-sky-100 hover:text-sky-800"
               @click="openPreviewForm(row)"
@@ -411,19 +404,16 @@ import { reactive, ref, computed, onMounted, watch } from 'vue';
 import DataTable from '@/components/common/DataTable.vue';
 import Badge from '@/components/common/Badge.vue';
 import FormKajiUlang from '@/components/form/FormKajiUlang.vue';
-  import {
-    PencilIcon,
-    EyeIcon,
-    XCircleIcon,
-    PrinterIcon,
-    DocumentDuplicateIcon,
-    DocumentMagnifyingGlassIcon,
-    BeakerIcon,
-    CheckCircleIcon,
-    ArrowUturnLeftIcon,
-  } from '@heroicons/vue/24/outline';
-import logoDinas from '@/assets/LOGO DINAS KAB TEGAL.webp';
-import { buildKajiUlangPrintHtml } from '@/utils/printTemplates';
+import {
+  PencilIcon,
+  EyeIcon,
+  XCircleIcon,
+  DocumentDuplicateIcon,
+  DocumentMagnifyingGlassIcon,
+  BeakerIcon,
+  CheckCircleIcon,
+  ArrowUturnLeftIcon,
+} from '@heroicons/vue/24/outline';
 import { useKajiUlangStore } from '@/stores/useKajiUlangStore';
 import { useTestStore } from '@/stores/useTestStore';
 import { useConfirmDialog } from '@/stores/useConfirmDialog';
@@ -1410,20 +1400,6 @@ function openRefundModal(row) {
     );
   }
 
-  function buildKajiUlangPrintTitle(order) {
-    const normalizedStatus = normalizeOrderStatus(order?.status);
-    return normalizedStatus === 'rejected' || normalizedStatus === 'cancelled'
-      ? 'Berita Acara Kaji Ulang (Ditolak)'
-      : 'Berita Acara Kaji Ulang';
-  }
-
-  function buildKajiUlangHtml(order) {
-    return buildKajiUlangPrintHtml(order, {
-      logoSrc: logoDinas,
-      title: buildKajiUlangPrintTitle(order),
-    });
-  }
-
   function openPreviewForm(row) {
     const order = resolveKajiUlangOrder(row);
     if (!order) {
@@ -1444,20 +1420,6 @@ function openRefundModal(row) {
       return;
     }
     updateRouteQuery({ mode: 'preview', id: order.orderNo || order.id });
-  }
-
-  function printKajiUlang(row) {
-    const order = resolveKajiUlangOrder(row);
-    if (!order) {
-      pushToast({
-        tone: 'error',
-        title: 'Data Tidak Ditemukan',
-        message: 'Order kaji ulang tidak tersedia untuk dicetak.',
-      });
-      return;
-    }
-    const html = buildKajiUlangHtml(order);
-    openPrintWindow(html);
   }
 
 async function approvePaymentEvidence() {
@@ -1814,51 +1776,6 @@ function rejectReview() {
 function closeForm() {
   resetFormState();
   clearRouteQuery();
-}
-
-function openPrintWindow(html) {
-  if (!html) return;
-  const printWindow = window.open('', '_blank', 'width=900,height=650');
-  if (!printWindow) {
-    pushToast({
-      tone: 'error',
-      title: 'Cetak Diblokir',
-      message: 'Izinkan pop-up pada browser Anda untuk mencetak dokumen.',
-    });
-    return;
-  }
-  try {
-    printWindow.document.open('text/html', 'replace');
-    printWindow.document.write(html);
-    printWindow.document.close();
-    const triggerPrint = () => {
-      try {
-        printWindow.focus();
-        printWindow.print();
-      } catch (err) {
-        console.warn('Gagal memicu dialog cetak', err);
-      }
-    };
-    if ('onload' in printWindow) {
-      printWindow.onload = () => triggerPrint();
-    } else {
-      setTimeout(triggerPrint, 300);
-    }
-    printWindow.onafterprint = () => {
-      try {
-        printWindow.close();
-      } catch (err) {
-        console.warn('Gagal menutup jendela cetak', err);
-      }
-    };
-  } catch (err) {
-    console.error('Tidak dapat menulis konten ke jendela cetak', err);
-    pushToast({
-      tone: 'error',
-      title: 'Gagal Mencetak',
-      message: 'Terjadi kesalahan saat menyiapkan dokumen cetak.',
-    });
-  }
 }
 
 function formatDateDisplay(value) {

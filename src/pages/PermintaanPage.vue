@@ -130,14 +130,6 @@
               >
                 <BanknotesIcon class="w-5 h-5" />
               </button>
-              <button
-                class="p-1.5 rounded-md hover:bg-emerald-50 text-emerald-600 hover:text-emerald-800 disabled:cursor-not-allowed disabled:opacity-50"
-                :title="canPrint(row) ? 'Preview & Cetak' : 'Cetak tersedia setelah pembayaran terverifikasi'"
-                :disabled="!canPrint(row)"
-                @click="openPreviewModal(row)"
-              >
-                <EyeIcon class="w-5 h-5" />
-              </button>
             </div>
           </template>
         </DataTable>
@@ -154,163 +146,6 @@
       @close="closePaymentModal"
       @payment-saved="handlePaymentSaved"
     />
-
-    <transition name="fade">
-      <div
-        v-if="showPreviewModal"
-        class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-2"
-      >
-        <div
-          class="relative w-[98vw] max-w-5xl max-h-[90vh] overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl"
-        >
-          <button
-            class="absolute right-4 top-4 text-gray-500 transition hover:text-gray-700"
-            @click="closePreviewModal"
-          >
-            <span class="sr-only">Tutup</span>
-            <XMarkIcon class="h-6 w-6" />
-          </button>
-          <div class="flex flex-col gap-4 sm:flex-row sm:items-center">
-            <img
-              :src="logoDinas"
-              alt="Logo Dinas Kabupaten Tegal"
-              class="h-16 w-16 object-contain"
-            />
-            <div>
-              <h3 class="text-xl font-semibold text-surfaceDark">
-                Preview Permintaan & Invoice
-              </h3>
-              <p class="text-sm text-gray-500">
-                Tinjau seluruh informasi sebelum mencetak dokumen resmi.
-              </p>
-            </div>
-          </div>
-          <div class="mt-6 grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
-            <section class="rounded-xl border border-gray-200 bg-gray-50 p-4">
-              <h4 class="text-sm font-semibold text-surfaceDark uppercase tracking-wide">
-                Detail Permintaan
-              </h4>
-              <dl class="mt-4 grid gap-3 text-sm text-gray-700 sm:grid-cols-2">
-                <div>
-                  <dt class="text-xs uppercase text-gray-500">ID Order</dt>
-                  <dd>{{ previewRequest?.idOrder || '-' }}</dd>
-                </div>
-                <div>
-                  <dt class="text-xs uppercase text-gray-500">Nomor Order</dt>
-                  <dd>{{ formatOrderNumber(previewRequest) }}</dd>
-                </div>
-                <div>
-                  <dt class="text-xs uppercase text-gray-500">Tanggal Masuk</dt>
-                  <dd>{{ formatFullDate(previewRequest?.entryDate) }}</dd>
-                </div>
-                <div>
-                  <dt class="text-xs uppercase text-gray-500">Status</dt>
-                  <dd>{{ translateStatus(previewRequest?.status) }}</dd>
-                </div>
-                <div>
-                  <dt class="text-xs uppercase text-gray-500">Customer</dt>
-                  <dd>{{ previewRequest?.customerName || '-' }}</dd>
-                </div>
-                <div>
-                  <dt class="text-xs uppercase text-gray-500">Kontak</dt>
-                  <dd>{{ previewRequest?.phoneNumber || '-' }}</dd>
-                </div>
-                <div class="sm:col-span-2">
-                  <dt class="text-xs uppercase text-gray-500">Alamat</dt>
-                  <dd>{{ previewRequest?.address || '-' }}</dd>
-                </div>
-              </dl>
-              <div class="mt-5">
-                <h5 class="text-xs font-semibold uppercase text-gray-500">
-                  Detail Pengujian
-                </h5>
-                <div class="mt-2 space-y-3">
-                  <article
-                    v-for="(item, idx) in previewRequest?.testItems || []"
-                    :key="`preview-test-${idx}`"
-                    class="rounded-lg border border-gray-200 bg-white p-3 text-sm"
-                  >
-                    <div class="flex items-center justify-between text-xs text-gray-500">
-                      <span>Pengujian {{ idx + 1 }}</span>
-                      <span>{{ item.quantity }} x</span>
-                    </div>
-                    <p class="mt-1 font-semibold text-surfaceDark">
-                      {{ resolveTestName(item) }}
-                    </p>
-                    <p class="text-xs text-gray-500">
-                      {{ item.objectName || '-' }}
-                    </p>
-                    <p class="mt-1 text-sm text-gray-700">
-                      Tarif: {{ formatCurrency(item.price) }}
-                    </p>
-                  </article>
-                  <p
-                    v-if="!(previewRequest?.testItems || []).length"
-                    class="text-xs text-gray-500"
-                  >
-                    Belum ada detail pengujian.
-                  </p>
-                </div>
-              </div>
-            </section>
-
-            <section class="rounded-xl border border-gray-200 p-4">
-              <h4 class="text-sm font-semibold text-surfaceDark uppercase tracking-wide">
-                Ringkasan Pembayaran
-              </h4>
-              <div
-                class="mt-4 space-y-3 rounded-lg border border-gray-100 bg-gray-50 p-3 text-sm text-gray-700"
-              >
-                <div class="flex items-center justify-between">
-                  <span>Total Tagihan</span>
-                  <strong>{{ formatCurrency(previewTotals.total) }}</strong>
-                </div>
-                <div class="flex items-center justify-between">
-                  <span>Pembayaran Diterima</span>
-                  <strong>{{ formatCurrency(previewTotals.paid) }}</strong>
-                </div>
-                <div class="flex items-center justify-between text-amber-700">
-                  <span>Sisa Pembayaran</span>
-                  <strong>{{ formatCurrency(previewTotals.outstanding) }}</strong>
-                </div>
-              </div>
-              <div class="mt-4 space-y-2 text-xs text-gray-500">
-                <p>
-                  Status saat ini: <strong>{{ translateStatus(previewRequest?.status) }}</strong>
-                </p>
-                <p>
-                  Batas pembayaran mengikuti ketentuan invoice. Sample uji harap dikirim setelah
-                  pembayaran dan bukti dikonfirmasi.
-                </p>
-              </div>
-            </section>
-          </div>
-
-          <div
-            class="mt-6 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end"
-          >
-            <button
-              class="w-full rounded-md border border-gray-300 px-4 py-2 text-sm text-gray-600 transition hover:bg-gray-100 sm:w-auto"
-              @click="closePreviewModal"
-            >
-              Tutup
-            </button>
-            <button
-              class="w-full rounded-md border border-gray-300 px-4 py-2 text-sm text-gray-600 transition hover:bg-gray-100 sm:w-auto"
-              @click="printFromPreview('request')"
-            >
-              Cetak Permintaan
-            </button>
-            <button
-              class="w-full rounded-md bg-primary text-white px-4 py-2 text-sm font-semibold transition hover:bg-primaryDark sm:w-auto"
-              @click="printFromPreview('invoice')"
-            >
-              Cetak Invoice
-            </button>
-          </div>
-        </div>
-      </div>
-    </transition>
   </div>
 </template>
 
@@ -323,11 +158,9 @@ import { useAuthStore } from '@/stores/useAuthStore';
 import { useRouter, useRoute } from 'vue-router';
 import {
   PencilIcon,
-  EyeIcon,
   XCircleIcon,
   BanknotesIcon,
   DocumentDuplicateIcon,
-  XMarkIcon,
 } from '@heroicons/vue/24/outline';
 import FormPermintaan from '@/components/form/FormPermintaan.vue';
 import FormPayment from '@/components/form/FormPayment.vue';
@@ -335,13 +168,6 @@ import Badge from '@/components/common/Badge.vue';
 import DataTable from '../components/common/DataTable.vue';
 import { useConfirmDialog } from '@/stores/useConfirmDialog';
 import { useNotificationCenter } from '@/stores/useNotificationCenter';
-import {
-  buildPermintaanPrintHtml,
-  formatCurrency,
-  formatFullDate,
-  translateStatus,
-} from '@/utils/printTemplates';
-import logoDinas from '@/assets/LOGO DINAS KAB TEGAL.webp';
 import { copyText } from '@/utils/copyText';
 
 const orderStore = useOrderStore();
@@ -352,11 +178,9 @@ const router = useRouter();
 const route = useRoute();
 const showModal = ref(false);
 const showPaymentModal = ref(false);
-const showPreviewModal = ref(false);
 const isEdit = ref(false);
 const selectedRequest = ref(null);
 const paymentContext = ref(null);
-const previewRequest = ref(null);
 const openConfirm = useConfirmDialog();
 const { notify } = useNotificationCenter();
 const sampleShipmentMessage =
@@ -377,7 +201,7 @@ const canViewAllOrders = computed(() =>
 );
 const currentUserId = computed(() => resolveUserId(authStore.currentUser));
 
-// Query mode routing: ?mode=new|edit|payment|preview&id=ORDER_NO&doc=request|invoice
+// Query mode routing: ?mode=new|edit|payment&id=ORDER_NO
 const readQueryValue = (value) =>
   Array.isArray(value) ? value[0] ?? '' : value ?? '';
 
@@ -385,10 +209,6 @@ const routeMode = computed(() =>
   String(readQueryValue(route.query.mode)).trim().toLowerCase()
 );
 const routeId = computed(() => String(readQueryValue(route.query.id)).trim());
-const routeDoc = computed(() =>
-  String(readQueryValue(route.query.doc)).trim().toLowerCase()
-);
-const suppressAutoPrint = ref(false);
 
 function updateRouteQuery(next = {}) {
   const query = { ...route.query };
@@ -402,7 +222,7 @@ function updateRouteQuery(next = {}) {
   router.push({ path: route.path, query });
 }
 
-function clearRouteQuery(keys = ['mode', 'id', 'doc']) {
+function clearRouteQuery(keys = ['mode', 'id']) {
   const query = { ...route.query };
   keys.forEach((key) => {
     delete query[key];
@@ -574,22 +394,6 @@ const tableRows = computed(() =>
   })
 );
 
-const previewTotals = computed(() => {
-  const row = previewRequest.value;
-  if (!row) {
-    return { total: 0, paid: 0, outstanding: 0 };
-  }
-  const items = row.testItems || [];
-  const total = items.reduce((sum, item) => {
-    const quantity = Math.max(1, Number(item.quantity) || 1);
-    const price = Math.max(0, Number(item.price) || 0);
-    return sum + quantity * price;
-  }, 0);
-  const paid = Number(row.paymentInfo?.amountPaid || 0);
-  const outstanding = Math.max(0, total - paid);
-  return { total, paid, outstanding };
-});
-
 // === Modal logic ===
 function resetFormState() {
   showModal.value = false;
@@ -600,12 +404,6 @@ function resetFormState() {
 function resetPaymentState() {
   showPaymentModal.value = false;
   paymentContext.value = null;
-}
-
-function resetPreviewState() {
-  showPreviewModal.value = false;
-  previewRequest.value = null;
-  suppressAutoPrint.value = false;
 }
 
 function buildDefaultRequest() {
@@ -625,7 +423,6 @@ function buildDefaultRequest() {
 
 function applyNewFormState() {
   resetPaymentState();
-  resetPreviewState();
   isEdit.value = false;
   selectedRequest.value = buildDefaultRequest();
   showModal.value = true;
@@ -654,11 +451,6 @@ function applyPaymentContext(row) {
     rows: buildPaymentRows(row.testItems),
   };
   showPaymentModal.value = true;
-}
-
-function applyPreviewState(row) {
-  previewRequest.value = row;
-  showPreviewModal.value = true;
 }
 
 function findRowById(orderId) {
@@ -763,63 +555,12 @@ async function openPaymentById(orderId) {
   applyPaymentContext(row);
 }
 
-function isPrintableDoc(value) {
-  return value === 'request' || value === 'invoice';
-}
-
-async function openPreviewById(orderId, doc) {
-  const row = await resolveRowById(orderId);
-  if (!row) {
-    notify({
-      tone: 'warning',
-      title: 'Order Tidak Ditemukan',
-      message: `Order ${orderId || '-'} tidak ditemukan.`,
-      duration: 4000,
-    });
-    clearRouteQuery();
-    resetPreviewState();
-    return;
-  }
-  if (!canAccessOrder(row)) {
-    handleOrderAccessDenied(orderId);
-    clearRouteQuery();
-    resetPreviewState();
-    return;
-  }
-  if (!canPrint(row)) {
-    notify({
-      tone: 'warning',
-      title: 'Preview Belum Tersedia',
-      message: 'Preview & cetak hanya tersedia setelah pembayaran terverifikasi.',
-      duration: 4000,
-      persist: false,
-    });
-    clearRouteQuery();
-    resetPreviewState();
-    return;
-  }
-  applyPreviewState(row);
-
-  const docType = String(doc || '').toLowerCase();
-  if (!isPrintableDoc(docType)) return;
-
-  if (suppressAutoPrint.value) {
-    suppressAutoPrint.value = false;
-    return;
-  }
-
-  setTimeout(() => {
-    printFromPreview(docType, { skipQueryUpdate: true });
-  }, 0);
-}
-
 watch(
-  [routeMode, routeId, routeDoc],
-  async ([mode, id, doc]) => {
+  [routeMode, routeId],
+  async ([mode, id]) => {
     if (!mode) {
       resetFormState();
       resetPaymentState();
-      resetPreviewState();
       return;
     }
 
@@ -830,7 +571,6 @@ watch(
 
     if (mode === 'edit') {
       resetPaymentState();
-      resetPreviewState();
       if (!id) {
         notify({
           tone: 'warning',
@@ -847,7 +587,6 @@ watch(
 
     if (mode === 'payment') {
       resetFormState();
-      resetPreviewState();
       if (!id) {
         notify({
           tone: 'warning',
@@ -862,26 +601,8 @@ watch(
       return;
     }
 
-    if (mode === 'preview') {
-      resetFormState();
-      resetPaymentState();
-      if (!id) {
-        notify({
-          tone: 'warning',
-          title: 'ID Order Kosong',
-          message: 'Masukkan id order pada query untuk preview.',
-          duration: 4000,
-        });
-        clearRouteQuery();
-        return;
-      }
-      await openPreviewById(id, doc);
-      return;
-    }
-
     resetFormState();
     resetPaymentState();
-    resetPreviewState();
   },
   { immediate: true }
 );
@@ -1136,32 +857,6 @@ async function handlePaymentSaved(detail) {
   });
 }
 
-function canPrint(row) {
-  if (!row) return false;
-  const printableStatuses = ['payment_approved', 'completed'];
-  return printableStatuses.includes(row.status);
-}
-
-function openPreviewModal(row) {
-  if (!row) return;
-  if (!canPrint(row)) {
-    notify({
-      tone: 'warning',
-      title: 'Preview Belum Tersedia',
-      message: 'Preview & cetak hanya tersedia setelah pembayaran terverifikasi.',
-      duration: 4000,
-      persist: false,
-    });
-    return;
-  }
-  updateRouteQuery({ mode: 'preview', id: row.idOrder, doc: null });
-}
-
-function closePreviewModal() {
-  resetPreviewState();
-  clearRouteQuery();
-}
-
 async function copyId(id) {
   if (!id) return;
   const copied = await copyText(id);
@@ -1175,126 +870,4 @@ async function copyId(id) {
     persist: false,
   });
 }
-
-function printFromPreview(type, options = {}) {
-  if (!previewRequest.value) return;
-  if (!canPrint(previewRequest.value)) {
-    notify({
-      tone: 'warning',
-      title: 'Cetak Tidak Diizinkan',
-      message: 'Cetak hanya tersedia setelah pembayaran terverifikasi.',
-      duration: 4000,
-      persist: false,
-    });
-    return;
-  }
-  const docType = String(type || '').toLowerCase();
-  if (!options.skipQueryUpdate && docType) {
-    const idOrder =
-      previewRequest.value.idOrder ||
-      previewRequest.value.orderNo ||
-      previewRequest.value.id ||
-      '';
-    const sameRoute =
-      routeMode.value === 'preview' &&
-      routeId.value === String(idOrder) &&
-      routeDoc.value === docType;
-    if (!sameRoute) {
-      suppressAutoPrint.value = true;
-      updateRouteQuery({ mode: 'preview', id: idOrder, doc: docType });
-    }
-  }
-  printDocument(previewRequest.value, type);
-}
-
-function normalizeFilenameSegment(value, fallback = 'ORDER') {
-  const raw = String(value || '').trim();
-  if (!raw) return fallback;
-  const cleaned = raw
-    .replace(/[\s\\/]+/g, '-')
-    .replace(/[^A-Za-z0-9_-]+/g, '-')
-    .replace(/-+/g, '-')
-    .replace(/^[-_]+|[-_]+$/g, '');
-  return cleaned || fallback;
-}
-
-function formatDateForFilename(value) {
-  const raw = String(value || '').trim();
-  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(raw);
-  if (match) return `${match[1]}${match[2]}${match[3]}`;
-  const date = new Date(raw);
-  if (!Number.isNaN(date.getTime())) {
-    return date.toISOString().slice(0, 10).replace(/-/g, '');
-  }
-  return new Date().toISOString().slice(0, 10).replace(/-/g, '');
-}
-
-function buildPrintTitle(row, type = 'request') {
-  const prefix = type === 'invoice' ? 'INV' : 'REQ';
-  const idOrder = row?.idOrder || row?.orderNo || row?.id || '';
-  const safeId = normalizeFilenameSegment(idOrder);
-  const dateSource = row?.entryDate || row?.date || row?.createdAt || '';
-  const datePart = formatDateForFilename(dateSource);
-  return `${prefix}-${safeId}-${datePart}`;
-}
-
-function printDocument(row, type = 'request') {
-  if (!row) return;
-  const formTitle = type === 'invoice' ? 'Invoice Pembayaran' : 'Permintaan Pengujian';
-  const title = buildPrintTitle(row, type);
-  const html = buildPermintaanPrintHtml(row, type, {
-    logoSrc: logoDinas,
-    title,
-    header: {
-      formTitle,
-    },
-  });
-  const printWindow = window.open('', '_blank', 'width=900,height=650');
-  if (!printWindow) {
-    alert('Tidak dapat membuka jendela cetak. Izinkan pop-up pada browser Anda.');
-    return;
-  }
-  try {
-    printWindow.document.open('text/html', 'replace');
-    printWindow.document.write(html);
-    printWindow.document.close();
-    printWindow.focus();
-    const triggerPrint = () => {
-      try {
-        printWindow.focus();
-        printWindow.print();
-      } catch (err) {
-        console.warn('Gagal memicu dialog print', err);
-      }
-    };
-    if ('onload' in printWindow) {
-      printWindow.onload = () => {
-        triggerPrint();
-      };
-    } else {
-      setTimeout(triggerPrint, 300);
-    }
-    printWindow.onafterprint = () => {
-      try {
-        printWindow.close();
-      } catch (err) {
-        console.warn('Gagal menutup jendela cetak', err);
-      }
-    };
-  } catch (err) {
-    console.error('Tidak dapat menulis konten ke jendela cetak', err);
-    alert('Terjadi kesalahan saat menyiapkan dokumen cetak.');
-  }
-}
 </script>
-
-<style scoped>
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.2s;
-}
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
-}
-</style>

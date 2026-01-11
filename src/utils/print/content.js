@@ -1,5 +1,5 @@
 // Bagian isi & utilitas untuk dokumen cetak (body/content)
-import { ORDER_STATUS_LABELS, normalizeOrderStatus } from '@/utils/orderStatus';
+import logoTuk from '@/assets/logo TUK.webp';
 
 export function sanitize(value) {
   if (value === null || value === undefined) return '-';
@@ -9,17 +9,6 @@ export function sanitize(value) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
-}
-
-export function toLineMarkup(value) {
-  const lines = String(value || '')
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean);
-  if (!lines.length) {
-    return sanitize(value);
-  }
-  return lines.map((line) => `<span>${sanitize(line)}</span>`).join('<br />');
 }
 
 export function formatFullDate(value) {
@@ -37,12 +26,6 @@ export function formatNumber(value) {
 
 export function formatCurrency(value) {
   return `Rp ${formatNumber(value)}`;
-}
-
-export function translateStatus(status) {
-  const normalized = normalizeOrderStatus(status);
-  if (!normalized) return 'Draft';
-  return ORDER_STATUS_LABELS[normalized] || normalized;
 }
 
 export function buildPrintLayout({
@@ -99,43 +82,78 @@ export function prepareTitle(options = {}, fallbackTitle = 'Dokumen') {
   return { docTitle, titleLines, titleForHead, titleMarkup };
 }
 
-// === PERMINTAAN / INVOICE ===
-const LETTERHEAD_STYLES = `
-  .letterhead { width: 100%; border-collapse: collapse; margin-bottom: 12px; border: var(--lh-border, 1px solid #000000); }
-  .letterhead td { border: var(--lh-cell-border, 1px solid #000000); vertical-align: middle; padding: 6px; }
-  .logo-cell { width: 86px; text-align: center; }
-  .logo-cell img { width: 78px; height: 78px; object-fit: contain; }
-  .org-cell { width: 240px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px; line-height: 1.35; }
-  .org-title { font-size: 13px; }
-  .form-label { text-align: center; font-weight: 700; font-size: 14px; letter-spacing: 0.6px; padding: 10px 6px; }
-  .doc-title { text-align: center; font-weight: 700; font-size: 14px; letter-spacing: 0.5px; text-transform: uppercase; padding: 18px 6px; }
-  .meta-row td.meta-cell { font-size: 11px; padding: 6px 8px; text-align: center; font-weight: 600; }
-  .meta-row td.meta-span-2 { text-align: left; }
-  .content-frame { width: 100%; border: var(--content-border, 3px ridge #000); padding: var(--content-padding, 12px 12px); box-sizing: border-box; margin-top: 6px; flex: 1 1 auto; display: flex; flex-direction: column; }
-`;
-
-const PERMINTAAN_STYLES = `
+// === KAJI ULANG ===
+const KAJI_ULANG_STYLES = `
   <style>
-    @page { margin: 6mm 12mm 16mm; }
-    body { font-family: 'Times New Roman', 'Times', serif; font-size: 12px; margin: 0; color: #000000; }
-    .page { padding: 6px 6px 0; display: flex; flex-direction: column; min-height: 100vh; box-sizing: border-box; }
-  ${LETTERHEAD_STYLES}
-  h2 { margin-top: 0; font-size: 18px; text-transform: uppercase; letter-spacing: 0.08em; color: #000000; }
-  table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 12px; }
-  .info-table td { padding: 4px 6px; vertical-align: top; }
-    .info-table td:first-child { width: 28%; color: #000000; font-weight: 400; }
-    .info-table .info-label { font-weight: 400; }
-    .info-table .info-colon { width: 12px; text-align: center; font-weight: 400; }
-    .items-table th, .items-table td { border: 1px solid #000000; padding: 8px; text-align: left; }
-    .items-table th { background: #ffffff; text-transform: uppercase; font-size: 11px; color: #000000; }
-    .totals { margin-top: 12px; width: 50%; float: right; border: 1px solid #000000; border-collapse: collapse; }
-    .totals td { padding: 8px; border: 1px solid #000000; }
-    .totals td:first-child { background: #f9fafb; font-weight: 600; width: 60%; }
-    .notes { clear: both; margin-top: 32px; font-size: 12px; }
-    .signature { margin-top: 48px; display: flex; justify-content: flex-end; font-size: 12px; }
-    .signature div { text-align: center; }
+    @page { size: 210mm 330mm; margin: 6mm 8mm 8mm; }
+    body { font-family: 'Times New Roman', 'Times', serif; font-size: 11px; margin: 0; color: #000000; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .kaji-ulang-page { padding: 0; box-sizing: border-box; }
+    .content-frame { border: none; padding: 0; position: relative; }
+    .content-frame::before { content: ''; position: absolute; inset: 0; background: url('${logoTuk}') center/90% no-repeat; opacity: 0.08; pointer-events: none; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .content-frame > * { position: relative; z-index: 1; }
+    .form-header { position: relative; padding: 0 70px 4px; text-align: center; }
+    .form-header img { position: absolute; left: 0; top: 0; width: 56px; height: 56px; object-fit: contain; }
+    .form-header .org-line { font-size: 10px; line-height: 1.25; }
+    .form-header .org-strong { font-weight: 700; }
+    .form-header .org-unit { font-size: 11px; font-weight: 700; }
+    .form-header .org-contact { font-size: 9px; }
+    .form-header .org-link { color: #0b68b1; text-decoration: underline; }
+    .form-header .header-bar { margin: 6px -70px 0; width: calc(100% + 140px); background: #0b68b1; color: #ffffff; font-weight: 700; letter-spacing: 0.4px; padding: 3px 0; box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .section { border: 1px solid #000000; margin-top: 6px; }
+    .section-bar { background: #0b68b1; color: #ffffff; font-weight: 700; padding: 3px 6px; font-size: 10.5px; display: flex; justify-content: space-between; align-items: center; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .section-bar span { color: #ffffff; }
+    .section-bar .section-note { color: #ffffff; font-weight: 400; font-style: italic; font-size: 9px; }
+    .section-bar .section-doc { color: #ffffff; font-weight: 600; font-size: 9px; }
+    .line-table { width: 100%; border-collapse: collapse; }
+    .line-table td { padding: 2px 6px; vertical-align: top; }
+    .line-label { width: 150px; }
+    .line-colon { width: 10px; text-align: center; }
+    .line-value { border-bottom: 1px dotted #000000; min-height: 14px; }
+    .line-value span { display: inline-block; padding-bottom: 1px; }
+    .subsection-title { font-weight: 700; padding: 4px 6px 2px; }
+    .review-grid { width: 100%; border-collapse: collapse; }
+    .review-grid > tbody > tr > td { border: none; vertical-align: top; padding: 0; }
+    .review-grid > tbody > tr > td + td { border-left: 1px solid #000000; }
+    .checkbox-table { width: 100%; border-collapse: collapse; }
+    .checkbox-table th, .checkbox-table td { border: 1px solid #000000; padding: 3px 4px; }
+    .checkbox-table th { text-align: center; font-weight: 700; }
+    .checkbox-table tr:first-child th,
+    .checkbox-table tr:first-child td { border-top: none; }
+    .checkbox-table tr:last-child td { border-bottom: none; }
+    .checkbox-table tr td:first-child,
+    .checkbox-table tr th:first-child { border-left: none; }
+    .checkbox-table tr td:last-child,
+    .checkbox-table tr th:last-child { border-right: none; }
+    .checkbox-cell { text-align: center; width: 26px; }
+    .checkbox { display: inline-flex; width: 12px; height: 12px; border: 1px solid #000000; align-items: center; justify-content: center; font-size: 10px; line-height: 1; }
+    .note-box { padding: 4px; min-height: 36px; }
+    .note-label { font-style: italic; }
+    .review-info .line-label { width: 110px; }
+    .review-info .line-value { min-height: 12px; }
+    .note-small { font-size: 9px; padding: 2px 6px 4px; }
+    .terms { border: 1px solid #000000; border-top: none; padding: 6px 8px 4px; font-size: 9.5px; line-height: 1.25; }
+    .terms ol { margin: 0 0 4px 18px; padding: 0; }
+    .terms li { margin-bottom: 3px; }
+    .terms-consent { margin: 4px 0 2px; }
+    .terms-info { margin: 0; font-style: italic; }
+    .sample-table { width: 100%; border-collapse: collapse; border: 1px solid #000000; margin-top: 4px; font-size: 10px; }
+    .sample-table th, .sample-table td { border: 1px solid #000000; padding: 3px 4px; }
+    .sample-table th { text-align: center; font-weight: 700; }
+    .text-center { text-align: center; }
+    .signature-cell { width: 80px; vertical-align: bottom; }
+    .signature-line { border-top: 1px solid #000000; margin: 0 6px 8px; height: 1px; }
+    .cut-line { position: relative; margin: 8px 0 6px; border-top: 1px dashed #000000; min-height: 14px; }
+    .cut-icon { position: absolute; left: 0; top: -7px; display: inline-flex; align-items: center; background: #ffffff; padding-right: 6px; }
+    .cut-icon svg { width: 14px; height: 14px; stroke: #000000; fill: none; stroke-width: 1.3; stroke-linecap: round; stroke-linejoin: round; }
+    .receipt { border: 1px solid #000000; padding: 6px; margin-top: 6px; }
+    .receipt-title { text-align: center; font-weight: 700; text-decoration: underline; margin-bottom: 4px; }
+    .receipt-note { font-size: 9px; font-style: italic; margin-top: 4px; }
+    .receipt, .sample-table { break-inside: avoid; page-break-inside: avoid; }
   </style>
 `;
+
+const KAJI_ULANG_DOC_NUMBER = 'F/UPT-LAB/7.1-1';
+const KAJI_ULANG_SAMPLE_ROWS = 6;
 
 function formatOrderNumber(row) {
   if (!row) return '-';
@@ -157,501 +175,335 @@ function formatOrderNumber(row) {
   return String(explicit);
 }
 
-function buildInfoTable(row, type) {
-  const info = [
-    ['ID Order', row.idOrder || '-'],
-    ['Nomor Order', formatOrderNumber(row)],
-    ['Tanggal Masuk', formatFullDate(row.entryDate)],
-    ['Nama Customer', row.customerName || '-'],
-    ['Kontak', row.phoneNumber || '-'],
-    ['Alamat', row.address || '-'],
-  ];
-  if (type === 'invoice') {
-    info.push(['Status Pembayaran', translateStatus(row.status)]);
-  }
+function lineValue(value) {
+  if (value === null || value === undefined) return '';
+  const text = String(value).trim();
+  return text ? sanitize(text) : '';
+}
+
+function buildLineRow(label, value) {
   return `
-    <table class="info-table">
-      ${info
-        .map(
-          ([label, value]) => `
-            <tr>
-              <td class="info-label">${label}</td>
-              <td class="info-colon">:</td>
-              <td>${sanitize(value)}</td>
-            </tr>
-          `
-        )
-        .join('')}
-    </table>
+    <tr>
+      <td class="line-label">${sanitize(label)}</td>
+      <td class="line-colon">:</td>
+      <td class="line-value"><span>${lineValue(value)}</span></td>
+    </tr>
   `;
 }
 
-function buildItemsTable(row) {
-  const items = row.testItems || [];
-  if (!items.length) {
-    return `<p>Tidak ada data pengujian.</p>`;
-  }
-  return `
-    <table class="items-table">
-      <thead>
-        <tr>
-          <th>No</th>
-          <th>Nama Pengujian</th>
-          <th>Nama Sampel</th>
-          <th>Qty</th>
-          <th>Tarif (Rp)</th>
-          <th>Subtotal (Rp)</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${items
-          .map((item, idx) => {
-            const quantity = Math.max(1, Number(item.quantity) || 1);
-            const price = Math.max(0, Number(item.price) || 0);
-            const subtotal = quantity * price;
-            return `
-              <tr>
-                <td>${idx + 1}</td>
-                <td>${sanitize(item.testName || '-')}</td>
-                <td>${sanitize(item.objectName || '-')}</td>
-                <td>${quantity}</td>
-                <td>${formatNumber(price)}</td>
-                <td>${formatNumber(subtotal)}</td>
-              </tr>
-            `;
-          })
-          .join('')}
-      </tbody>
-    </table>
-  `;
+function resolveTestName(item = {}) {
+  return (
+    item.testName ||
+    item.test_name ||
+    item.name ||
+    item.service?.test_name ||
+    item.service?.testName ||
+    item.service?.name ||
+    ''
+  );
 }
 
-function buildTotalsSection(row) {
-  const items = row.testItems || [];
-  const total = items.reduce((sum, item) => {
+function buildTestNameSummary(items = []) {
+  const names = items
+    .map((item) => resolveTestName(item))
+    .map((name) => String(name || '').trim())
+    .filter(Boolean);
+  return names.join(', ');
+}
+
+function resolveObjectUji(order = {}) {
+  const items = Array.isArray(order.testItems) ? order.testItems : [];
+  return (
+    order.objectName ||
+    order.commodity ||
+    order.testType ||
+    items[0]?.objectName ||
+    ''
+  );
+}
+
+function resolveServiceType(order = {}) {
+  return (
+    order.workCategoryName ||
+    order.jobCategory ||
+    order.workPackageName ||
+    order.workPackage ||
+    ''
+  );
+}
+
+function sumQuantities(items = []) {
+  return items.reduce((sum, item) => {
+    const quantity = Math.max(1, Number(item.quantity) || 1);
+    return sum + quantity;
+  }, 0);
+}
+
+function sumCosts(items = []) {
+  return items.reduce((sum, item) => {
     const quantity = Math.max(1, Number(item.quantity) || 1);
     const price = Math.max(0, Number(item.price) || 0);
     return sum + quantity * price;
   }, 0);
-  const paid = Number(row.paymentInfo?.amountPaid || 0);
-  const outstanding = Math.max(0, total - paid);
-
-  return `
-    <table class="totals">
-      <tr>
-        <td>Total Tagihan</td>
-        <td>${formatNumber(total)}</td>
-      </tr>
-      <tr>
-        <td>Pembayaran Diterima</td>
-        <td>${formatNumber(paid)}</td>
-      </tr>
-      <tr>
-        <td>Sisa Pembayaran</td>
-        <td>${formatNumber(outstanding)}</td>
-      </tr>
-    </table>
-  `;
 }
 
-function buildNotes(type) {
-  if (type === 'invoice') {
-    return `
-      <section class="notes">
-        <strong>Catatan:</strong>
-        <p>Setelah pembayaran diterima, mohon kirimkan bukti pembayaran kepada admin. Sample uji harap dikirim ke Laboratorium UPT Lab di Jalan Raya Dampyak KM 4, Kec. Kramat, Kabupaten Tegal 52181 untuk proses kaji ulang.</p>
-      </section>
-    `;
-  }
-    return `
-      <section class="notes">
-        <strong>Catatan:</strong>
-        <p>Form permintaan ini menjadi dasar pelaksanaan pengujian. Pastikan data pengujian dan nama sampel telah sesuai dengan kebutuhan lapangan.</p>
-      </section>
-    `;
-  }
-
-export function buildPermintaanBody(row, type, titleMarkup) {
-  const infoTable = buildInfoTable(row, type);
-  const itemsTable = buildItemsTable(row);
-  const totalsSection = type === 'invoice' ? buildTotalsSection(row) : '';
-  const notesSection = buildNotes(type);
-  return `
-    ${infoTable}
-    ${itemsTable}
-    ${totalsSection}
-    ${notesSection}
-  `;
+function resolveSampleCodes(order, items = []) {
+  const codes = items
+    .map((item, idx) => formatSampleCode(order, item, idx))
+    .filter(Boolean);
+  if (codes.length) return codes.join(', ');
+  return order.sampleNo || '';
 }
 
-export function buildPermintaanStyles() {
-  return PERMINTAAN_STYLES;
+function buildMethodList(items = []) {
+  const methods = items
+    .map(
+      (item) =>
+        item.methodName ||
+        item.method ||
+        item.methodName ||
+        item.method_name ||
+        item.service?.method_name ||
+        item.service?.method?.name ||
+        ''
+    )
+    .map((value) => String(value || '').trim())
+    .filter(Boolean);
+  return Array.from(new Set(methods)).join(', ');
 }
 
-// === KAJI ULANG ===
-const KAJI_ULANG_STYLES = `
-  <style>
-    @page { margin: 6mm 12mm 16mm; }
-    body { font-family: 'Times New Roman', 'Times', serif; font-size: 12px; margin: 0; color: #000000; }
-    .page { padding: 6px 6px 18px; display: flex; flex-direction: column; min-height: 100vh; box-sizing: border-box; }
-    ${LETTERHEAD_STYLES}
-    h2 { margin-top: 0; font-size: 18px; text-transform: uppercase; letter-spacing: 0.08em; color: #000000; }
-    table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 12px; }
-    .info-table td { padding: 4px 6px; vertical-align: top; }
-    .info-table td:first-child { width: 32%; color: #000000; font-weight: 600; }
-    .items-table th, .items-table td { border: 1px solid #000000; padding: 8px; text-align: left; }
-    .items-table th { background: #ffffff; text-transform: uppercase; font-size: 11px; color: #000000; }
-    .decision { margin-top: 20px; border: 1px solid #000000; border-radius: 0; padding: 12px; background: #ffffff; font-size: 12px; }
-    .decision strong { color: #000000; }
-    .notes { margin-top: 16px; font-size: 12px; }
-    .evaluation-table th, .evaluation-table td { border: 1px solid #000000; padding: 6px; text-align: left; }
-    .evaluation-table th { background: #ffffff; text-transform: uppercase; font-size: 11px; color: #000000; }
-    .signature { margin: 16px auto 0; display: flex; justify-content: space-between; gap: 24px; font-size: 12px; }
-    .signature div { flex: 1; text-align: center; }
-  </style>
-`;
-
-function buildKajiUlangInfoTable(order) {
-  const info = [
-    ['ID Order', order.orderNo || order.requestId || '-'],
-    ['Nomor Order', formatOrderNumber(order)],
-    ['Tanggal Permintaan', formatFullDate(order.date || order.entryDate)],
-    ['Nama Customer', order.customerName || '-'],
-    ['Kontak', order.customerPhone || '-'],
-    ['Alamat', order.customerAddress || '-'],
-    ['Status Kaji Ulang', translateKajiUlangStatus(order.status)],
-  ];
-  return `
-    <table class="info-table">
-      ${info
-        .map(
-          ([label, value]) => `
-            <tr>
-              <td>${label}</td>
-              <td>${sanitize(value)}</td>
-            </tr>
-          `
-        )
-        .join('')}
-    </table>
-  `;
-}
-
-function buildKajiUlangItemsTable(order) {
-  const items = Array.isArray(order.testItems) ? order.testItems : [];
-  if (!items.length) {
-    return `
-      <section class="notes">
-        <strong>Ringkasan Pengujian:</strong>
-        <p>Data pengujian belum tersedia.</p>
-      </section>
-    `;
-  }
-  return `
-    <table class="items-table">
-      <thead>
-        <tr>
-          <th>No</th>
-          <th>Nama Pengujian</th>
-          <th>Nama Sampel</th>
-          <th>Jumlah</th>
-          <th>Tarif (Rp)</th>
-          <th>Kode Sampel</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${items
-          .map((item, idx) => {
-            const quantity = Math.max(1, Number(item.quantity) || 1);
-            const price = Math.max(0, Number(item.price) || 0);
-            return `
-              <tr>
-                <td>${idx + 1}</td>
-                <td>${sanitize(item.testName || item.name || '-')}</td>
-                <td>${sanitize(item.objectName || '-')}</td>
-                <td>${quantity}</td>
-                <td>${formatNumber(price)}</td>
-                <td>${sanitize(formatSampleCode(order, item, idx))}</td>
-              </tr>
-            `;
-          })
-          .join('')}
-      </tbody>
-    </table>
-  `;
-}
-
-function normalizeEvaluationValue(value) {
-  if (value === true || value === false) return value;
-  if (value === 1) return true;
-  if (value === 0) return false;
-  return null;
-}
-
-function summarizeEvaluationField(items, field, labels) {
+function aggregateEvaluation(items = [], field) {
   const values = items
-    .map((item) => normalizeEvaluationValue(item?.evaluation?.[field]))
+    .map((item) => item?.evaluation?.[field])
     .filter((value) => value === true || value === false);
-  if (!values.length) return '';
+  if (!values.length) return null;
   const hasTrue = values.includes(true);
   const hasFalse = values.includes(false);
-  if (hasTrue && hasFalse) return labels.mixed || 'Sebagian';
-  return hasTrue ? labels.true : labels.false;
+  if (hasTrue && hasFalse) return 'mixed';
+  return hasTrue;
 }
 
-function buildDerivedEvaluationRows(items = []) {
-  if (!Array.isArray(items) || !items.length) return [];
-  return [
-    {
-      topic: 'Peralatan',
-      result: summarizeEvaluationField(items, 'is_equipment_available', {
-        true: 'Ada',
-        false: 'Tidak Ada',
-      }),
-    },
-    {
-      topic: 'Personel',
-      result: summarizeEvaluationField(items, 'is_personnel_available', {
-        true: 'Ada',
-        false: 'Tidak Ada',
-      }),
-    },
-    {
-      topic: 'Waktu',
-      result: summarizeEvaluationField(items, 'is_time_available', {
-        true: 'Cukup',
-        false: 'Tidak Cukup',
-      }),
-    },
-    {
-      topic: 'Kondisi',
-      result: summarizeEvaluationField(items, 'is_test_ready', {
-        true: 'Siap Uji',
-        false: 'Prepare Sampel',
-      }),
-    },
-    {
-      topic: 'Laboratorium Subkontrak',
-      result: summarizeEvaluationField(items, 'is_subcontract_lab_available', {
-        true: 'Ada',
-        false: 'Tidak Ada',
-      }),
-    },
-  ];
+function resolveCheckState(items, field) {
+  const result = aggregateEvaluation(items, field);
+  if (result === true) return { yes: true, no: false };
+  if (result === false) return { yes: false, no: true };
+  if (result === 'mixed') return { yes: true, no: true };
+  return { yes: false, no: false };
 }
 
-function mergeEvaluationRows(providedRows = [], derivedRows = []) {
-  if (!providedRows.length) return derivedRows;
-  if (!derivedRows.length) return providedRows;
-  const derivedMap = new Map(
-    derivedRows.map((row) => [row.topic, row.result])
-  );
-  const merged = providedRows.map((row) => {
-    const topic = row?.topic || '';
-    const resultText =
-      typeof row?.result === 'string' ? row.result.trim() : row?.result;
-    const derivedResult = derivedMap.get(topic);
-    const result = resultText ? row.result : derivedResult || row.result;
-    return { ...row, result };
-  });
-  const knownTopics = new Set(merged.map((row) => row.topic));
-  derivedRows.forEach((row) => {
-    if (!knownTopics.has(row.topic)) merged.push(row);
-  });
-  return merged;
+function resolveConditionLabel(items) {
+  const result = aggregateEvaluation(items, 'is_test_ready');
+  if (result === true) return 'Siap Uji';
+  if (result === false) return 'Prepare Sampel';
+  if (result === 'mixed') return 'Siap Uji / Prepare Sampel';
+  return '';
 }
 
-function buildKajiUlangEvaluationTable(order) {
-  const providedRows =
-    Array.isArray(order.kajiUlangRows) && order.kajiUlangRows.length
-      ? order.kajiUlangRows
-      : [];
-  const derivedRows = buildDerivedEvaluationRows(order.testItems);
-  const rows = mergeEvaluationRows(providedRows, derivedRows);
-  if (!rows.length) {
-    rows.push(
-      { topic: 'Peralatan', result: order.evaluation?.equipment || '' },
-      { topic: 'Personel', result: order.evaluation?.personnel || '' },
-      { topic: 'Waktu', result: order.evaluation?.time || '' },
-      { topic: 'Kondisi', result: order.evaluation?.condition || '' },
-      {
-        topic: 'Laboratorium Subkontrak',
-        result: order.evaluation?.subcontract || '',
-      },
-      { topic: 'Metode Uji', result: order.evaluation?.method || '' }
-    );
-  }
-  if (!rows.length) return '';
+function renderCheckbox(checked) {
+  return `<span class="checkbox">${checked ? '&#10003;' : ''}</span>`;
+}
+
+function buildCheckboxRow(label, state) {
   return `
-    <table class="evaluation-table">
+    <tr>
+      <td>${sanitize(label)}</td>
+      <td class="checkbox-cell">${renderCheckbox(state.yes)}</td>
+      <td class="checkbox-cell">${renderCheckbox(state.no)}</td>
+    </tr>
+  `;
+}
+
+function buildSampleTable(items = [], rowCount = KAJI_ULANG_SAMPLE_ROWS) {
+  const rows = [];
+  for (let i = 0; i < rowCount; i += 1) {
+    const item = items[i] || {};
+    const quantity = item.quantity !== undefined ? Math.max(1, Number(item.quantity) || 1) : '';
+    const quantityText = quantity ? formatNumber(quantity) : '';
+    const description =
+      item.objectName ||
+      item.sampleName ||
+      item.sample_name ||
+      item.testName ||
+      '';
+    rows.push(`
+      <tr>
+        <td class="text-center">${i + 1}</td>
+        <td class="text-center">${sanitize(quantityText)}</td>
+        <td>${sanitize(description)}</td>
+        <td class="text-center"></td>
+        <td class="text-center"></td>
+        ${i === 0 ? `<td class="signature-cell" rowspan="${rowCount}"><div class="signature-line"></div></td>` : ''}
+        ${i === 0 ? `<td class="signature-cell" rowspan="${rowCount}"><div class="signature-line"></div></td>` : ''}
+      </tr>
+    `);
+  }
+  return `
+    <table class="sample-table">
       <thead>
         <tr>
-          <th style="width:12%;">No</th>
-          <th>Perihal</th>
-          <th>Hasil</th>
+          <th rowspan="2" style="width:5%;">No</th>
+          <th rowspan="2" style="width:10%;">Jumlah</th>
+          <th rowspan="2">Keterangan Sampel</th>
+          <th colspan="2" style="width:14%;">Verifikasi Sampel</th>
+          <th rowspan="2" style="width:12%;">Penerima</th>
+          <th rowspan="2" style="width:12%;">Pelanggan</th>
+        </tr>
+        <tr>
+          <th style="width:7%;">Sesuai</th>
+          <th style="width:7%;">Tidak</th>
         </tr>
       </thead>
       <tbody>
-        ${rows
-          .map(
-            (row, idx) => `
-            <tr>
-              <td>${idx + 1}</td>
-              <td>${sanitize(row.topic || '-')}</td>
-              <td>${sanitize(row.result || '-')}</td>
-            </tr>
-          `
-          )
-          .join('')}
+        ${rows.join('')}
       </tbody>
     </table>
   `;
 }
 
-function buildKajiUlangDecisionSection(order) {
-  const note = order.kajiUlangNote || order.note || '-';
-  const reviewer =
-    order.kajiUlangValidatedBy || order.paymentInfo?.reviewedBy || '-';
-  const reviewedAt = formatFullDate(
-    order.kajiUlangValidatedAt || order.paymentInfo?.reviewedAt
-  );
-  const isRejected =
-    order.status === 'rejected' || order.status === 'cancelled';
-  const decisionLabel = isRejected ? 'DITOLAK' : 'DITERIMA';
+export function buildKajiUlangBody(order = {}) {
+  const items = Array.isArray(order.testItems) ? order.testItems : [];
+  const customerName = order.customerName || '';
+  const companyName = order.companyName || '';
+  const address =
+    order.address || order.customerAddress || order.addressFull || '';
+  const phone = order.customerPhone || order.phoneNumber || '';
+  const email = order.customerEmail || order.email || '';
+  const certificateName = order.certificateName || customerName;
+  const certificateAddress = order.certificateAddress || address;
+  const objectUji = resolveObjectUji(order);
+  const serviceType = resolveServiceType(order);
+  const totalQuantity = sumQuantities(items);
+  const totalCost =
+    Number(order.paymentInfo?.total) || sumCosts(items);
+  const orderNumber = formatOrderNumber(order);
+  const orderNo =
+    orderNumber && orderNumber !== '-' ? orderNumber : order.orderNo || '';
+  const sampleCodes = resolveSampleCodes(order, items);
+  const methodList = buildMethodList(items);
+  const conditionLabel = resolveConditionLabel(items);
+  const noteText = order.kajiUlangNote || order.note || '';
+  const peralatanState = resolveCheckState(items, 'is_equipment_available');
+  const personelState = resolveCheckState(items, 'is_personnel_available');
+  const waktuState = resolveCheckState(items, 'is_time_available');
+  const labState = resolveCheckState(items, 'is_subcontract_lab_available');
+  const pengambilanState = { yes: false, no: false };
+  const kondisiText = conditionLabel || 'Siap Uji / Prepare Sampel';
+
   return `
-    <section class="decision">
-      <p><strong>Keputusan:</strong> ${decisionLabel}</p>
-      <p><strong>Status:</strong> ${translateKajiUlangStatus(order.status)}</p>
-      <p><strong>Catatan:</strong> ${sanitize(note)}</p>
-      <p><strong>Ditinjau Oleh:</strong> ${sanitize(reviewer)}</p>
-      <p><strong>Tanggal Review:</strong> ${sanitize(reviewedAt)}</p>
+    <section class="section">
+      <div class="section-bar">
+        <span>DATA PELANGGAN <span class="section-note">(diisi lengkap dengan sebenar-benarnya)</span></span>
+      </div>
+      <table class="line-table">
+        ${buildLineRow('Nama Pemohon', customerName)}
+        ${buildLineRow('Nama Perusahaan', companyName)}
+        ${buildLineRow('Alamat Lengkap', address)}
+        ${buildLineRow('No. Hp Aktif', phone)}
+        ${buildLineRow('Email', email)}
+      </table>
+      <div class="subsection-title">SERTIFIKAT ATAS NAMA</div>
+      <table class="line-table">
+        ${buildLineRow('Nama', certificateName)}
+        ${buildLineRow('Alamat', certificateAddress)}
+      </table>
+      <table class="line-table">
+        ${buildLineRow('Objek Uji', objectUji)}
+        ${buildLineRow('Jenis Pelayanan', serviceType)}
+        ${buildLineRow('Jumlah Benda Uji', totalQuantity ? formatNumber(totalQuantity) : '')}
+      </table>
     </section>
-  `;
-}
 
-export function buildKajiUlangBody(order, title) {
-  const infoTable = buildKajiUlangInfoTable(order);
-  const itemsTable = buildKajiUlangItemsTable(order);
-  const evaluationTable = buildKajiUlangEvaluationTable(order);
-  const decisionSection = buildKajiUlangDecisionSection(order);
+    <section class="section">
+      <div class="section-bar">
+        <span>KAJI ULANG PERMINTAAN <span class="section-note">(Diisi Petugas)</span></span>
+        <span class="section-doc">No.Dok: ${KAJI_ULANG_DOC_NUMBER}</span>
+      </div>
+      <table class="review-grid">
+        <tr>
+          <td style="width:55%;">
+            <table class="checkbox-table">
+              <thead>
+                <tr>
+                  <th> </th>
+                  <th>Ya</th>
+                  <th>Tidak</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${buildCheckboxRow('Peralatan', peralatanState)}
+                ${buildCheckboxRow('Personel', personelState)}
+                ${buildCheckboxRow('Waktu', waktuState)}
+                ${buildCheckboxRow('Laboratorium Subkontrak', labState)}
+                ${buildCheckboxRow('Pengambilan sisa sampel uji', pengambilanState)}
+                <tr>
+                  <td colspan="3" class="note-box">
+                    <span class="note-label">Catatan :</span>
+                    <div>${lineValue(noteText)}</div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </td>
+          <td style="width:45%;">
+            <table class="line-table review-info">
+              ${buildLineRow('No. Order', orderNo)}
+              ${buildLineRow('No. Sampel', sampleCodes)}
+              ${buildLineRow('Biaya', totalCost ? formatCurrency(totalCost) : '')}
+              ${buildLineRow('Jumlah Benda Uji', totalQuantity ? formatNumber(totalQuantity) : '')}
+              ${buildLineRow('Metode Uji', methodList)}
+              <tr>
+                <td class="line-label">Kondisi*)</td>
+                <td class="line-colon">:</td>
+                <td>${sanitize(kondisiText)}</td>
+              </tr>
+            </table>
+            <div class="note-small">*) Coret yang tidak perlu</div>
+          </td>
+        </tr>
+      </table>
+    </section>
 
-  return `
-    ${infoTable}
-    ${itemsTable}
-    ${evaluationTable}
-    ${decisionSection}
+    <div class="terms">
+      <ol>
+        <li>Proses pengujian/permesinan akan dilaksanakan setelah dilakukan pembayaran dan pelanggan menyampaikan bukti pembayaran kepada pihak Laboratorium.</li>
+        <li>Penyimpanan alat atau sampel di ruang UPT Laboratorium selama proses penyelesaian administrasi dibatasi maksimal 5 (lima) hari kalender, termasuk penandatanganan formulir permohonan layanan. Apabila dalam jangka waktu tersebut proses administrasi belum selesai, maka pihak Laboratorium tidak bertanggung jawab atas segala risiko yang terjadi pada alat atau sampel milik pelanggan.</li>
+        <li>Pengambilan sisa contoh sampel uji dilakukan paling lambat 3 (tiga) bulan sejak laporan hasil uji diterbitkan. Apabila sampai batas waktu tersebut sampel tidak diambil, maka sampel dapat dimusnahkan oleh pihak Laboratorium.</li>
+        <li>Apabila terjadi keadaan di luar kendali (force majeure) yang mengakibatkan kerusakan alat atau sampel serta terhambatnya atau tidak terpenuhinya proses layanan, maka pihak Laboratorium tidak bertanggung jawab atas kerusakan yang terjadi. Proses layanan akan disesuaikan kembali sebagaimana mestinya dengan pemberitahuan tertulis paling lambat 14 (empat belas) hari sejak terjadinya keadaan tersebut.</li>
+      </ol>
+      <p class="terms-consent">Dengan ini, pelanggan menyatakan menyetujui ketentuan tersebut.</p>
+      <p class="terms-info">*Untuk informasi lebih lanjut mengenai proses pelayanan, dapat menghubungi UPT Laboratorium melalui email labperintgl@gmail.com atau melalui Telp/Faks: (0283) 357437.</p>
+    </div>
+
+    ${buildSampleTable(items, KAJI_ULANG_SAMPLE_ROWS)}
+
+    <div class="cut-line">
+      <span class="cut-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" role="img">
+          <circle cx="6.5" cy="6.5" r="2.5"></circle>
+          <circle cx="6.5" cy="17.5" r="2.5"></circle>
+          <path d="M8.3 8.3l12.7 12.7"></path>
+          <path d="M8.3 15.7l12.7-12.7"></path>
+        </svg>
+      </span>
+    </div>
+
+    <section class="receipt">
+      <div class="receipt-title">SURAT TANDA TERIMA BARANG</div>
+      <table class="line-table">
+        ${buildLineRow('Tanggal', formatFullDate(order.entryDate || order.date || order.createdAt))}
+        ${buildLineRow('Nomor Order', orderNo)}
+        ${buildLineRow('Nama Pelanggan', customerName)}
+        ${buildLineRow('Jenis Pengujian &', buildTestNameSummary(items))}
+        ${buildLineRow('Jumlah Pengujian', totalQuantity ? formatNumber(totalQuantity) : '')}
+      </table>
+      ${buildSampleTable(items, KAJI_ULANG_SAMPLE_ROWS)}
+      <p class="receipt-note">* Surat tanda terima ini wajib dibawa ketika pengambilan sertifikat</p>
+    </section>
   `;
 }
 
 export function buildKajiUlangStyles() {
   return KAJI_ULANG_STYLES;
-}
-
-function translateKajiUlangStatus(status) {
-  return translateStatus(status);
-}
-
-// === VALIDASI ===
-const VALIDASI_STYLES = `
-  <style>
-    @page { margin: 6mm 12mm 16mm; }
-    html, body { height: 100%; margin: 0; padding: 0; }
-    body { font-family: 'Times New Roman', 'Times', serif; font-size: 12px; margin: 0; color: #000000; }
-    .page { min-height: 100vh; padding: 6px 6px 14px; display: flex; flex-direction: column; box-sizing: border-box; }
-    ${LETTERHEAD_STYLES}
-    h2 { margin: 0 0 12px; font-size: 18px; text-transform: uppercase; letter-spacing: 0.08em; color: #000000; }
-    .info-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 8px; }
-    .info-table td { padding: 6px 8px; vertical-align: top; }
-    .info-table td:first-child { width: 32%; font-weight: 600; }
-    .items-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 16px; }
-    .items-table th, .items-table td { border: 1px solid #000000; padding: 8px; text-align: left; }
-    .items-table th { background: #ffffff; text-transform: uppercase; font-size: 11px; }
-    .content { flex: 1 1 auto; display: flex; flex-direction: column; }
-    .signature { margin-top: auto; padding-top: 40px; display: flex; justify-content: space-between; align-items: flex-end; text-align: center; font-size: 12px; column-gap: 20px; }
-    .signature-column { width: 45%; }
-    .signature-column p { margin: 4px 0; }
-    .signature-line { margin: 36px auto 8px; width: 160px; border-bottom: 1px solid #000000; height: 1px; }
-  </style>
-`;
-
-function buildInfoRow(label, value) {
-  return `
-    <tr>
-      <td>${sanitize(label)}</td>
-      <td>${sanitize(value || '-')}</td>
-    </tr>
-  `;
-}
-
-function resolveCommodity(order = {}) {
-  return (
-    order.commodity ||
-    order.objectName ||
-    order.testItems?.[0]?.objectName ||
-    order.testType ||
-    '-'
-  );
-}
-
-export function buildValidasiBody(order, title) {
-  const orderId = order.orderNo || order.id || order.requestId || '-';
-  const orderNumber = formatOrderNumber(order);
-
-  const infoTable = `
-    <table class="info-table">
-      ${buildInfoRow('ID Order', orderId)}
-      ${buildInfoRow('No Order', orderNumber)}
-      ${buildInfoRow('Tanggal', formatFullDate(order.date || order.entryDate))}
-      ${buildInfoRow('Komoditi / Benda Uji', resolveCommodity(order))}
-    </table>
-  `;
-
-  const items = Array.isArray(order.testItems) ? order.testItems : [];
-  const itemsTable = `
-    <table class="items-table">
-      <thead>
-        <tr>
-          <th style="width:8%;">No</th>
-          <th style="width:26%;">Nama Pengujian</th>
-          <th style="width:14%;">Jumlah Sampel</th>
-          <th style="width:20%;">Kode Sampel</th>
-          <th style="width:18%;">Metode Uji</th>
-          <th style="width:14%;">Waktu Pengambilan</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${
-          items.length
-            ? items
-                .map(
-                  (item, idx) => `
-                  <tr>
-                    <td>${idx + 1}</td>
-                    <td>${sanitize(item.testName || item.name || '-')}</td>
-                    <td>${sanitize(item.quantity || 0)}</td>
-                    <td>${sanitize(formatSampleCode(order, item, idx))}</td>
-                    <td>${sanitize(item.method || item.methodName || item.testMethod || '-')}</td>
-                    <td>${sanitize(item.collectionTime || item.collectionDate || '-')}</td>
-                  </tr>
-                `
-                )
-                .join('')
-            : `<tr><td colspan="6" style="text-align:center;">Tidak ada data pengujian</td></tr>`
-        }
-      </tbody>
-    </table>
-  `;
-
-  return `
-    <div class="content">
-      ${infoTable}
-      ${itemsTable}
-    </div>
-  `;
-}
-
-export function buildValidasiStyles() {
-  return VALIDASI_STYLES;
 }
 
 function formatSampleCode(order, item, index) {
@@ -698,13 +550,7 @@ function formatMonthYear(value) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) {
     const now = new Date();
-    return `${String(now.getMonth() + 1).padStart(
-      2,
-      '0'
-    )}/${now.getFullYear()}`;
+    return `${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()}`;
   }
-  return `${String(date.getMonth() + 1).padStart(
-    2,
-    '0'
-  )}/${date.getFullYear()}`;
+  return `${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()}`;
 }
