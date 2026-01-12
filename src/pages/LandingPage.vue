@@ -492,6 +492,30 @@
         </div>
       </section>
 
+      <!-- SOP Pelayanan -->
+      <section
+        id="sop"
+        class="section-block space-y-6"
+        data-reveal
+        data-reveal-delay="200"
+      >
+        <div class="space-y-2 text-center">
+          <p class="text-sm font-semibold uppercase tracking-wide text-sky-700">
+            Alur Pelayanan
+          </p>
+          <h2 class="text-2xl font-semibold text-slate-900">
+            SOP Pelayanan Pengujian
+          </h2>
+        </div>
+        <div class="rounded-3xl border border-slate-200 bg-white p-4 shadow-lg sm:p-6">
+          <img
+            :src="images.sop"
+            alt="SOP Pelayanan"
+            class="w-full rounded-2xl object-contain bg-white"
+          />
+        </div>
+      </section>
+
       <!-- Services -->
       <section
         id="layanan"
@@ -739,12 +763,14 @@ import akreditasiKan from '@/assets/logo KAN.webp';
 import akreditasiTuk from '@/assets/logo TUK.webp';
 import akreditasiLspLmi from '@/assets/Logo LSP LMI.webp';
 import navLogo from '@/assets/LOGO DINAS KAB TEGAL.webp';
+import sopPelayanan from '@/assets/SOP Pelayanan.png';
 
 const images = {
   profile: bgLogin,
   service1: servicePengujian,
   service2: servicePermesinan,
   service3: serviceSertifikasi,
+  sop: sopPelayanan,
   accreditation1: akreditasiKan,
   accreditation2: akreditasiTuk,
   accreditation3: akreditasiLspLmi,
