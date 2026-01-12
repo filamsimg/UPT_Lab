@@ -1022,8 +1022,8 @@ const PERMINTAAN_PENGUJIAN_STYLES = `
     .permintaan-page .summary-row td { font-weight: 600; }
     .permintaan-page .text-center { text-align: center; }
     .permintaan-page .text-right { text-align: right; }
-    .permintaan-page .sop-title { text-align: center; font-weight: 700; margin-top: 10px; }
-    .permintaan-page .sop-diagram { width: 100%; max-width: 520px; margin: 6px auto 0; display: block; }
+    .permintaan-page .sop-title { text-align: center; font-weight: 700; margin-top: 18px; }
+    .permintaan-page .sop-diagram { width: 100%; max-width: 680px; margin: 4px auto 0; display: block; }
     .permintaan-page .sop-diagram text { font-family: 'Times New Roman', 'Times', serif; font-size: 9px; }
   </style>
 `;
