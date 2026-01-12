@@ -1,138 +1,141 @@
 # UPT Lab Dashboard
 
-Dashboard berbasis Vue 3/Vite/Tailwind untuk mengelola operasional UPT Laboratorium Perindustrian Kabupaten Tegal. Aplikasi ini memusatkan permintaan pengujian, kaji ulang, validasi, surat perintah, master data layanan, serta manajemen pengguna dalam satu antarmuka responsif.
+Dashboard berbasis Vue 3, Vite, dan Tailwind untuk mengelola operasional UPT Laboratorium Perindustrian Kabupaten Tegal. Aplikasi ini memusatkan permintaan pengujian, kaji ulang, data layanan, serta manajemen pengguna dalam satu antarmuka responsif.
 
-## ✨ Fitur Utama
+## Fitur Utama
 
-- **Permintaan Pengujian** – tambah/edit permintaan, pilih jenis uji, generate ringkasan biaya, lanjutkan ke pembayaran.
-- **Kaji Ulang & Validasi** – evaluasi kelayakan sampel, tetapkan penanggung jawab, unggah tanda tangan digital.
-- **Surat Perintah & Kartu Kendali** – pantau progres pekerjaan serta arsipkan log setiap tahapan.
-- **Manajemen Master Data** – kelola layanan, mesin uji, metode, pengguna, role, permission.
-- **Riwayat Aktivitas** – logging otomatis (login, permintaan, pembayaran) dengan halaman monitoring khusus.
-- **Reusable Confirm Dialog** – setiap aksi penting (simpan, hapus, logout) menggunakan modal konfirmasi seragam.
-- **UI Modern** – layout AppShell dengan sidebar collapsible, tabel responsif, badge status, dan komponen form modular.
+- Dashboard: ringkasan status order, tren order selesai, dan aktivitas terbaru.
+- Permintaan pengujian: tambah/edit permintaan, pencarian/filter status, input pembayaran, pembatalan.
+- Kaji ulang dan pengujian: review bukti bayar, validasi, update status (testing, selesai, refund, batal).
+- Cetak order: cari ID order dan cetak dokumen Kaji Ulang, Formulir Pengujian, Permintaan Pengujian.
+- Layanan dan tarif: kelola layanan uji, kategori, metode, mesin uji, harga.
+- Keuangan dan laporan: ringkasan pendapatan/refund, tren keuangan, filter periode, export CSV.
+- Manajemen pengguna: user, role, permission, kode undangan admin, profil, ganti password, verifikasi email.
+- Aktivitas dan notifikasi: riwayat aktivitas dan pusat notifikasi.
 
-## 🧱 Teknologi
+## Dashboard
 
-| Layer     | Stack                                                                 |
-| --------- | --------------------------------------------------------------------- |
-| Framework | [Vue 3](https://vuejs.org/) + [Vite](https://vitejs.dev/)             |
-| Styling   | [Tailwind CSS](https://tailwindcss.com/), custom utilities, Heroicons |
-| State     | [Pinia](https://pinia.vuejs.org/)                                     |
-| Routing   | [Vue Router 4](https://router.vuejs.org/)                             |
-| Utilities | Custom composables (`useConfirmDialog`, dsb)                          |
+- KPI status order: menunggu kaji ulang, menunggu pembayaran, proses pengujian, selesai.
+- Grafik tren order selesai: total pendapatan (Rp) dan jumlah order per periode.
+- Filter tren: harian, bulanan, tahunan, dan rentang tanggal.
+- Aktivitas terbaru: daftar event dengan aktor, aksi, subject, dan IP.
 
-## 🚀 Menjalankan Proyek
+## Teknologi
+
+| Layer     | Stack |
+| --------- | ----- |
+| Framework | [Vue 3](https://vuejs.org/) + [Vite](https://vitejs.dev/) |
+| Styling   | [Tailwind CSS](https://tailwindcss.com/), Heroicons |
+| State     | [Pinia](https://pinia.vuejs.org/) |
+| Routing   | [Vue Router 4](https://router.vuejs.org/) |
+| HTTP      | [Axios](https://axios-http.com/) |
+| Charts    | [Chart.js](https://www.chartjs.org/) |
+| Utilities | Custom composables (`src/composables`) |
+
+## Konfigurasi
+
+- Pastikan file `.env` berisi endpoint backend.
 
 ```bash
-# 1. Pastikan Node.js >= 16
+VITE_API_URL=http://localhost:8080
+```
+
+- Semua request frontend memakai prefix `/api` dan akan diproxy ke `VITE_API_URL` saat dev.
+
+## Menjalankan Proyek
+
+```bash
+# 1. Pastikan Node.js LTS terpasang
 node --version
 
 # 2. Instal dependensi
 npm install
 
-# 3. Jalankan server dev (http://localhost:5173)
+# 3. Jalankan server dev (http://localhost:5174)
 npm run dev
 
 # 4. Build produksi
 npm run build
 
 # 5. Preview hasil build
-npm run preview
+npm run serve
 ```
 
-## 📂 Struktur Direktori Penting
+## Struktur Direktori Penting
 
 ```
 src/
-├── components/
-│   ├── AppShell.vue          # Layout utama + provider confirm dialog
-│   ├── DataTable.vue, Badge.vue, FileUpload.vue, SignaturePad.vue, dll.
-│   └── form/                 # FormUser, FormRole, FormPermission, FormPermintaan, FormPayment, ...
-├── pages/                    # Dashboard, Permintaan, Users, Roles, Permissions, dsb.
-├── stores/                   # useAuthStore, useUserStore, useRoleStore, usePermintaanStore, useConfirmDialog, ...
-├── router/index.js           # Definisi route + guard login
-└── assets/styles.css         # Tailwind base & custom utilities
+  assets/
+  components/
+    charts/OrderTrendsChart.vue
+    common/DataTable.vue, Badge.vue, FileUpload.vue
+    feedback/ConfirmDialog.vue, NotificationStack.vue
+    form/FormPermintaan.vue, FormUser.vue, FormRole.vue
+    layout/AppShell.vue
+  composables/
+  pages/
+  router/
+  services/
+  stores/
+  utils/
+  App.vue
+  main.js
 ```
 
-## 🧠 State Management (Pinia)
+## State Management (Pinia)
 
-- `useAuthStore` – login/logout, token & currentUser.
-- `useUserStore`, `useRoleStore`, `usePermissionStore` – CRUD master pengguna & akses.
-- `usePermintaanStore` – normalisasi permintaan, integrasi API (kapan tersedia), dummy fallback.
-- `useActivityStore` – menyimpan log aktivitas ke `localStorage`.
-- `useConfirmDialog` – provider/injector dialog konfirmasi global.
+- `useAuthStore`: login/logout, token, dan current user.
+- `useUserStore`, `useRoleStore`, `usePermissionStore`: master pengguna dan akses.
+- `usePermintaanStore`, `useKajiUlangStore`, `useOrderStore`, `useTestStore`: alur permintaan dan pengujian.
+- `useNotificationStore`, `useNotificationCenter`: notifikasi dan pusat notifikasi.
+- `useAnalyticsStore`, `useActivityStore`: data dashboard dan log aktivitas.
+- Store lain tersedia di `src/stores`.
 
-Semua store memakai Composition API `defineStore`, sehingga mudah diuji maupun diintegrasikan dengan backend nyata.
+## Confirm Dialog (Reusable Validation)
 
-## ✅ Confirm Dialog (Reusable Validation)
+1. Provider dipasang di `components/layout/AppShell.vue` dan `components/feedback/ConfirmDialog.vue` dirender sekali di layout.
+2. Consumer cukup memanggil:
 
-1. **Provider** sudah dipasang di `AppShell.vue`:
+```js
+import { useConfirmDialog } from '@/stores/useConfirmDialog';
 
-   ```js
-   const { state, confirm, cancel, open } = provideConfirmDialog();
-   ```
+const confirmDialog = useConfirmDialog();
+const ok = await confirmDialog({
+  title: 'Hapus data?',
+  message: 'Tindakan ini tidak dapat dibatalkan.',
+  variant: 'danger',
+  confirmLabel: 'Hapus',
+});
+if (!ok) return;
+// lanjutkan aksi
+```
 
-   dan `ConfirmDialog.vue` dirender sekali di bawah layout.
-
-2. **Consumer** (form/page) cukup memanggil:
-
-   ```js
-   import { useConfirmDialog } from '@/stores/useConfirmDialog';
-   const confirmDialog = useConfirmDialog();
-
-   const ok = await confirmDialog({
-     title: 'Hapus data?',
-     message: 'Tindakan ini tidak dapat dibatalkan.',
-     variant: 'danger',
-     confirmLabel: 'Hapus',
-   });
-   if (!ok) return;
-   // lanjutkan aksi
-   ```
-
-3. Implementasi saat ini mencakup:
-   - Semua form simpan (User, Role, Permission, Permintaan, Payment).
-   - Semua aksi hapus (Permintaan tunggal/bulk, User, Role, Permission, Kaji Ulang, Riwayat).
-   - Logout pada AppShell.
-
-Silakan gunakan hook yang sama untuk validasi tambahan (mis. reset form, ubah status, dsb).
-
-## 🧩 Komponen Kunci
-
-- **DataTable.vue** – dukung pencarian, sorting, stack-mode mobile, slot untuk kolom khusus.
-- **ConfirmDialog.vue** – modal konfirmasi responsif dengan variasi primary/danger.
-- **Form components** – composable-friendly, menerima `isEdit`, `loading`, `modelValue`.
-- **FileUpload** – siap pakai untuk workflow dokumen.
-
-## 🔧 Praktik Kode
+## Praktik Kode
 
 - Gunakan alias `@` untuk impor dari `src/`.
-- Simpan semua side effect di Pinia store; komponen bersifat presentational + event emit.
-- Manfaatkan utility Tailwind (warna primer sudah diset di `tailwind.config.js`).
-- Jalankan format/lint (ESLint/Prettier) sebelum commit jika tooling tersedia.
+- Simpan side effect di Pinia store; komponen fokus pada UI dan emit event.
+- Manfaatkan utility Tailwind (warna primer di `tailwind.config.js`).
 
-## 🧪 Testing Manual
+## Testing Manual
 
-1. CRUD pengguna/role/permission → pastikan dialog konfirmasi muncul.
-2. Tambah permintaan + lanjutkan ke pembayaran → cek validasi dialog.
-3. Hapus permintaan (tunggal & multi-select) → dialog danger.
-4. Logout → dialog konfirmasi.
-5. Clear riwayat aktivitas → dialog danger.
+1. Login, reset password, dan verifikasi email.
+2. Tambah permintaan dan lanjutkan ke pembayaran.
+3. Kaji ulang permintaan dan buat surat perintah.
+4. Cek log aktivitas dan notifikasi.
+5. Uji CRUD pengguna/role/permission.
 
-## 📝 Catatan
+## Catatan
 
-- Saat ini data dummy masih digunakan pada beberapa store; ketika API backend siap, ganti `try/catch` di store agar mengambil data nyata.
-- Riwayat aktivitas persisten di `localStorage` (`uptlab.activityHistory`).
-- Pastikan `public/img/avatar-default.png` tersedia untuk avatar default.
+- Token pengguna disimpan di `localStorage` melalui `src/utils/storage`.
+- Dev server mem-proxy `/api` ke `VITE_API_URL`.
 
-## 🤝 Kontribusi
+## Kontribusi
 
-1. Fork & clone repo ini.
+1. Fork dan clone repo ini.
 2. Buat branch fitur: `git checkout -b feat/nama-fitur`.
 3. Lakukan perubahan, tambahkan uji manual bila relevan.
-4. Push dan buka pull request berisi ringkasan perubahan + screenshot jika UI berubah.
+4. Push dan buka pull request berisi ringkasan perubahan dan screenshot jika UI berubah.
 
-## 📬 Lisensi
+## Lisensi
 
 Hak cipta tetap milik UPT Laboratorium Perindustrian Kabupaten Tegal. Gunakan contoh ini sebagai referensi internal atau proyek belajar sesuai kebutuhan Anda.
