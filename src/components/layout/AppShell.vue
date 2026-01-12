@@ -537,11 +537,12 @@ const baseMenu = [
     label: 'Cetak',
     icon: BriefcaseIcon,
     children: [
-      {
-        label: 'Cetak Order',
-        path: '/cetak-order',
-        icon: ClipboardDocumentListIcon,
-      },
+        {
+          label: 'Cetak Order',
+          path: '/cetak-order',
+          icon: ClipboardDocumentListIcon,
+          requiredPermission: 'material_test_orders.index',
+        },
     ],
   },
   {

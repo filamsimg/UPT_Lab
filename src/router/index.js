@@ -61,7 +61,11 @@ const routes = [
     component: KajiUlangPage,
     meta: { requiredPermission: 'material_test_orders.index' },
   },
-  { path: '/cetak-order', component: CetakOrderPage },
+  {
+    path: '/cetak-order',
+    component: CetakOrderPage,
+    meta: { requiredPermission: 'material_test_orders.index' },
+  },
   { path: '/layanan', component: LayananPage },
   {
     path: '/laporan-keuangan',
