@@ -11,12 +11,7 @@ import DashboardPage from '../pages/DashboardPage.vue';
 const LandingPage = () => import('../pages/LandingPage.vue');
 const PermintaanPage = () => import('../pages/PermintaanPage.vue');
 const KajiUlangPage = () => import('../pages/KajiUlangPage.vue');
-const KartuKendaliPage = () => import('../pages/KartuKendaliPage.vue');
-const CetakKajiUlangPage = () => import('../pages/CetakKajiUlangPage.vue');
-const CetakFormulirPengujianPage = () =>
-  import('../pages/CetakFormulirPengujianPage.vue');
-const CetakPermintaanPengujianPage = () =>
-  import('../pages/CetakPermintaanPengujianPage.vue');
+const CetakOrderPage = () => import('../pages/CetakOrderPage.vue');
 const LayananPage = () => import('../pages/LayananPage.vue');
 const AuthPage = () => import('../pages/AuthPage.vue');
 const ResetPasswordPage = () => import('../pages/ResetPasswordPage.vue');
@@ -54,7 +49,11 @@ const routes = [
     component: EmailVerificationPage,
     meta: { layout: 'auth', authMode: 'verify-email' },
   },
-  { path: '/dashboard', component: DashboardPage, meta: { requiredPermission: 'material_test_orders.index' } },
+  {
+    path: '/dashboard',
+    component: DashboardPage,
+    meta: { requiredPermission: 'material_test_orders.index' },
+  },
   { path: '/profile', component: ProfilePage },
   { path: '/permintaan', component: PermintaanPage },
   {
@@ -62,16 +61,7 @@ const routes = [
     component: KajiUlangPage,
     meta: { requiredPermission: 'material_test_orders.index' },
   },
-  { path: '/kartu-kendali', component: KartuKendaliPage },
-  { path: '/cetak-kaji-ulang', component: CetakKajiUlangPage },
-  {
-    path: '/cetak-formulir-pengujian',
-    component: CetakFormulirPengujianPage,
-  },
-  {
-    path: '/cetak-permintaan-pengujian',
-    component: CetakPermintaanPengujianPage,
-  },
+  { path: '/cetak-order', component: CetakOrderPage },
   { path: '/layanan', component: LayananPage },
   {
     path: '/laporan-keuangan',
@@ -244,9 +234,3 @@ router.beforeEach(async (to, from, next) => {
 });
 
 export default router;
-
-
-
-
-
-

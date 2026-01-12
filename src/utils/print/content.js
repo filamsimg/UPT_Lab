@@ -1,5 +1,6 @@
 // Bagian isi & utilitas untuk dokumen cetak (body/content)
 import logoTuk from '@/assets/logo TUK.webp';
+import sopPelayanan from '@/assets/SOP Pelayanan.png';
 
 export function sanitize(value) {
   if (value === null || value === undefined) return '-';
@@ -96,69 +97,69 @@ export function prepareTitle(options = {}, fallbackTitle = 'Dokumen') {
 const KAJI_ULANG_STYLES = `
   <style>
     @page { size: 210mm 330mm; margin: 6mm 8mm 8mm; }
-    body { font-family: 'Times New Roman', 'Times', serif; font-size: 11px; margin: 0; color: #000000; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    .kaji-ulang-page { padding: 0; box-sizing: border-box; }
-    .content-frame { border: none; padding: 0; position: relative; }
-    .content-frame::before { content: ''; position: absolute; inset: 0; background: url('${logoTuk}') center/90% no-repeat; opacity: 0.08; pointer-events: none; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    .content-frame > * { position: relative; z-index: 1; }
-    .form-header { position: relative; padding: 0 70px 4px; text-align: center; }
-    .form-header img { position: absolute; left: 0; top: 0; width: 56px; height: 56px; object-fit: contain; }
-    .form-header .org-line { font-size: 10px; line-height: 1.25; }
-    .form-header .org-strong { font-weight: 700; }
-    .form-header .org-unit { font-size: 11px; font-weight: 700; }
-    .form-header .org-contact { font-size: 9px; }
-    .form-header .org-link { color: #0b68b1; text-decoration: underline; }
-    .form-header .header-bar { margin: 6px -70px 0; width: calc(100% + 140px); background: #0b68b1; color: #ffffff; font-weight: 700; letter-spacing: 0.4px; padding: 3px 0; box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    .section { border: 1px solid #000000; margin-top: 6px; }
-    .section-bar { background: #0b68b1; color: #ffffff; font-weight: 700; padding: 3px 6px; font-size: 10.5px; display: flex; justify-content: space-between; align-items: center; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    .section-bar span { color: #ffffff; }
-    .section-bar .section-note { color: #ffffff; font-weight: 400; font-style: italic; font-size: 9px; }
-    .section-bar .section-doc { color: #ffffff; font-weight: 600; font-size: 9px; }
-    .line-table { width: 100%; border-collapse: collapse; }
-    .line-table td { padding: 2px 6px; vertical-align: top; }
-    .line-label { width: 150px; }
-    .line-colon { width: 10px; text-align: center; }
-    .line-value { border-bottom: 1px dotted #000000; min-height: 14px; }
-    .line-value span { display: inline-block; padding-bottom: 1px; }
-    .subsection-title { font-weight: 700; padding: 4px 6px 2px; }
-    .review-grid { width: 100%; border-collapse: collapse; }
-    .review-grid > tbody > tr > td { border: none; vertical-align: top; padding: 0; }
-    .review-grid > tbody > tr > td + td { border-left: 1px solid #000000; }
-    .checkbox-table { width: 100%; border-collapse: collapse; }
-    .checkbox-table th, .checkbox-table td { border: 1px solid #000000; padding: 3px 4px; }
-    .checkbox-table th { text-align: center; font-weight: 700; }
-    .checkbox-table tr:first-child th,
-    .checkbox-table tr:first-child td { border-top: none; }
-    .checkbox-table tr:last-child td { border-bottom: none; }
-    .checkbox-table tr td:first-child,
-    .checkbox-table tr th:first-child { border-left: none; }
-    .checkbox-table tr td:last-child,
-    .checkbox-table tr th:last-child { border-right: none; }
-    .checkbox-cell { text-align: center; width: 26px; }
-    .checkbox { display: inline-flex; width: 12px; height: 12px; border: 1px solid #000000; align-items: center; justify-content: center; font-size: 10px; line-height: 1; }
-    .note-box { padding: 4px; min-height: 36px; }
-    .note-label { font-style: italic; }
-    .review-info .line-label { width: 110px; }
-    .review-info .line-value { min-height: 12px; }
-    .note-small { font-size: 9px; padding: 2px 6px 4px; }
-    .terms { border: 1px solid #000000; border-top: none; padding: 6px 8px 4px; font-size: 9.5px; line-height: 1.25; }
-    .terms ol { margin: 0 0 4px 18px; padding: 0; }
-    .terms li { margin-bottom: 3px; }
-    .terms-consent { margin: 4px 0 2px; }
-    .terms-info { margin: 0; font-style: italic; }
-    .sample-table { width: 100%; border-collapse: collapse; border: 1px solid #000000; margin-top: 4px; font-size: 10px; }
-    .sample-table th, .sample-table td { border: 1px solid #000000; padding: 3px 4px; }
-    .sample-table th { text-align: center; font-weight: 700; }
-    .text-center { text-align: center; }
-    .signature-cell { width: 80px; vertical-align: bottom; }
-    .signature-line { border-top: 1px solid #000000; margin: 0 6px 8px; height: 1px; }
-    .cut-line { position: relative; margin: 8px 0 6px; border-top: 1px dashed #000000; min-height: 14px; }
-    .cut-icon { position: absolute; left: 0; top: -7px; display: inline-flex; align-items: center; background: #ffffff; padding-right: 6px; }
-    .cut-icon svg { width: 14px; height: 14px; stroke: #000000; fill: none; stroke-width: 1.3; stroke-linecap: round; stroke-linejoin: round; }
-    .receipt { border: 1px solid #000000; padding: 6px; margin-top: 6px; }
-    .receipt-title { text-align: center; font-weight: 700; text-decoration: underline; margin-bottom: 4px; }
-    .receipt-note { font-size: 9px; font-style: italic; margin-top: 4px; }
-    .receipt, .sample-table { break-inside: avoid; page-break-inside: avoid; }
+    body { font-family: 'Times New Roman', 'Times', serif; font-size: 10px; margin: 0; color: #000000; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .kaji-ulang-page { padding: 0; box-sizing: border-box; font-size: 11px; }
+    .kaji-ulang-page .content-frame { border: none; padding: 0; position: relative; }
+    .kaji-ulang-page .content-frame::before { content: ''; position: absolute; inset: 0; background: url('${logoTuk}') center/90% no-repeat; opacity: 0.08; pointer-events: none; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .kaji-ulang-page .content-frame > * { position: relative; z-index: 1; }
+    .kaji-ulang-page .form-header { position: relative; padding: 0 70px 4px; text-align: center; }
+    .kaji-ulang-page .form-header img { position: absolute; left: 0; top: 0; width: 56px; height: 56px; object-fit: contain; }
+    .kaji-ulang-page .form-header .org-line { font-size: 10px; line-height: 1.25; }
+    .kaji-ulang-page .form-header .org-strong { font-weight: 700; }
+    .kaji-ulang-page .form-header .org-unit { font-size: 11px; font-weight: 700; }
+    .kaji-ulang-page .form-header .org-contact { font-size: 9px; }
+    .kaji-ulang-page .form-header .org-link { color: #0b68b1; text-decoration: underline; }
+    .kaji-ulang-page .form-header .header-bar { margin: 6px -70px 0; width: calc(100% + 140px); background: #0b68b1; color: #ffffff; font-weight: 700; letter-spacing: 0.4px; padding: 3px 0; box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .kaji-ulang-page .section { border: 1px solid #000000; margin-top: 6px; }
+    .kaji-ulang-page .section-bar { background: #0b68b1; color: #ffffff; font-weight: 700; padding: 3px 6px; font-size: 10.5px; display: flex; justify-content: space-between; align-items: center; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .kaji-ulang-page .section-bar span { color: #ffffff; }
+    .kaji-ulang-page .section-bar .section-note { color: #ffffff; font-weight: 400; font-style: italic; font-size: 9px; }
+    .kaji-ulang-page .section-bar .section-doc { color: #ffffff; font-weight: 600; font-size: 9px; }
+    .kaji-ulang-page .line-table { width: 100%; border-collapse: collapse; }
+    .kaji-ulang-page .line-table td { padding: 2px 6px; vertical-align: top; }
+    .kaji-ulang-page .line-label { width: 150px; }
+    .kaji-ulang-page .line-colon { width: 10px; text-align: center; }
+    .kaji-ulang-page .line-value { border-bottom: 1px dotted #000000; min-height: 14px; }
+    .kaji-ulang-page .line-value span { display: inline-block; padding-bottom: 1px; }
+    .kaji-ulang-page .subsection-title { font-weight: 700; padding: 4px 6px 2px; }
+    .kaji-ulang-page .review-grid { width: 100%; border-collapse: collapse; }
+    .kaji-ulang-page .review-grid > tbody > tr > td { border: none; vertical-align: top; padding: 0; }
+    .kaji-ulang-page .review-grid > tbody > tr > td + td { border-left: 1px solid #000000; }
+    .kaji-ulang-page .checkbox-table { width: 100%; border-collapse: collapse; }
+    .kaji-ulang-page .checkbox-table th, .kaji-ulang-page .checkbox-table td { border: 1px solid #000000; padding: 3px 4px; }
+    .kaji-ulang-page .checkbox-table th { text-align: center; font-weight: 700; }
+    .kaji-ulang-page .checkbox-table tr:first-child th,
+    .kaji-ulang-page .checkbox-table tr:first-child td { border-top: none; }
+    .kaji-ulang-page .checkbox-table tr:last-child td { border-bottom: none; }
+    .kaji-ulang-page .checkbox-table tr td:first-child,
+    .kaji-ulang-page .checkbox-table tr th:first-child { border-left: none; }
+    .kaji-ulang-page .checkbox-table tr td:last-child,
+    .kaji-ulang-page .checkbox-table tr th:last-child { border-right: none; }
+    .kaji-ulang-page .checkbox-cell { text-align: center; width: 26px; }
+    .kaji-ulang-page .checkbox { display: inline-flex; width: 12px; height: 12px; border: 1px solid #000000; align-items: center; justify-content: center; font-size: 10px; line-height: 1; }
+    .kaji-ulang-page .note-box { padding: 4px; min-height: 36px; }
+    .kaji-ulang-page .note-label { font-style: italic; }
+    .kaji-ulang-page .review-info .line-label { width: 110px; }
+    .kaji-ulang-page .review-info .line-value { min-height: 12px; }
+    .kaji-ulang-page .note-small { font-size: 9px; padding: 2px 6px 4px; }
+    .kaji-ulang-page .terms { border: 1px solid #000000; border-top: none; padding: 6px 8px 4px; font-size: 9.5px; line-height: 1.25; }
+    .kaji-ulang-page .terms ol { margin: 0 0 4px 18px; padding: 0; }
+    .kaji-ulang-page .terms li { margin-bottom: 3px; }
+    .kaji-ulang-page .terms-consent { margin: 4px 0 2px; }
+    .kaji-ulang-page .terms-info { margin: 0; font-style: italic; }
+    .kaji-ulang-page .sample-table { width: 100%; border-collapse: collapse; border: 1px solid #000000; margin-top: 4px; font-size: 10px; }
+    .kaji-ulang-page .sample-table th, .kaji-ulang-page .sample-table td { border: 1px solid #000000; padding: 3px 4px; }
+    .kaji-ulang-page .sample-table th { text-align: center; font-weight: 700; }
+    .kaji-ulang-page .text-center { text-align: center; }
+    .kaji-ulang-page .signature-cell { width: 80px; vertical-align: bottom; }
+    .kaji-ulang-page .signature-line { border-top: 1px solid #000000; margin: 0 6px 8px; height: 1px; }
+    .kaji-ulang-page .cut-line { position: relative; margin: 8px 0 6px; border-top: 1px dashed #000000; min-height: 14px; }
+    .kaji-ulang-page .cut-icon { position: absolute; left: 0; top: -7px; display: inline-flex; align-items: center; background: #ffffff; padding-right: 6px; }
+    .kaji-ulang-page .cut-icon svg { width: 14px; height: 14px; stroke: #000000; fill: none; stroke-width: 1.3; stroke-linecap: round; stroke-linejoin: round; }
+    .kaji-ulang-page .receipt { border: 1px solid #000000; padding: 6px; margin-top: 6px; }
+    .kaji-ulang-page .receipt-title { text-align: center; font-weight: 700; text-decoration: underline; margin-bottom: 4px; }
+    .kaji-ulang-page .receipt-note { font-size: 9px; font-style: italic; margin-top: 4px; }
+    .kaji-ulang-page .receipt, .kaji-ulang-page .sample-table { break-inside: avoid; page-break-inside: avoid; }
   </style>
 `;
 
@@ -198,6 +199,16 @@ function buildLineRow(label, value) {
       <td class="line-label">${sanitize(label)}</td>
       <td class="line-colon">:</td>
       <td class="line-value"><span>${lineValue(value)}</span></td>
+    </tr>
+  `;
+}
+
+function buildPlainRow(label, value) {
+  return `
+    <tr>
+      <td class="line-label">${sanitize(label)}</td>
+      <td class="line-colon"></td>
+      <td><span>${lineValue(value)}</span></td>
     </tr>
   `;
 }
@@ -596,6 +607,532 @@ export function buildKajiUlangBody(order = {}, options = {}) {
 
 export function buildKajiUlangStyles() {
   return KAJI_ULANG_STYLES;
+}
+
+// === FORMULIR PENGUJIAN ===
+const FORMULIR_PENGUJIAN_STYLES = `
+  <style>
+    @page { size: 210mm 330mm; margin: 6mm 8mm 8mm; }
+    body { font-family: 'Times New Roman', 'Times', serif; font-size: 10px; margin: 0; color: #000000; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .formulir-page { padding: 0; box-sizing: border-box; font-size: 10px; }
+    .formulir-page .content-frame { border: none; padding: 0; position: relative; }
+    .formulir-page .content-frame::before { content: ''; position: absolute; inset: 0; background: url('${logoTuk}') center/90% no-repeat; opacity: 0.08; pointer-events: none; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .formulir-page .content-frame > * { position: relative; z-index: 1; }
+    .formulir-page .form-header { position: relative; padding: 0 70px 4px; text-align: center; }
+    .formulir-page .form-header img { position: absolute; left: 0; top: 0; width: 56px; height: 56px; object-fit: contain; }
+    .formulir-page .form-header .org-line { font-size: 10px; line-height: 1.25; }
+    .formulir-page .form-header .org-strong { font-weight: 700; }
+    .formulir-page .form-header .org-unit { font-size: 11px; font-weight: 700; }
+    .formulir-page .form-header .org-contact { font-size: 9px; }
+    .formulir-page .form-header .org-link { color: #0b68b1; text-decoration: underline; }
+    .formulir-page .form-header .header-bar { margin: 6px -70px 0; width: calc(100% + 140px); background: #0b68b1; color: #ffffff; font-weight: 700; letter-spacing: 0.6px; padding: 3px 0; box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .formulir-page .section { border: 1px solid #000000; margin-top: 6px; }
+    .formulir-page .section-bar { background: #0b68b1; color: #ffffff; font-weight: 700; padding: 3px 6px; font-size: 10px; display: flex; justify-content: space-between; align-items: center; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .formulir-page .section-bar span { color: #ffffff; }
+    .formulir-page .section-bar .section-doc { color: #ffffff; font-weight: 600; font-size: 9px; }
+    .formulir-page .line-table { width: 100%; border-collapse: collapse; margin-top: 2px; }
+    .formulir-page .line-table td { padding: 2px 6px; vertical-align: top; }
+    .formulir-page .line-label { width: 130px; }
+    .formulir-page .line-colon { width: 8px; text-align: center; }
+    .formulir-page .line-value { border-bottom: 1px dotted #000000; min-height: 12px; }
+    .formulir-page .line-value span { display: inline-block; padding-bottom: 1px; }
+    .formulir-page .section-note { padding: 2px 6px 0; font-size: 9.5px; }
+    .formulir-page .grid-table { width: 100%; border-collapse: collapse; margin-top: 4px; font-size: 9.5px; }
+    .formulir-page .grid-table th, .formulir-page .grid-table td { border: 1px solid #000000; padding: 3px 4px; }
+    .formulir-page .grid-table th { text-align: center; font-weight: 700; }
+    .formulir-page .grid-table td { vertical-align: top; }
+    .formulir-page .text-center { text-align: center; }
+    .formulir-page .signature-cell { width: 18%; vertical-align: bottom; text-align: center; position: relative; }
+    .formulir-page .signature-merge { width: 9%; vertical-align: bottom; text-align: center; position: relative; }
+    .formulir-page .signature-merge-content { position: absolute; left: 2px; right: 2px; bottom: 2px; }
+    .formulir-page .signature-stack { position: absolute; left: 2px; right: 2px; bottom: 2px; }
+    .formulir-page .signature-title { font-weight: 700; margin-top: 2px; }
+    .formulir-page .signature-line { border-bottom: 1px dotted #000000; margin: 14px 6px 2px; height: 1px; }
+    .formulir-page .signature-label { font-size: 9px; margin-bottom: 2px; }
+    .formulir-page .signature-date { font-size: 9px; }
+    .formulir-page .signature-space { height: 16px; }
+    .formulir-page .control-table { width: 100%; border-collapse: collapse; margin-top: 4px; font-size: 9px; }
+    .formulir-page .control-table th, .formulir-page .control-table td { border: 1px solid #000000; padding: 3px 4px; }
+    .formulir-page .control-table th { text-align: center; font-weight: 700; }
+    .formulir-page .control-table td { height: 56px; }
+    .formulir-page .control-arrow { text-align: center; font-size: 18px; line-height: 1; padding: 2px 0; }
+  </style>
+`;
+
+const FORMULIR_PERMINTAAN_DOC_NUMBER = 'F/UPT-LAB/7.1-3';
+const FORMULIR_SURAT_DOC_NUMBER = 'F/UPT-LAB/7.1-5';
+const FORMULIR_KENDALI_DOC_NUMBER = 'F/UPT-LAB/7.1-4';
+const FORMULIR_PERMINTAAN_ROWS = 5;
+const FORMULIR_SURAT_ROWS = 4;
+const FORMULIR_KENDALI_ROWS = 1;
+
+function resolveCommodity(order = {}, items = []) {
+  return (
+    order.commodity ||
+    order.objectName ||
+    order.purpose ||
+    order.workCategoryName ||
+    order.workPackageName ||
+    items[0]?.objectName ||
+    resolveTestName(items[0]) ||
+    ''
+  );
+}
+
+function resolveOrderUserName(order = {}, typeCandidates = []) {
+  const users = Array.isArray(order.orderUsers) ? order.orderUsers : [];
+  if (!users.length) return '';
+  const normalized = typeCandidates.map((type) =>
+    String(type || '')
+      .trim()
+      .toLowerCase()
+  );
+  const match = users.find((entry) =>
+    normalized.includes(
+      String(entry?.type || '')
+        .trim()
+        .toLowerCase()
+    )
+  );
+  if (match?.user?.name) return match.user.name;
+  return '';
+}
+
+function resolveTechnician(order = {}) {
+  return (
+    order.technicianName ||
+    order.technician ||
+    resolveOrderUserName(order, ['technician', 'teknisi']) ||
+    ''
+  );
+}
+
+function resolveSupervisor(order = {}) {
+  return (
+    order.supervisorName ||
+    order.penyeliaName ||
+    resolveOrderUserName(order, ['supervisor', 'penyelia']) ||
+    ''
+  );
+}
+
+function formatLineDate(value) {
+  if (!value) return '';
+  const formatted = formatFullDate(value);
+  return formatted === '-' ? '' : formatted;
+}
+
+function resolveMethodForItem(item = {}, tests = []) {
+  const direct = resolveMethodName(item);
+  if (direct) return direct;
+  const testId =
+    item.serviceId ||
+    item.service_id ||
+    item.testId ||
+    item.test_id ||
+    item.orderedServiceId ||
+    item.ordered_service_id ||
+    item.id ||
+    '';
+  if (!testId || !Array.isArray(tests)) return '';
+  const match = tests.find((entry) => entry.id === testId);
+  return match ? resolveMethodFromTest(match) : '';
+}
+
+function resolveEquipmentName(item = {}) {
+  const candidates = [
+    item.equipmentName,
+    item.equipment,
+    item.machineName,
+    item.machine?.name,
+    item.machine?.code,
+    item.toolName,
+    item.tool,
+    item.deviceName,
+  ];
+  for (const candidate of candidates) {
+    const text = toText(candidate);
+    if (text) return text;
+  }
+  return '';
+}
+
+function resolvePickupTime(item = {}) {
+  const candidates = [
+    item.pickupTime,
+    item.pickup_time,
+    item.collectionTime,
+    item.collection_time,
+    item.pickupAt,
+    item.pickupDate,
+    item.pickupSchedule,
+    item.pickup_schedule,
+    item.takeTime,
+  ];
+  for (const candidate of candidates) {
+    const text = toText(candidate);
+    if (text) return text;
+  }
+  return '';
+}
+
+function buildRequestRows(order, items, tests, rowCount) {
+  const rows = [];
+  const signatureCells = `
+    <td class="signature-merge" rowspan="${rowCount}">
+      <div class="signature-merge-content">Manajer<br />Teknis</div>
+    </td>
+    <td class="signature-merge" rowspan="${rowCount}">
+      <div class="signature-merge-content">Penerima<br />Sampel Uji</div>
+    </td>
+  `;
+  for (let i = 0; i < rowCount; i += 1) {
+    const item = items[i];
+    const hasItem = Boolean(item);
+    const quantity = hasItem ? Math.max(1, Number(item.quantity) || 1) : '';
+    const sampleCode = hasItem ? formatSampleCode(order, item, i) : '';
+    const method = hasItem ? resolveMethodForItem(item, tests) : '';
+    const equipment = hasItem ? resolveEquipmentName(item) : '';
+    const pickupTime = hasItem ? resolvePickupTime(item) : '';
+    rows.push(`
+      <tr>
+        <td class="text-center">${i + 1}</td>
+        <td>${sanitize(hasItem ? resolveTestName(item) : '')}</td>
+        <td class="text-center">${sanitize(
+          quantity ? formatNumber(quantity) : ''
+        )}</td>
+        <td class="text-center">${sanitize(sampleCode)}</td>
+        <td>${sanitize(method)}</td>
+        <td>${sanitize(equipment)}</td>
+        <td class="text-center">${sanitize(pickupTime)}</td>
+        ${i === 0 ? signatureCells : ''}
+      </tr>
+    `);
+  }
+  return rows.join('');
+}
+
+function buildSuratRows(order, items, tests, rowCount) {
+  const rows = [];
+  const signatureCell = `
+    <td class="signature-cell" rowspan="${rowCount}">
+      <div class="signature-stack">
+        <div class="signature-label">Penyelia Uji</div>
+      </div>
+    </td>
+  `;
+  for (let i = 0; i < rowCount; i += 1) {
+    const item = items[i];
+    const hasItem = Boolean(item);
+    const quantity = hasItem ? Math.max(1, Number(item.quantity) || 1) : '';
+    const sampleCode = hasItem ? formatSampleCode(order, item, i) : '';
+    const method = hasItem ? resolveMethodForItem(item, tests) : '';
+    const equipment = hasItem ? resolveEquipmentName(item) : '';
+    const pickupTime = hasItem ? resolvePickupTime(item) : '';
+    rows.push(`
+      <tr>
+        <td class="text-center">${i + 1}</td>
+        <td>${sanitize(hasItem ? resolveTestName(item) : '')}</td>
+        <td class="text-center">${sanitize(
+          quantity ? formatNumber(quantity) : ''
+        )}</td>
+        <td class="text-center">${sanitize(sampleCode)}</td>
+        <td>${sanitize(method)}</td>
+        <td>${sanitize(equipment)}</td>
+        <td class="text-center">${sanitize(pickupTime)}</td>
+        ${i === 0 ? signatureCell : ''}
+      </tr>
+    `);
+  }
+  return rows.join('');
+}
+
+function buildControlTable(groups = [], rowCount = 1) {
+  const groupHeaders = groups
+    .map((label) => `<th colspan="3">${sanitize(label)}</th>`)
+    .join('');
+  const subHeaders = groups
+    .map(() => '<th>Tgl</th><th>Jam</th><th>Paraf</th>')
+    .join('');
+  const rows = [];
+  for (let i = 0; i < rowCount; i += 1) {
+    const cells = groups.map(() => '<td></td><td></td><td></td>').join('');
+    rows.push(`<tr>${cells}</tr>`);
+  }
+  return `
+    <table class="control-table">
+      <thead>
+        <tr>${groupHeaders}</tr>
+        <tr>${subHeaders}</tr>
+      </thead>
+      <tbody>
+        ${rows.join('')}
+      </tbody>
+    </table>
+  `;
+}
+
+export function buildFormulirPengujianBody(order = {}, options = {}) {
+  const items = Array.isArray(order.testItems) ? order.testItems : [];
+  const tests = Array.isArray(options.tests) ? options.tests : [];
+  const orderNumber = formatOrderNumber(order);
+  const orderNo = orderNumber !== '-' ? orderNumber : order.orderNo || '';
+  const testingDate = formatLineDate(
+    order.testingAt || order.entryDate || order.date || order.createdAt
+  );
+  const tegalDate = formatLineDate(
+    order.testingAt || order.entryDate || order.date || order.createdAt
+  );
+  const tegalHeader = tegalDate ? `Tegal, ${tegalDate}` : 'Tegal,';
+  const commodity = resolveCommodity(order, items);
+  const supervisor = resolveSupervisor(order);
+  const technician = resolveTechnician(order);
+  const requestRowCount = Math.max(FORMULIR_PERMINTAAN_ROWS, items.length);
+  const suratRowCount = Math.max(FORMULIR_SURAT_ROWS, items.length);
+
+  return `
+    <section class="section">
+      <div class="section-bar">
+        <span>PERMINTAAN PENGUJIAN KE PENYELIA</span>
+        <span class="section-doc">No. Dok : ${FORMULIR_PERMINTAAN_DOC_NUMBER}</span>
+      </div>
+      <table class="line-table">
+        ${buildLineRow('No. Order', orderNo)}
+        ${buildLineRow('Tanggal Pengujian', testingDate)}
+        ${buildLineRow('Komoditi', commodity)}
+      </table>
+      <table class="grid-table">
+        <thead>
+          <tr>
+            <th style="width:4%;">No.</th>
+            <th>Jenis Pengujian</th>
+            <th style="width:10%;">Jumlah Sampel</th>
+            <th style="width:12%;">Kode Sampel</th>
+            <th style="width:14%;">Metode Uji</th>
+            <th style="width:12%;">Peralatan</th>
+            <th style="width:12%;">Waktu Pengambilan</th>
+            <th colspan="2" style="width:18%;">Mengetahui,</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${buildRequestRows(order, items, tests, requestRowCount)}
+        </tbody>
+      </table>
+    </section>
+
+    <section class="section">
+      <div class="section-bar">
+        <span>SURAT PERINTAH PENGUJIAN</span>
+        <span class="section-doc">No. Dok : ${FORMULIR_SURAT_DOC_NUMBER}</span>
+      </div>
+      <table class="line-table">
+        ${buildPlainRow('Kepada,', supervisor)}
+        ${buildPlainRow('Teknisi', technician)}
+      </table>
+      <p class="section-note">Mohon dilakukan pengujian dengan perincian sebagai berikut :</p>
+      <table class="grid-table">
+        <thead>
+          <tr>
+            <th style="width:4%;">No.</th>
+            <th>Jenis Pengujian</th>
+            <th style="width:10%;">Jumlah Sampel</th>
+            <th style="width:12%;">Kode Sampel</th>
+            <th style="width:14%;">Metode Uji</th>
+            <th style="width:12%;">Peralatan</th>
+            <th style="width:12%;">Waktu Pengambilan</th>
+            <th style="width:18%;">${sanitize(tegalHeader)}</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${buildSuratRows(order, items, tests, suratRowCount)}
+        </tbody>
+      </table>
+    </section>
+
+    <section class="section">
+      <div class="section-bar">
+        <span>KARTU KENDALI PENGUJIAN</span>
+        <span class="section-doc">No. Dok : ${FORMULIR_KENDALI_DOC_NUMBER}</span>
+      </div>
+      ${buildControlTable(
+        ['Penerima Sampel', 'Manajer Teknis', 'Penyelia Uji', 'Teknisi'],
+        FORMULIR_KENDALI_ROWS
+      )}
+      <div class="control-arrow">&#8595;</div>
+      ${buildControlTable(
+        [
+          'Customer',
+          'Administrasi',
+          'Kepala Laboratorium',
+          'Manajer Teknis',
+          'Administrasi',
+        ],
+        FORMULIR_KENDALI_ROWS
+      )}
+    </section>
+  `;
+}
+
+export function buildFormulirPengujianStyles() {
+  return FORMULIR_PENGUJIAN_STYLES;
+}
+
+const ORDER_PRINT_STYLES = `
+  <style>
+    .print-page { break-after: page; page-break-after: always; }
+    .print-page:last-child { break-after: auto; page-break-after: auto; }
+  </style>
+`;
+
+export function buildOrderPrintStyles() {
+  return ORDER_PRINT_STYLES;
+}
+
+// === PERMINTAAN PENGUJIAN ===
+const PERMINTAAN_PENGUJIAN_STYLES = `
+  <style>
+    @page { size: 210mm 330mm; margin: 6mm 8mm 8mm; }
+    body { font-family: 'Times New Roman', 'Times', serif; font-size: 10px; margin: 0; color: #000000; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .permintaan-page { padding: 0; box-sizing: border-box; font-size: 10px; }
+    .permintaan-page .content-frame { border: none; padding: 0; position: relative; }
+    .permintaan-page .content-frame::before { content: ''; position: absolute; inset: 0; background: url('${logoTuk}') center/90% no-repeat; opacity: 0.08; pointer-events: none; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .permintaan-page .content-frame > * { position: relative; z-index: 1; }
+    .permintaan-page .form-header { position: relative; padding: 0 70px 4px; text-align: center; }
+    .permintaan-page .form-header img { position: absolute; left: 0; top: 0; width: 56px; height: 56px; object-fit: contain; }
+    .permintaan-page .form-header .org-line { font-size: 10px; line-height: 1.25; }
+    .permintaan-page .form-header .org-strong { font-weight: 700; }
+    .permintaan-page .form-header .org-unit { font-size: 11px; font-weight: 700; }
+    .permintaan-page .form-header .org-contact { font-size: 9px; }
+    .permintaan-page .form-header .org-link { color: #0b68b1; text-decoration: underline; }
+    .permintaan-page .form-header .header-bar { margin: 6px -70px 0; width: calc(100% + 140px); background: #0b68b1; color: #ffffff; font-weight: 700; letter-spacing: 0.6px; padding: 3px 0; box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .permintaan-page .section { border: 1px solid #000000; }
+    .permintaan-page .section-bar { background: #0b68b1; color: #ffffff; font-weight: 700; padding: 3px 6px; font-size: 10px; display: flex; justify-content: space-between; align-items: center; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .permintaan-page .section-bar span { color: #ffffff; }
+    .permintaan-page .section-bar .section-doc { color: #ffffff; font-weight: 600; font-size: 9px; }
+    .permintaan-page .line-table { width: 100%; border-collapse: collapse; margin-top: 2px; }
+    .permintaan-page .line-table td { padding: 2px 6px; vertical-align: top; }
+    .permintaan-page .line-label { width: 110px; }
+    .permintaan-page .line-colon { width: 8px; text-align: center; }
+    .permintaan-page .line-value { border-bottom: 1px dotted #000000; min-height: 12px; }
+    .permintaan-page .line-value span { display: inline-block; padding-bottom: 1px; }
+    .permintaan-page .grid-table { width: 100%; border-collapse: collapse; margin-top: 4px; font-size: 9.5px; }
+    .permintaan-page .grid-table th, .permintaan-page .grid-table td { border: 1px solid #000000; padding: 3px 4px; }
+    .permintaan-page .grid-table th { text-align: center; font-weight: 700; }
+    .permintaan-page .grid-table td { vertical-align: top; height: 18px; }
+    .permintaan-page .summary-row td { font-weight: 600; }
+    .permintaan-page .text-center { text-align: center; }
+    .permintaan-page .text-right { text-align: right; }
+    .permintaan-page .sop-title { text-align: center; font-weight: 700; margin-top: 10px; }
+    .permintaan-page .sop-diagram { width: 100%; max-width: 520px; margin: 6px auto 0; display: block; }
+    .permintaan-page .sop-diagram text { font-family: 'Times New Roman', 'Times', serif; font-size: 9px; }
+  </style>
+`;
+
+const PERMINTAAN_PENGUJIAN_DOC_NUMBER = 'F/UPT-LAB/7.1-2';
+const PERMINTAAN_PENGUJIAN_ROWS = 10;
+
+const SOP_DIAGRAM_SVG = `
+  <img class="sop-diagram" src="${sopPelayanan}" alt="SOP Pelayanan" />
+`;
+
+function buildPermintaanRows(order, items, rowCount) {
+  const rows = [];
+  for (let i = 0; i < rowCount; i += 1) {
+    const item = items[i];
+    const hasItem = Boolean(item);
+    const quantity = hasItem ? Math.max(1, Number(item.quantity) || 1) : '';
+    const quantityText = quantity ? formatNumber(quantity) : '';
+    const price = hasItem
+      ? Number(item.price ?? item.servicePrice ?? item.testPrice ?? 0)
+      : 0;
+    const priceText = price > 0 ? formatNumber(price) : '';
+    const lineTotal = price > 0 && quantity ? price * quantity : 0;
+    const totalText = lineTotal > 0 ? formatNumber(lineTotal) : '';
+    rows.push(`
+      <tr>
+        <td class="text-center">${i + 1}</td>
+        <td>${sanitize(hasItem ? resolveTestName(item) : '')}</td>
+        <td class="text-right">${sanitize(priceText)}</td>
+        <td class="text-center">${sanitize(quantityText)}</td>
+        <td class="text-right">${sanitize(totalText)}</td>
+      </tr>
+    `);
+  }
+  return rows.join('');
+}
+
+function buildSummaryRow(label, value) {
+  return `
+    <tr class="summary-row">
+      <td colspan="4">${sanitize(label)}</td>
+      <td class="text-right">${sanitize(value)}</td>
+    </tr>
+  `;
+}
+
+export function buildPermintaanPengujianBody(order = {}, options = {}) {
+  const items = Array.isArray(order.testItems) ? order.testItems : [];
+  const orderNumber = formatOrderNumber(order);
+  const orderNo = orderNumber !== '-' ? orderNumber : order.orderNo || '';
+  const sampleCodes = resolveSampleCodes(order, items);
+  const dateText = formatLineDate(
+    order.entryDate || order.date || order.createdAt || ''
+  );
+  const rowCount = Math.max(PERMINTAAN_PENGUJIAN_ROWS, items.length);
+  const paymentInfo = order.paymentInfo || {};
+  const totalValue = Number(paymentInfo.total);
+  const computedTotal = sumCosts(items);
+  const total = totalValue > 0 ? totalValue : computedTotal;
+  const amountPaid = Number(paymentInfo.amountPaid);
+  const downPayment = amountPaid > 0 ? amountPaid : 0;
+  const outstandingValue = Number(paymentInfo.outstanding);
+  const outstanding =
+    outstandingValue >= 0
+      ? outstandingValue
+      : total > 0 && downPayment > 0
+      ? Math.max(total - downPayment, 0)
+      : 0;
+  const totalText = total > 0 ? formatNumber(total) : '';
+  const downPaymentText = downPayment > 0 ? formatNumber(downPayment) : '';
+  const outstandingText = outstanding > 0 ? formatNumber(outstanding) : '';
+
+  return `
+    <section class="section">
+      <div class="section-bar">
+        <span>PERMINTAAN PENGUJIAN</span>
+        <span class="section-doc">No. Dok : ${PERMINTAAN_PENGUJIAN_DOC_NUMBER}</span>
+      </div>
+      <table class="line-table">
+        ${buildLineRow('No. Order', orderNo)}
+        ${buildLineRow('No. Sampel', sampleCodes)}
+        ${buildLineRow('Tanggal', dateText)}
+      </table>
+      <table class="grid-table">
+        <thead>
+          <tr>
+            <th style="width:6%;">No</th>
+            <th>Nama pengujian</th>
+            <th style="width:16%;">Biaya Satuan (Rp.)</th>
+            <th style="width:16%;">Jumlah Pengujian (Buah)</th>
+            <th style="width:16%;">Jumlah Rupiah (Rp.)</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${buildPermintaanRows(order, items, rowCount)}
+          ${buildSummaryRow('Total + Pajak - Pajak', totalText)}
+          ${buildSummaryRow('Uang Muka', downPaymentText)}
+          ${buildSummaryRow('Sisa Yang harus dibayar', outstandingText)}
+        </tbody>
+      </table>
+    </section>
+
+    <div class="sop-title">SOP PELAYANAN</div>
+    ${SOP_DIAGRAM_SVG}
+  `;
+}
+
+export function buildPermintaanPengujianStyles() {
+  return PERMINTAAN_PENGUJIAN_STYLES;
 }
 
 function formatSampleCode(order, item, index) {

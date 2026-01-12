@@ -2,10 +2,11 @@
   <div class="space-y-6">
     <header class="flex flex-col gap-1">
       <h2 class="text-xl font-semibold text-surfaceDark sm:text-2xl">
-        Cetak Kaji Ulang
+        Cetak Order
       </h2>
       <p class="text-sm text-gray-500">
-        Cari ID order, pilih, lalu cetak formulir kaji ulang.
+        Cari ID order, pilih, lalu cetak 3 halaman (Kaji Ulang, Formulir
+        Pengujian, Permintaan Pengujian).
       </p>
     </header>
 
@@ -129,6 +130,22 @@
                 {{ resolveMethod(item) }}
               </p>
             </div>
+            <div>
+              <p class="text-[10px] font-semibold uppercase tracking-wide text-gray-400">
+                Peralatan
+              </p>
+              <p class="text-sm text-surfaceDark break-words">
+                {{ resolveEquipment(item) }}
+              </p>
+            </div>
+            <div>
+              <p class="text-[10px] font-semibold uppercase tracking-wide text-gray-400">
+                Waktu Pengambilan
+              </p>
+              <p class="text-sm text-surfaceDark break-words">
+                {{ resolvePickupTime(item) }}
+              </p>
+            </div>
           </div>
         </article>
         <div
@@ -144,11 +161,12 @@
           <thead class="bg-gray-50">
             <tr>
               <th class="border-b px-3 py-2 text-left">No</th>
-              <th class="border-b px-3 py-2 text-left">Nama Pengujian</th>
+              <th class="border-b px-3 py-2 text-left">Jenis Pengujian</th>
               <th class="border-b px-3 py-2 text-left">Jumlah</th>
-              <th class="border-b px-3 py-2 text-left">Nama Sampel</th>
               <th class="border-b px-3 py-2 text-left">Kode Sampel</th>
               <th class="border-b px-3 py-2 text-left">Metode Uji</th>
+              <th class="border-b px-3 py-2 text-left">Peralatan</th>
+              <th class="border-b px-3 py-2 text-left">Waktu Pengambilan</th>
             </tr>
           </thead>
           <tbody>
@@ -162,14 +180,15 @@
                 {{ resolveTestName(item) || '-' }}
               </td>
               <td class="border-b px-3 py-2">{{ item.quantity || 1 }}</td>
-              <td class="border-b px-3 py-2">{{ item.objectName || '-' }}</td>
               <td class="border-b px-3 py-2">{{ resolveSampleCode(item) }}</td>
               <td class="border-b px-3 py-2">{{ resolveMethod(item) }}</td>
+              <td class="border-b px-3 py-2">{{ resolveEquipment(item) }}</td>
+              <td class="border-b px-3 py-2">{{ resolvePickupTime(item) }}</td>
             </tr>
             <tr v-if="!selectedItems.length">
               <td
                 class="border-b px-3 py-3 text-center text-gray-500"
-                colspan="6"
+                colspan="7"
               >
                 Tidak ada data pengujian.
               </td>
@@ -181,9 +200,9 @@
       <div class="flex justify-end">
         <button
           class="inline-flex w-full items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-90 sm:w-auto"
-          @click="printKajiUlang"
+          @click="printOrder"
         >
-          Cetak Formulir
+          Cetak Order (3 Halaman)
         </button>
       </div>
     </section>
@@ -198,7 +217,7 @@
 import { ref, computed, onMounted } from 'vue';
 import { useOrderStore } from '@/stores/useOrderStore';
 import { useTestStore } from '@/stores/useTestStore';
-import { buildKajiUlangPrintHtml } from '@/utils/printTemplates';
+import { buildOrderPrintHtml } from '@/utils/printTemplates';
 import { normalizeOrderStatus, toOrderStatusLabel } from '@/utils/orderStatus';
 import logoDinas from '@/assets/LOGO DINAS KAB TEGAL.webp';
 
@@ -356,6 +375,49 @@ function resolveMethod(item = {}) {
   return '-';
 }
 
+function resolveEquipment(item = {}) {
+  const candidates = [
+    item.equipmentName,
+    item.equipment,
+    item.machineName,
+    item.machine?.name,
+    item.machine?.code,
+    item.toolName,
+    item.tool,
+    item.deviceName,
+  ];
+  for (const candidate of candidates) {
+    if (typeof candidate === 'string') {
+      const text = candidate.trim();
+      if (text) return text;
+    }
+    if (typeof candidate === 'number') return String(candidate);
+  }
+  return '-';
+}
+
+function resolvePickupTime(item = {}) {
+  const candidates = [
+    item.pickupTime,
+    item.pickup_time,
+    item.collectionTime,
+    item.collection_time,
+    item.pickupAt,
+    item.pickupDate,
+    item.pickupSchedule,
+    item.pickup_schedule,
+    item.takeTime,
+  ];
+  for (const candidate of candidates) {
+    if (typeof candidate === 'string') {
+      const text = candidate.trim();
+      if (text) return text;
+    }
+    if (typeof candidate === 'number') return String(candidate);
+  }
+  return '-';
+}
+
 function resolveStatusLabel(order) {
   if (!order) return '-';
   return (
@@ -366,9 +428,9 @@ function resolveStatusLabel(order) {
   );
 }
 
-function printKajiUlang() {
+function printOrder() {
   if (!selectedOrder.value) return;
-  const html = buildKajiUlangPrintHtml(selectedOrder.value, {
+  const html = buildOrderPrintHtml(selectedOrder.value, {
     logoSrc: logoDinas,
     tests: testStore.tests,
   });
