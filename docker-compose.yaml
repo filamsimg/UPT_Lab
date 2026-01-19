@@ -1,0 +1,10 @@
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: silapuji-fe
+    container_name: silapuji-fe
+    ports:
+      - "5174:80"
+    restart: unless-stopped

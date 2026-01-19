@@ -34,13 +34,11 @@ Dashboard berbasis Vue 3, Vite, dan Tailwind untuk mengelola operasional UPT Lab
 
 ## Konfigurasi
 
-- Pastikan file `.env` berisi endpoint backend.
-
-```bash
-VITE_API_URL=http://localhost:8080
-```
-
+- `.env` untuk mode dev (`npm run dev`).
+- `.env.docker` untuk build Docker (mode docker).
 - Semua request frontend memakai prefix `/api` dan akan diproxy ke `VITE_API_URL` saat dev.
+
+
 
 ## Menjalankan Proyek
 
@@ -60,6 +58,57 @@ npm run build
 # 5. Preview hasil build
 npm run serve
 ```
+
+## Docker (Production)
+
+Pastikan `Dockerfile`, `nginx.conf`, dan `docker-compose.yaml` ada di root `Front-end/`.
+Nginx mem-proxy `/api` ke `http://host.docker.internal:8080` agar tidak kena CORS. Ubah di `nginx.conf` bila backend berbeda.
+
+### Docker Compose (disarankan)
+
+```bash
+# jalankan dari folder Front-end
+docker compose up -d --build
+```
+
+### Makefile (opsional)
+
+```bash
+# jalankan dari folder Front-end
+make docker-up
+make docker-up-build
+make docker-down
+make docker-restart
+make docker-logs
+make docker-ps
+make docker-fresh
+```
+
+`make docker-fresh` akan menjalankan `docker-down`, `docker-up-build`, lalu `docker-ps` (setara fresh rebuild tanpa hapus cache image).
+
+Hentikan sementara:
+
+```bash
+docker compose stop
+```
+
+Jalankan lagi:
+
+```bash
+docker compose start
+```
+
+Hapus container & network:
+
+```bash
+docker compose down
+```
+
+Akses: http://localhost:5174
+
+Catatan:
+- `VITE_API_URL` dibaca saat build (mode docker) dari `.env.docker`, jadi jika endpoint backend berubah harus rebuild image.
+- `host.docker.internal` tersedia di Docker Desktop (Windows/Mac). Di Linux, ganti dengan IP host atau gunakan network yang sama dengan backend.
 
 ## Struktur Direktori Penting
 
