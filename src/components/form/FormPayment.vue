@@ -4,10 +4,16 @@
     class="fixed inset-0 z-50 flex items-stretch justify-center bg-black/60 backdrop-blur-sm p-0 sm:p-4"
     @click.self="handleClose"
   >
-    <div class="relative flex h-full w-full max-h-full flex-col bg-white shadow-2xl sm:h-auto sm:w-[95vw] sm:max-w-4xl sm:max-h-[90vh] sm:rounded-2xl overflow-hidden">
-      <div class="sticky top-0 z-10 flex items-center justify-between border-b border-gray-200 bg-white px-4 py-3 sm:px-6 sm:py-4">
+    <div
+      class="relative flex h-full w-full max-h-full flex-col bg-white shadow-2xl sm:h-auto sm:w-[95vw] sm:max-w-4xl sm:max-h-[90vh] sm:rounded-2xl overflow-hidden"
+    >
+      <div
+        class="sticky top-0 z-10 flex items-center justify-between border-b border-gray-200 bg-white px-4 py-3 sm:px-6 sm:py-4"
+      >
         <div>
-          <p class="text-xs uppercase tracking-wide text-gray-500">Invoice Pembayaran</p>
+          <p class="text-xs uppercase tracking-wide text-gray-500">
+            Invoice Pembayaran
+          </p>
           <h3 class="text-lg font-semibold text-surfaceDark">
             Permintaan {{ formattedOrderId }}
           </h3>
@@ -17,19 +23,35 @@
           @click="handleClose"
         >
           <span class="sr-only">Tutup</span>
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"
-            stroke-width="1.5">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-6 w-6"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            stroke-width="1.5"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M6 18L18 6M6 6l12 12"
+            />
           </svg>
         </button>
       </div>
 
-      <div class="flex-1 overflow-y-auto px-4 py-5 pb-28 space-y-6 sm:px-6 sm:py-6 sm:pb-10">
+      <div
+        class="flex-1 overflow-y-auto px-4 py-5 pb-28 space-y-6 sm:px-6 sm:py-6 sm:pb-10"
+      >
         <div class="grid gap-6 md:grid-cols-[2fr_1fr]">
           <section class="space-y-4">
-            <div class="hidden rounded-xl border border-gray-200 overflow-hidden md:block">
+            <div
+              class="hidden rounded-xl border border-gray-200 overflow-hidden md:block"
+            >
               <table class="min-w-full text-sm">
-                <thead class="bg-muted text-gray-600 uppercase text-xs tracking-wide">
+                <thead
+                  class="bg-muted text-gray-600 uppercase text-xs tracking-wide"
+                >
                   <tr>
                     <th class="px-3 py-2 text-center">No</th>
                     <th class="px-3 py-2 text-left">Nama Pengujian</th>
@@ -58,12 +80,17 @@
                     <td class="px-3 py-2 text-right text-gray-700">
                       {{ row.quantity }}
                     </td>
-                    <td class="px-3 py-2 text-right font-semibold text-surfaceDark">
+                    <td
+                      class="px-3 py-2 text-right font-semibold text-surfaceDark"
+                    >
                       Rp {{ formatCurrency(rowSubtotal(row)) }}
                     </td>
                   </tr>
                   <tr v-if="!testRows.length">
-                    <td colspan="6" class="px-3 py-4 text-center text-sm text-gray-500">
+                    <td
+                      colspan="6"
+                      class="px-3 py-4 text-center text-sm text-gray-500"
+                    >
                       Belum ada data pengujian untuk permintaan ini.
                     </td>
                   </tr>
@@ -77,9 +104,13 @@
                 :key="`payment-card-${index}`"
                 class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm"
               >
-                <div class="flex items-center justify-between text-xs uppercase tracking-wide text-gray-500">
+                <div
+                  class="flex items-center justify-between text-xs uppercase tracking-wide text-gray-500"
+                >
                   <span>Pengujian {{ index + 1 }}</span>
-                  <span class="font-semibold text-surfaceDark">Rp {{ formatCurrency(rowSubtotal(row)) }}</span>
+                  <span class="font-semibold text-surfaceDark"
+                    >Rp {{ formatCurrency(rowSubtotal(row)) }}</span
+                  >
                 </div>
                 <div class="mt-2 space-y-1">
                   <p class="text-sm font-semibold text-surfaceDark">
@@ -91,12 +122,22 @@
                 </div>
                 <div class="mt-3 grid grid-cols-2 gap-2 text-xs text-gray-600">
                   <div class="flex flex-col rounded-lg bg-gray-50 p-2">
-                    <span class="text-[11px] uppercase text-gray-500">Biaya</span>
-                    <span class="text-sm font-semibold text-surfaceDark">Rp {{ formatCurrency(row.price) }}</span>
+                    <span class="text-[11px] uppercase text-gray-500"
+                      >Biaya</span
+                    >
+                    <span class="text-sm font-semibold text-surfaceDark"
+                      >Rp {{ formatCurrency(row.price) }}</span
+                    >
                   </div>
-                  <div class="flex flex-col rounded-lg bg-gray-50 p-2 text-right">
-                    <span class="text-[11px] uppercase text-gray-500">Jumlah</span>
-                    <span class="text-sm font-semibold text-surfaceDark">{{ row.quantity }}</span>
+                  <div
+                    class="flex flex-col rounded-lg bg-gray-50 p-2 text-right"
+                  >
+                    <span class="text-[11px] uppercase text-gray-500"
+                      >Jumlah</span
+                    >
+                    <span class="text-sm font-semibold text-surfaceDark">{{
+                      row.quantity
+                    }}</span>
                   </div>
                 </div>
               </article>
@@ -109,7 +150,9 @@
             </div>
 
             <div class="flex flex-col gap-2 text-sm text-gray-600 sm:items-end">
-              <div class="flex flex-col gap-2 rounded-xl bg-gray-50 p-3 sm:flex-row sm:items-center sm:justify-end sm:gap-4 sm:bg-transparent sm:p-0">
+              <div
+                class="flex flex-col gap-2 rounded-xl bg-gray-50 p-3 sm:flex-row sm:items-center sm:justify-end sm:gap-4 sm:bg-transparent sm:p-0"
+              >
                 <span>Total Pengujian</span>
                 <span class="font-semibold text-surfaceDark">
                   Rp {{ formatCurrency(grandTotal) }}
@@ -119,18 +162,26 @@
           </section>
 
           <aside class="space-y-4">
-            <div class="rounded-xl bg-gray-50 border border-gray-100 p-4 space-y-3 text-sm text-gray-600">
-              <div class="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+            <div
+              class="rounded-xl bg-gray-50 border border-gray-100 p-4 space-y-3 text-sm text-gray-600"
+            >
+              <div
+                class="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between"
+              >
                 <span class="text-gray-500">Customer</span>
                 <span class="font-semibold text-surfaceDark">
                   {{ customerNameDisplay || '-' }}
                 </span>
               </div>
-              <div class="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+              <div
+                class="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between"
+              >
                 <span class="text-gray-500">Tanggal Permintaan</span>
                 <span class="font-medium">{{ formattedEntryDate }}</span>
               </div>
-              <div class="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+              <div
+                class="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between"
+              >
                 <span class="text-gray-500">Batas Pembayaran</span>
                 <span class="font-semibold text-danger">
                   {{ paymentDeadline.label }}
@@ -138,32 +189,64 @@
               </div>
             </div>
 
-            <div class="rounded-xl border border-gray-200 p-4 space-y-3 text-sm text-gray-600">
-              <h4 class="text-sm font-semibold text-surfaceDark">Instruksi Pembayaran</h4>
+            <div
+              class="rounded-xl border border-gray-200 p-4 space-y-3 text-sm text-gray-600"
+            >
+              <h4 class="text-sm font-semibold text-surfaceDark">
+                Instruksi Pembayaran
+              </h4>
               <div
                 v-for="(account, idx) in bankAccounts"
                 :key="`bank-${idx}`"
                 class="rounded-lg border border-gray-100 bg-gray-50 p-3 space-y-1"
               >
-                <p class="text-xs text-gray-500 uppercase tracking-wide">{{ account.bank }}</p>
-                <p class="text-base font-semibold text-surfaceDark">{{ account.number }}</p>
+                <div class="flex items-start justify-between gap-2">
+                  <p class="text-xs text-gray-500 uppercase tracking-wide">
+                    {{ account.bank }}
+                  </p>
+                  <button
+                    type="button"
+                    class="text-[11px] font-semibold uppercase tracking-wide text-primary hover:text-primaryDark transition"
+                    @click="copyBankAccount(account, idx)"
+                  >
+                    {{ copiedBankIndex === idx ? 'Tersalin' : 'Salin' }}
+                  </button>
+                </div>
+                <p
+                  class="text-base font-semibold text-surfaceDark cursor-pointer"
+                  title="Klik untuk menyalin"
+                  @click="copyBankAccount(account, idx)"
+                >
+                  {{ account.number }}
+                </p>
                 <p class="text-xs text-gray-500">a.n {{ account.name }}</p>
               </div>
-              <div class="rounded-lg border border-dashed border-primary/40 bg-primary/5 p-3 text-xs text-primaryDark">
+              <div
+                class="rounded-lg border border-dashed border-primary/40 bg-primary/5 p-3 text-xs text-primaryDark"
+              >
                 Scan QRIS pada aplikasi perbankan Anda untuk pembayaran cepat.
               </div>
             </div>
 
-            <div class="rounded-xl bg-white border border-gray-200 p-4 space-y-3 text-sm text-gray-600">
-              <div class="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+            <div
+              class="rounded-xl bg-white border border-gray-200 p-4 space-y-3 text-sm text-gray-600"
+            >
+              <div
+                class="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between"
+              >
                 <span>Total Tagihan</span>
                 <span class="font-semibold text-surfaceDark">
                   Rp {{ formatCurrency(grandTotal) }}
                 </span>
               </div>
-              <div class="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+              <div
+                class="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between"
+              >
                 <span>Sisa Pembayaran</span>
-                <span class="font-semibold" :class="outstanding > 0 ? 'text-danger' : 'text-emerald-600'">
+                <span
+                  class="font-semibold"
+                  :class="outstanding > 0 ? 'text-danger' : 'text-emerald-600'"
+                >
                   Rp {{ formatCurrency(outstanding) }}
                 </span>
               </div>
@@ -173,27 +256,37 @@
 
         <div class="grid gap-4 md:grid-cols-[2fr_1fr]">
           <div>
-            <h4 class="text-sm font-semibold text-surfaceDark mb-2">Upload Bukti Pembayaran</h4>
+            <h4 class="text-sm font-semibold text-surfaceDark mb-2">
+              Upload Bukti Pembayaran
+            </h4>
             <p class="text-xs text-gray-500 mb-3">
-              Unggah bukti transfer dalam format PDF, PNG, atau JPG (maksimal 5MB).
+              Unggah bukti transfer dalam format PDF, PNG, atau JPG (maksimal
+              5MB).
             </p>
             <FileUpload v-model="transferFiles" />
           </div>
-          <div class="rounded-xl border border-gray-200 p-4 text-xs text-gray-600 space-y-2">
+          <div
+            class="rounded-xl border border-gray-200 p-4 text-xs text-gray-600 space-y-2"
+          >
             <h4 class="text-sm font-semibold text-surfaceDark">Catatan</h4>
             <p>
-              Setelah bukti pembayaran dikirim, tim admin akan melakukan verifikasi maksimal dalam 1x24 jam
-              sebelum permintaan diproses lebih lanjut.
+              Setelah bukti pembayaran dikirim, tim admin akan melakukan
+              verifikasi maksimal dalam 1x24 jam sebelum permintaan diproses
+              lebih lanjut.
             </p>
             <p>
-              Bila pembayaran melewati batas waktu, permintaan dapat dibatalkan secara otomatis oleh sistem.
+              Bila pembayaran melewati batas waktu, permintaan dapat dibatalkan
+              secara otomatis oleh sistem.
             </p>
           </div>
         </div>
-
       </div>
-      <div class="sticky bottom-0 z-10 border-t border-gray-200 bg-white px-4 py-4 sm:px-6">
-        <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
+      <div
+        class="sticky bottom-0 z-10 border-t border-gray-200 bg-white px-4 py-4 sm:px-6"
+      >
+        <div
+          class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end"
+        >
           <button
             class="w-full rounded-md border border-gray-300 px-4 py-2 text-sm text-gray-600 transition hover:bg-gray-100 sm:w-auto"
             @click="handleClose"
@@ -214,12 +307,12 @@
 </template>
 
 <script setup>
-  import { ref, computed, watch } from 'vue';
-  import FileUpload from '@/components/common/FileUpload.vue';
-  import { useConfirmDialog } from '@/stores/useConfirmDialog';
-  
-  // Form pembayaran: normalisasi bukti transfer, hitung outstanding, dan emit payload
-  const props = defineProps({
+import { ref, computed, watch } from 'vue';
+import FileUpload from '@/components/common/FileUpload.vue';
+import { useConfirmDialog } from '@/stores/useConfirmDialog';
+
+// Form pembayaran: normalisasi bukti transfer, hitung outstanding, dan emit payload
+const props = defineProps({
   tests: { type: Array, default: () => [] },
   orderId: { type: String, default: '' },
   initialRows: { type: Array, default: () => [] },
@@ -231,21 +324,22 @@ const emit = defineEmits(['close', 'payment-saved']);
 const openConfirm = useConfirmDialog();
 
 const testRows = ref([]);
- // Daftar item pengujian yang ditagihkan
+// Daftar item pengujian yang ditagihkan
 const transferFiles = ref([]);
- // File bukti transfer yang diupload
+// File bukti transfer yang diupload
 const amountPaid = ref(0);
 
 const bankAccounts = [
-  { bank: 'Bank Jateng', number: '1234 5678 90', name: 'UPT Lab Tegal' },
-  { bank: 'BRI', number: '0099 8877 6655', name: 'UPT Lab Tegal' },
+  { bank: 'BPD JATENG', number: '1.035.005.01.7', name: 'RKUD KAB.TEGAL' },
 ];
+const copiedBankIndex = ref(null);
+let copyResetTimer = null;
 
 const formattedOrderId = computed(() => props.orderId || '-');
-  // Tampilkan orderNo/number fallback
+// Tampilkan orderNo/number fallback
 
 const formattedEntryDate = computed(() => formatDate(props.entryDate));
-  // Tanggal permintaan yang diformat
+// Tanggal permintaan yang diformat
 
 const paymentDeadline = computed(() => {
   // Hitung tenggat tampil (label + isOverdue)
@@ -277,20 +371,14 @@ function normalizeRow(row = {}) {
   const test = findTest(row.testId);
   const quantity = Math.max(1, Number(row.quantity) || 1);
   const price = Math.max(0, Number(row.price ?? test?.price ?? 0));
-  const lineTotal = Number(
-    row.lineTotal ??
-      row.line_total ??
-      price * quantity
-  ) || 0;
-  const testName =
-    row.testName ||
-    test?.name ||
-    test?.code ||
-    'Pengujian';
+  const lineTotal =
+    Number(row.lineTotal ?? row.line_total ?? price * quantity) || 0;
+  const testName = row.testName || test?.name || test?.code || 'Pengujian';
   return {
     testId: row.testId || test?.id || null,
     testName,
-    objectName: row.objectName || row.testName || test?.name || test?.code || '',
+    objectName:
+      row.objectName || row.testName || test?.name || test?.code || '',
     price,
     quantity,
     lineTotal,
@@ -306,33 +394,40 @@ function rowSubtotal(row) {
   const direct =
     row.lineTotal ??
     row.line_total ??
-    Math.max(0, Number(row.price) || 0) * Math.max(1, Number(row.quantity) || 1);
+    Math.max(0, Number(row.price) || 0) *
+      Math.max(1, Number(row.quantity) || 1);
   return Math.max(0, Number(direct) || 0);
 }
 
 function serializeTransferFiles() {
-  return transferFiles.value.map((file, idx) => {
-    if (!file) return null;
-    // Keep already-serialized entries as-is
-    if (typeof file === 'object' && !('lastModified' in file) && file.previewUrl) {
-      return { ...file };
-    }
-    if (file instanceof File) {
-      const previewUrl = URL.createObjectURL(file);
+  return transferFiles.value
+    .map((file, idx) => {
+      if (!file) return null;
+      // Keep already-serialized entries as-is
+      if (
+        typeof file === 'object' &&
+        !('lastModified' in file) &&
+        file.previewUrl
+      ) {
+        return { ...file };
+      }
+      if (file instanceof File) {
+        const previewUrl = URL.createObjectURL(file);
+        return {
+          id: `${file.name || 'file'}-${file.size || 0}-${file.lastModified || Date.now()}-${idx}`,
+          name: file.name || `Lampiran-${idx + 1}`,
+          size: file.size || 0,
+          type: file.type || 'application/octet-stream',
+          lastModified: file.lastModified || Date.now(),
+          previewUrl,
+        };
+      }
       return {
-        id: `${file.name || 'file'}-${file.size || 0}-${file.lastModified || Date.now()}-${idx}`,
-        name: file.name || `Lampiran-${idx + 1}`,
-        size: file.size || 0,
-        type: file.type || 'application/octet-stream',
-        lastModified: file.lastModified || Date.now(),
-        previewUrl,
+        ...file,
+        previewUrl: file.previewUrl || '',
       };
-    }
-    return {
-      ...file,
-      previewUrl: file.previewUrl || '',
-    };
-  }).filter(Boolean);
+    })
+    .filter(Boolean);
 }
 
 const grandTotal = computed(() =>
@@ -345,7 +440,7 @@ const outstanding = computed(() =>
 );
 
 const customerNameDisplay = computed(() => props.customerName);
-  // Nama customer fallback dari modelValue
+// Nama customer fallback dari modelValue
 
 const canConfirmPayment = computed(() => {
   return amountPaid.value > 0 && transferFiles.value.length > 0;
@@ -369,11 +464,55 @@ function formatDate(value) {
   }).format(date);
 }
 
+async function copyBankAccount(account, idx) {
+  const text = account.number;
+  try {
+    await writeTextToClipboard(text);
+    copiedBankIndex.value = idx;
+    if (copyResetTimer) {
+      window.clearTimeout(copyResetTimer);
+    }
+    copyResetTimer = window.setTimeout(() => {
+      copiedBankIndex.value = null;
+    }, 1600);
+  } catch (error) {
+    copiedBankIndex.value = null;
+  }
+}
+
+function writeTextToClipboard(text) {
+  if (navigator?.clipboard && window.isSecureContext) {
+    return navigator.clipboard.writeText(text);
+  }
+  return fallbackCopyText(text);
+}
+
+function fallbackCopyText(text) {
+  if (typeof document === 'undefined') {
+    return Promise.reject(new Error('Clipboard unavailable'));
+  }
+  const textarea = document.createElement('textarea');
+  textarea.value = text;
+  textarea.setAttribute('readonly', '');
+  textarea.style.position = 'fixed';
+  textarea.style.top = '-1000px';
+  textarea.style.left = '-1000px';
+  document.body.appendChild(textarea);
+  textarea.select();
+  const ok = document.execCommand('copy');
+  document.body.removeChild(textarea);
+  if (!ok) {
+    return Promise.reject(new Error('Copy failed'));
+  }
+  return Promise.resolve();
+}
+
 async function savePayment() {
   normalizeAmount();
   const confirmed = await openConfirm({
     title: 'Konfirmasi pembayaran?',
-    message: 'Status permintaan akan diperbarui menjadi bukti pembayaran dikirim.',
+    message:
+      'Status permintaan akan diperbarui menjadi bukti pembayaran dikirim.',
     confirmLabel: 'Simpan Pembayaran',
   });
   if (!confirmed) return;
