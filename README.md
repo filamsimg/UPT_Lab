@@ -64,14 +64,16 @@ npm run serve
 Pastikan `Dockerfile`, `nginx.conf`, dan `docker-compose.yaml` ada di root `Front-end/`.
 Nginx mem-proxy `/api` ke `http://host.docker.internal:8080` agar tidak kena CORS. Ubah di `nginx.conf` bila backend berbeda.
 
-### Docker Compose (disarankan)
+### Makefile (disarankan)
 
 ```bash
 # jalankan dari folder Front-end
-docker compose up -d --build
+make docker-fresh
 ```
 
-### Makefile (opsional)
+`make docker-fresh` akan menjalankan `docker-down`, `docker-up-build`, lalu `docker-ps` (setara fresh rebuild tanpa hapus cache image).
+
+### Perintah Makefile lain (opsional)
 
 ```bash
 # jalankan dari folder Front-end
@@ -81,10 +83,14 @@ make docker-down
 make docker-restart
 make docker-logs
 make docker-ps
-make docker-fresh
 ```
 
-`make docker-fresh` akan menjalankan `docker-down`, `docker-up-build`, lalu `docker-ps` (setara fresh rebuild tanpa hapus cache image).
+### Docker Compose (opsional)
+
+```bash
+# jalankan dari folder Front-end
+docker compose up -d --build
+```
 
 Hentikan sementara:
 
