@@ -95,12 +95,12 @@
 
         <!-- Metode Uji -->
         <div class="flex flex-col">
-          <label class="text-sm text-gray-600 mb-1">Metode Uji</label>
+          <label class="text-sm text-gray-600 mb-1">Metode Uji (opsional)</label>
           <select
             v-model="form.method"
             class="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primaryLight focus:border-primaryLight outline-none"
           >
-            <option value="" disabled>Pilih Metode</option>
+            <option value="">Pilih Metode (opsional)</option>
             <option
               v-for="m in methods"
               :key="m.id || m"
@@ -113,12 +113,12 @@
 
         <!-- Mesin Uji -->
         <div class="flex flex-col col-span-2">
-          <label class="text-sm text-gray-600 mb-1">Mesin Uji</label>
+          <label class="text-sm text-gray-600 mb-1">Mesin Uji (opsional)</label>
           <select
             v-model="form.equipment"
             class="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primaryLight focus:border-primaryLight outline-none"
           >
-            <option value="" disabled>Pilih Mesin</option>
+            <option value="">Pilih Mesin (opsional)</option>
             <option
               v-for="m in machines"
               :key="m.id || m"
@@ -226,17 +226,19 @@ function handleSubmit() {
   const name = toCleanString(form.name)
   const category = toCleanString(form.category)
   const code = toCleanString(form.code)
+  const methodId = toOptionalId(form.method)
+  const machineId = toOptionalId(form.equipment)
 
   if (!name) {
     alert('Nama pengujian wajib diisi secara manual.')
     return
   }
-  if (!category || !code || !form.method || !form.equipment) {
-    alert('Mohon lengkapi data layanan (nama, jenis, kode, metode, dan mesin).')
+  if (!category || !code) {
+    alert('Mohon lengkapi data layanan (nama, jenis, dan kode).')
     return
   }
 
-  emit('save', {
+  const payload = {
     ...form,
     name,
     category,
@@ -244,14 +246,22 @@ function handleSubmit() {
     isEdit: isEdit.value,
     service_type: category,
     service_code: code,
-    method_id: form.method,
-    machine_id: form.equipment,
     serviceType: category,
     serviceCode: code,
-    methodId: form.method,
-    machineId: form.equipment,
     price: toNumber(form.price, 0),
-  })
+  }
+
+  if (methodId) {
+    payload.method_id = methodId
+    payload.methodId = methodId
+  }
+
+  if (machineId) {
+    payload.machine_id = machineId
+    payload.machineId = machineId
+  }
+
+  emit('save', payload)
 }
 
 function toNumber(value, fallback = 0) {
@@ -261,6 +271,17 @@ function toNumber(value, fallback = 0) {
 
 function toCleanString(value) {
   return typeof value === 'string' ? value.trim() : ''
+}
+
+function toOptionalId(value) {
+  if (typeof value === 'string') {
+    const trimmed = value.trim()
+    return trimmed ? trimmed : ''
+  }
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return String(value)
+  }
+  return ''
 }
 </script>
 

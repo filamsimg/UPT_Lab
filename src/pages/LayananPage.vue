@@ -542,12 +542,10 @@ function validateServicePayload(payload = {}) {
       payload.serviceCategory
   )
   const code = toCleanString(payload.code || payload.service_code || payload.serviceCode)
-  const methodId = payload.method || payload.method_id || payload.methodId
-  const machineId = payload.equipment || payload.machine_id || payload.machineId
 
   if (!name) return 'Nama pengujian wajib diisi.'
-  if (!category || !code || !methodId || !machineId) {
-    return 'Mohon lengkapi data layanan (nama, jenis, kode, metode, dan mesin).'
+  if (!category || !code) {
+    return 'Mohon lengkapi data layanan (nama, jenis, dan kode).'
   }
   if (payload.isEdit) {
     const id = payload.id || payload.service_id || payload.serviceId

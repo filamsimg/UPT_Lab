@@ -20,6 +20,17 @@ function toNumber(value, fallback = 0) {
   return Number.isFinite(parsed) ? parsed : fallback
 }
 
+function normalizeId(value) {
+  if (typeof value === 'string') {
+    const trimmed = value.trim()
+    return trimmed ? trimmed : ''
+  }
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return String(value)
+  }
+  return ''
+}
+
 function normalizeMachine(entry = {}) {
   const id =
     ensureString(entry.id) ||
@@ -143,7 +154,12 @@ function resolvePagination(payload = {}, fallback = DEFAULT_PAGINATION) {
 }
 
 function buildServicePayload(payload = {}) {
-  return {
+  const machineId = normalizeId(
+    payload.machine_id ?? payload.machineId ?? payload.equipment
+  )
+  const methodId = normalizeId(payload.method_id ?? payload.methodId ?? payload.method)
+
+  const body = {
     service_type:
       payload.service_type ||
       payload.serviceType ||
@@ -151,8 +167,6 @@ function buildServicePayload(payload = {}) {
       payload.serviceCategory ||
       '',
     service_code: payload.service_code || payload.serviceCode || payload.code || '',
-    machine_id: payload.machine_id || payload.machineId || payload.equipment || '',
-    method_id: payload.method_id || payload.methodId || payload.method || '',
     unit: payload.unit || '',
     price: toNumber(payload.price, 0),
     test_name:
@@ -163,6 +177,11 @@ function buildServicePayload(payload = {}) {
       payload.serviceName ||
       '',
   }
+
+  if (machineId) body.machine_id = machineId
+  if (methodId) body.method_id = methodId
+
+  return body
 }
 
 function resolveMachineEntity(payload = {}) {
