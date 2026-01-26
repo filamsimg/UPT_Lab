@@ -352,7 +352,7 @@
           </button>
         </div>
 
-        <div v-if="testOptions.length" class="space-y-4">
+        <div v-if="allTestOptions.length" class="space-y-4">
           <div
             v-if="!form.testItems.length"
             class="rounded-xl border border-dashed border-slate-300 px-4 py-6 text-center text-sm text-slate-500"
@@ -378,6 +378,7 @@
                   <input
                     :list="`test-search-${index}`"
                     v-model="item.selectedLabel"
+                    @input="handleTestInput(index)"
                     @change="handleTestSelection(index)"
                     @blur="handleTestBlur(index)"
                     type="text"
@@ -677,7 +678,6 @@
 
 <script setup>
 import { ref, watch, computed, onMounted } from 'vue';
-import { useTestStore } from '@/stores/useTestStore';
 import { useWorkCategoryStore } from '@/stores/useWorkCategoryStore';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useConfirmDialog } from '@/stores/useConfirmDialog';
@@ -695,7 +695,6 @@ const props = defineProps({
 const emit = defineEmits(['submit', 'cancel']);
 const openConfirm = useConfirmDialog();
 
-const testStore = useTestStore();
 const workCategoryStore = useWorkCategoryStore();
 const authStore = useAuthStore();
 const { hasAnyPermission } = useAuthorization();
@@ -718,23 +717,148 @@ const statusLabels = {
   rejected: 'Ditolak',
 };
 
-const testOptions = computed(() =>
-  // Opsi pencarian pengujian dari store
-  (testStore.tests || []).map((test) => {
-    const segments = [test.name || null, test.code || null].filter(Boolean);
-    const label =
-      segments.length > 0
-        ? segments.join(' - ')
-        : test.name || test.code || 'Pengujian';
-    return {
-      value: test.id,
-      label,
-      price: Number(test.price ?? 0),
-      unit: test.unit || '',
-      code: test.code || '',
-    };
-  })
+const TEST_PREFETCH_LIMIT = 50;
+const TEST_SEARCH_LIMIT = 50;
+const MIN_TEST_SEARCH_CHARS = 3;
+
+const trimText = (value) => {
+  if (typeof value === 'string') return value.trim();
+  if (value === null || value === undefined) return '';
+  return String(value).trim();
+};
+
+const testCatalog = ref([]);
+const testSearchQuery = ref('');
+let testSearchTimeout = null;
+let testSearchSequence = 0;
+
+const normalizeTestEntry = (entry = {}) => {
+  const id = trimText(entry.id || entry.service_id || entry.ulid || entry.uuid);
+  const name = trimText(
+    entry.test_name ||
+      entry.testName ||
+      entry.name ||
+      entry.service_name ||
+      entry.serviceName
+  );
+  const code = trimText(entry.service_code || entry.serviceCode || entry.code);
+  const unit = trimText(entry.unit);
+  const price = Number(entry.price ?? 0);
+  return {
+    id,
+    name,
+    code,
+    unit,
+    price: Number.isFinite(price) ? price : 0,
+  };
+};
+
+const mergeTestCatalog = (items = []) => {
+  const current = Array.isArray(testCatalog.value) ? testCatalog.value : [];
+  const byId = new Map(
+    current.filter((item) => item?.id).map((item) => [item.id, item])
+  );
+  (items || []).forEach((item) => {
+    if (!item?.id) return;
+    const existing = byId.get(item.id) || {};
+    byId.set(item.id, { ...existing, ...item });
+  });
+  testCatalog.value = Array.from(byId.values());
+};
+
+const buildTestOption = (test = {}) => {
+  const segments = [test.name || null, test.code || null].filter(Boolean);
+  const label =
+    segments.length > 0
+      ? segments.join(' - ')
+      : test.name || test.code || 'Pengujian';
+  return {
+    value: test.id,
+    label,
+    price: Number(test.price ?? 0),
+    unit: test.unit || '',
+    code: test.code || '',
+  };
+};
+
+const allTestOptions = computed(() =>
+  (testCatalog.value || []).map((test) => buildTestOption(test))
 );
+
+const filterTestOptions = (options = [], query = '') => {
+  const normalized = trimText(query).toLowerCase();
+  if (!normalized) return options;
+  return options.filter((option) =>
+    String(option?.label || '').toLowerCase().includes(normalized)
+  );
+};
+
+const testOptions = computed(() => {
+  const query = trimText(testSearchQuery.value);
+  if (!query || query.length < MIN_TEST_SEARCH_CHARS) {
+    return allTestOptions.value;
+  }
+  return filterTestOptions(allTestOptions.value, query);
+});
+
+const findTestById = (testId) =>
+  (testCatalog.value || []).find((test) => test.id === testId) || null;
+
+const findTestOptionByLabel = (label) => {
+  const normalized = trimText(label).toLowerCase();
+  if (!normalized) return null;
+  return (
+    allTestOptions.value.find(
+      (option) => option.label.toLowerCase() === normalized
+    ) || null
+  );
+};
+
+const fetchTestCatalog = async ({ search = '', perPage = TEST_PREFETCH_LIMIT } = {}) => {
+  const query = new URLSearchParams();
+  query.set('page', '1');
+  query.set('per_page', String(perPage));
+  query.append('include', 'machine');
+  query.append('include', 'method');
+  const trimmedSearch = trimText(search);
+  if (trimmedSearch) query.set('search', trimmedSearch);
+
+  try {
+    const res = await api.get(`/api/v1/material-test-services?${query.toString()}`);
+    const payload = res.data?.data ?? res.data ?? {};
+    const items = Array.isArray(payload.items) ? payload.items : [];
+    return items.map((item) => normalizeTestEntry(item)).filter((item) => item.id);
+  } catch (err) {
+    console.warn('[FormPermintaan] gagal memuat data pengujian', err);
+    return [];
+  }
+};
+
+const loadInitialTestCatalog = async () => {
+  const items = await fetchTestCatalog({ perPage: TEST_PREFETCH_LIMIT });
+  if (items.length) mergeTestCatalog(items);
+};
+
+const queueTestSearch = (rawQuery) => {
+  const query = trimText(rawQuery);
+  if (testSearchTimeout) {
+    clearTimeout(testSearchTimeout);
+    testSearchTimeout = null;
+  }
+  if (!query || query.length < MIN_TEST_SEARCH_CHARS) return;
+  testSearchTimeout = setTimeout(() => {
+    runTestSearch(query);
+  }, 350);
+};
+
+const runTestSearch = async (query) => {
+  const localMatches = filterTestOptions(allTestOptions.value, query);
+  if (localMatches.length) return;
+  const currentSeq = ++testSearchSequence;
+  const items = await fetchTestCatalog({ search: query, perPage: TEST_SEARCH_LIMIT });
+  if (currentSeq !== testSearchSequence) return;
+  if (items.length) mergeTestCatalog(items);
+};
 
 const workCategoryOptions = computed(() =>
   (workCategoryStore.categories || []).map((cat) => ({
@@ -792,10 +916,8 @@ const ownerDataListId = `owner-search-${Math.random()
 let ownerSearchTimeout = null;
 let ownerSearchSequence = 0;
 
-onMounted(() => {
-  if (!testStore.tests.length && !testStore.loading) {
-    testStore.fetchAll();
-  }
+onMounted(async () => {
+  await loadInitialTestCatalog();
   if (!workCategoryStore.categories.length && !workCategoryStore.loading) {
     workCategoryStore.fetchAll({ perPage: 200 });
   }
@@ -965,6 +1087,7 @@ watch(
       form.value = defaultForm();
     }
     showValidationErrors.value = false;
+    testSearchQuery.value = '';
     ownerTouched.value = false;
     updateOrderMetadata(form.value.entryDate);
   },
@@ -999,37 +1122,33 @@ function removeTestItem(index) {
 }
 
 function resolveTestName(testId) {
-  const test =
-    typeof testStore.getTestById === 'function'
-      ? testStore.getTestById(testId)
-      : (testStore.tests || []).find((t) => t.id === testId);
+  const test = findTestById(testId);
   if (!test) return testId || 'Pengujian';
   return test.name || test.code || test.id || testId || 'Pengujian';
 }
 
 function resolveTestUnit(testId) {
-  const test =
-    typeof testStore.getTestById === 'function'
-      ? testStore.getTestById(testId)
-      : (testStore.tests || []).find((t) => t.id === testId);
+  const test = findTestById(testId);
   return test?.unit || '';
 }
 
 function resolveTestCode(testId) {
-  const test =
-    typeof testStore.getTestById === 'function'
-      ? testStore.getTestById(testId)
-      : (testStore.tests || []).find((t) => t.id === testId);
+  const test = findTestById(testId);
   return test?.code || '';
+}
+
+function handleTestInput(index) {
+  const item = form.value.testItems[index];
+  if (!item) return;
+  testSearchQuery.value = item.selectedLabel || '';
+  queueTestSearch(item.selectedLabel || '');
 }
 
 function handleTestSelection(index) {
   const item = form.value.testItems[index];
   if (!item) return;
   const label = (item.selectedLabel || '').trim();
-  const option = testOptions.value.find(
-    (opt) => opt.label.toLowerCase() === label.toLowerCase()
-  );
+  const option = findTestOptionByLabel(label);
   if (!option) {
     item.testId = '';
     item.price = '';
@@ -1066,11 +1185,13 @@ function applyOptionToItem(item, option) {
 }
 
 watch(
-  testOptions,
+  allTestOptions,
   () => {
     form.value.testItems.forEach((item) => {
       if (!item.testId) return;
-      const option = testOptions.value.find((opt) => opt.value === item.testId);
+      const option = allTestOptions.value.find(
+        (opt) => opt.value === item.testId
+      );
       if (option) applyOptionToItem(item, option);
       else if (!item.unit) item.unit = resolveTestUnit(item.testId) || '';
     });
@@ -1129,8 +1250,6 @@ const normalizedTestItems = computed(() =>
 const isManualMode = computed(() => normalizedTestItems.value.length === 0);
 
 const showValidationErrors = ref(false);
-
-const trimText = (value) => String(value || '').trim();
 
 const isValidEmail = (value) =>
   /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || '').trim());
