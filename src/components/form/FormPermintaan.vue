@@ -33,6 +33,12 @@
       @submit.prevent="handleSubmit"
       class="space-y-6 px-4 py-5 md:px-6 lg:px-8"
     >
+      <div
+        v-if="showValidationErrors && hasValidationErrors"
+        class="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-xs font-medium text-rose-700"
+      >
+        Periksa kembali kolom yang ditandai merah sebelum menyimpan permintaan.
+      </div>
       <!-- Informasi utama -->
       <section
         class="space-y-4 rounded-2xl border border-slate-200 bg-slate-50/70 p-4"
@@ -116,6 +122,12 @@
             >
               Pilih user dari daftar agar ID owner tersimpan.
             </p>
+            <p
+              v-if="showValidationErrors && formErrors.ownerUserIds"
+              class="text-[11px] font-medium text-rose-600"
+            >
+              {{ formErrors.ownerUserIds }}
+            </p>
           </div>
         </div>
         <div class="grid gap-3 sm:grid-cols-2">
@@ -134,6 +146,12 @@
                   isReadOnlyMode || (isCustomerUser && !canManageCustomerData)
                 "
               />
+              <p
+                v-if="showValidationErrors && formErrors.customerName"
+                class="text-[11px] font-medium text-rose-600"
+              >
+                {{ formErrors.customerName }}
+              </p>
             </div>
           </div>
           <div class="flex flex-col gap-1">
@@ -150,6 +168,12 @@
                 isReadOnlyMode || (isCustomerUser && !canManageCustomerData)
               "
             />
+            <p
+              v-if="showValidationErrors && formErrors.customerEmail"
+              class="text-[11px] font-medium text-rose-600"
+            >
+              {{ formErrors.customerEmail }}
+            </p>
           </div>
           <div class="flex flex-col gap-1 sm:col-span-2">
             <label
@@ -165,6 +189,12 @@
                 isReadOnlyMode || (isCustomerUser && !canManageCustomerData)
               "
             />
+            <p
+              v-if="showValidationErrors && formErrors.companyName"
+              class="text-[11px] font-medium text-rose-600"
+            >
+              {{ formErrors.companyName }}
+            </p>
           </div>
         </div>
 
@@ -183,6 +213,12 @@
                 isReadOnlyMode || (isCustomerUser && !canManageCustomerData)
               "
             />
+            <p
+              v-if="showValidationErrors && formErrors.phoneNumber"
+              class="text-[11px] font-medium text-rose-600"
+            >
+              {{ formErrors.phoneNumber }}
+            </p>
           </div>
           <div class="flex flex-col gap-1">
             <label
@@ -203,6 +239,12 @@
                 {{ cat.label }}
               </option>
             </select>
+            <p
+              v-if="showValidationErrors && formErrors.workCategoryId"
+              class="text-[11px] font-medium text-rose-600"
+            >
+              {{ formErrors.workCategoryId }}
+            </p>
           </div>
         </div>
 
@@ -220,6 +262,12 @@
               isReadOnlyMode || Boolean(form.addressId)
             "
           ></textarea>
+          <p
+            v-if="showValidationErrors && formErrors.address"
+            class="text-[11px] font-medium text-rose-600"
+          >
+            {{ formErrors.address }}
+          </p>
           <p v-if="form.addressId" class="text-[11px] text-emerald-600">
             Alamat berasal dari data customer.
           </p>
@@ -251,6 +299,12 @@
                 placeholder="Nama pada sertifikat"
                 :readonly="isReadOnlyMode"
               />
+              <p
+                v-if="showValidationErrors && formErrors.certificateName"
+                class="text-[11px] font-medium text-rose-600"
+              >
+                {{ formErrors.certificateName }}
+              </p>
             </div>
             <div class="flex flex-col gap-1 sm:col-span-2">
               <label
@@ -264,6 +318,12 @@
                 placeholder="Alamat pada sertifikat"
                 :readonly="isReadOnlyMode"
               ></textarea>
+              <p
+                v-if="showValidationErrors && formErrors.certificateAddress"
+                class="text-[11px] font-medium text-rose-600"
+              >
+                {{ formErrors.certificateAddress }}
+              </p>
             </div>
           </div>
         </div>
@@ -412,6 +472,23 @@
                 Line Total: Rp {{ formatCurrency(itemSubtotal(item)) }}
               </span>
             </div>
+            <div
+              v-if="
+                showValidationErrors &&
+                hasTestItemError(testItemErrors[index])
+              "
+              class="mt-2 space-y-1 text-[11px] font-medium text-rose-600"
+            >
+              <p v-if="testItemErrors[index]?.testId">
+                {{ testItemErrors[index].testId }}
+              </p>
+              <p v-if="testItemErrors[index]?.sampleName">
+                {{ testItemErrors[index].sampleName }}
+              </p>
+              <p v-if="testItemErrors[index]?.quantity">
+                {{ testItemErrors[index].quantity }}
+              </p>
+            </div>
           </div>
         </div>
         <div
@@ -437,6 +514,12 @@
             placeholder="cth. Proyek pembangunan gedung"
             :readonly="isReadOnlyMode"
           />
+          <p
+            v-if="showValidationErrors && formErrors.workPackage"
+            class="text-[11px] font-medium text-rose-600"
+          >
+            {{ formErrors.workPackage }}
+          </p>
         </div>
 
         <div class="flex flex-col gap-1">
@@ -466,6 +549,12 @@
             Karena layanan tidak dipilih, catatan dan dokumen pendukung
             diperlukan agar admin dapat menindaklanjuti. Dokumen dapat diunggah
             setelah permintaan tersimpan.
+          </p>
+          <p
+            v-if="showValidationErrors && formErrors.note"
+            class="text-[11px] font-medium text-rose-600"
+          >
+            {{ formErrors.note }}
           </p>
         </div>
 
@@ -545,6 +634,12 @@
                   : 'Opsional.'
               }}
             </p>
+            <p
+              v-if="showValidationErrors && formErrors.supportingDocs"
+              class="text-[11px] font-medium text-rose-600"
+            >
+              {{ formErrors.supportingDocs }}
+            </p>
           </div>
         </div>
       </section>
@@ -564,7 +659,6 @@
           v-if="!isReadOnlyMode"
           type="button"
           class="inline-flex w-full items-center justify-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
-          :disabled="!canSave"
           @click="handleSaveDraft"
         >
           Simpan Draft
@@ -573,7 +667,6 @@
           v-if="!isReadOnlyMode"
           type="submit"
           class="inline-flex w-full items-center justify-center rounded-lg bg-gradient-to-r from-sky-500 to-sky-600 px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
-          :disabled="!canSave"
         >
           {{ isEdit ? 'Simpan Perubahan' : 'Kirim Permintaan' }}
         </button>
@@ -871,6 +964,7 @@ watch(
     } else {
       form.value = defaultForm();
     }
+    showValidationErrors.value = false;
     ownerTouched.value = false;
     updateOrderMetadata(form.value.entryDate);
   },
@@ -1034,54 +1128,154 @@ const normalizedTestItems = computed(() =>
 
 const isManualMode = computed(() => normalizedTestItems.value.length === 0);
 
+const showValidationErrors = ref(false);
+
+const trimText = (value) => String(value || '').trim();
+
+const isValidEmail = (value) =>
+  /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || '').trim());
+
 const ownerSelectionValid = computed(() => {
   if (!showOwnerField.value || isReadOnlyMode.value) return true;
   const display = (form.value.ownerDisplay || '').trim();
   return !display;
 });
 
-const canSave = computed(() => {
-  // Validasi minimal data pemohon
-  const hasCustomer = Boolean(
-    form.value.customerName && form.value.customerName.trim()
-  );
-  const hasWorkCategory = Boolean(
-    form.value.workCategoryId && String(form.value.workCategoryId).trim()
-  );
-  const hasApplicantEmail = Boolean(
-    form.value.customerEmail && form.value.customerEmail.trim()
-  );
-  const hasApplicantPhone = Boolean(
-    form.value.phoneNumber && String(form.value.phoneNumber).trim()
-  );
-  const hasApplicantAddress = Boolean(
-    form.value.address && form.value.address.trim()
-  );
-  const hasServices = normalizedTestItems.value.length > 0;
-  const hasManualNote = Boolean(form.value.note && form.value.note.trim());
-  const hasSupportingDocsValue = hasSupportingDocs.value;
-  const shouldRequireSupportingDocs =
-    isManualMode.value && showSupportingDocs.value;
+const testItemErrors = computed(() =>
+  form.value.testItems.map((item) => {
+    const errors = {};
+    const selectedLabel = trimText(item?.selectedLabel);
+    const testId = trimText(item?.testId);
+    if (selectedLabel && !testId) {
+      errors.testId = 'Pilih pengujian dari daftar.';
+    }
+    if (testId && testId.length !== 26) {
+      errors.testId = 'ID pengujian tidak valid.';
+    }
+    if (testId) {
+      const quantity = Number(item?.quantity);
+      if (!Number.isFinite(quantity) || quantity < 1) {
+        errors.quantity = 'Jumlah sampel minimal 1.';
+      }
+      const sampleName = trimText(item?.objectName) || resolveTestName(testId);
+      if (sampleName && sampleName.length < 3) {
+        errors.sampleName = 'Nama sampel minimal 3 karakter.';
+      }
+    }
+    return errors;
+  })
+);
 
-  if (!ownerSelectionValid.value) return false;
+const hasTestItemErrors = computed(() =>
+  testItemErrors.value.some(
+    (entry) => entry && Object.keys(entry).length > 0
+  )
+);
 
-  if (
-    !hasCustomer ||
-    !hasWorkCategory ||
-    !hasApplicantEmail ||
-    !hasApplicantPhone ||
-    !hasApplicantAddress
-  ) {
-    return false;
+const formErrors = computed(() => {
+  const errors = {};
+  const customerName = trimText(form.value.customerName);
+  const workCategoryId = trimText(form.value.workCategoryId);
+  const workPackage = trimText(form.value.workPackage);
+  const email = trimText(form.value.customerEmail);
+  const phone = trimText(form.value.phoneNumber);
+  const address = trimText(form.value.address);
+  const companyName = trimText(form.value.companyName);
+  const certificateName = trimText(form.value.certificateName);
+  const certificateAddress = trimText(form.value.certificateAddress);
+  const note = trimText(form.value.note);
+
+  if (!customerName) {
+    errors.customerName = 'Nama pemohon wajib diisi.';
+  } else if (customerName.length < 3) {
+    errors.customerName = 'Nama pemohon minimal 3 karakter.';
+  } else if (customerName.length > 255) {
+    errors.customerName = 'Nama pemohon maksimal 255 karakter.';
   }
 
-  if (!hasServices) {
-    if (!hasManualNote) return false;
-    if (shouldRequireSupportingDocs && !hasSupportingDocsValue) return false;
+  if (!workCategoryId) {
+    errors.workCategoryId = 'Jenis pekerjaan wajib dipilih.';
+  } else if (workCategoryId.length !== 26) {
+    errors.workCategoryId = 'Id kategori pekerjaan harus 26 karakter.';
   }
 
-  return true;
+  if (!workPackage) {
+    errors.workPackage = 'Paket pekerjaan wajib diisi.';
+  } else if (workPackage.length < 3) {
+    errors.workPackage = 'Paket pekerjaan minimal 3 karakter.';
+  } else if (workPackage.length > 255) {
+    errors.workPackage = 'Paket pekerjaan maksimal 255 karakter.';
+  }
+
+  if (!email) {
+    errors.customerEmail = 'Email pemohon wajib diisi.';
+  } else if (email.length < 3 || email.length > 50) {
+    errors.customerEmail = 'Email pemohon harus 3-50 karakter.';
+  } else if (!isValidEmail(email)) {
+    errors.customerEmail = 'Format email pemohon tidak valid.';
+  }
+
+  if (!phone) {
+    errors.phoneNumber = 'Nomor telpon pemohon wajib diisi.';
+  } else if (phone.length < 10 || phone.length > 15) {
+    errors.phoneNumber = 'Nomor telpon pemohon harus 10-15 karakter.';
+  }
+
+  if (!address) {
+    errors.address = 'Alamat pemohon wajib diisi.';
+  } else if (address.length < 3) {
+    errors.address = 'Alamat pemohon minimal 3 karakter.';
+  } else if (address.length > 512) {
+    errors.address = 'Alamat pemohon maksimal 512 karakter.';
+  }
+
+  if (companyName && companyName.length > 255) {
+    errors.companyName = 'Nama perusahaan maksimal 255 karakter.';
+  }
+
+  if (certificateName) {
+    if (certificateName.length < 3) {
+      errors.certificateName = 'Nama penerima minimal 3 karakter.';
+    } else if (certificateName.length > 255) {
+      errors.certificateName = 'Nama penerima maksimal 255 karakter.';
+    }
+  }
+
+  if (certificateAddress && certificateAddress.length > 512) {
+    errors.certificateAddress = 'Alamat sertifikat maksimal 512 karakter.';
+  }
+
+  if (isManualMode.value && !note) {
+    errors.note = 'Catatan wajib diisi jika layanan tidak ada di daftar.';
+  }
+
+  if (isManualMode.value && showSupportingDocs.value && !hasSupportingDocs.value) {
+    errors.supportingDocs = 'Dokumen pendukung wajib dilampirkan.';
+  }
+
+  const ownerIds = Array.isArray(form.value.ownerSelections)
+    ? form.value.ownerSelections.map((item) => trimText(item?.id))
+    : [];
+  const invalidOwnerId = ownerIds.find((id) => id && id.length !== 26);
+  if (invalidOwnerId) {
+    errors.ownerUserIds = 'Owner user id harus 26 karakter.';
+  }
+
+  return errors;
 });
+
+const hasValidationErrors = computed(
+  () =>
+    hasTestItemErrors.value ||
+    Object.keys(formErrors.value).length > 0 ||
+    !ownerSelectionValid.value
+);
+
+const canSave = computed(() => !hasValidationErrors.value);
+
+function hasTestItemError(entry) {
+  return entry && Object.keys(entry).length > 0;
+}
 
 function itemSubtotal(item) {
   const lineTotal =
@@ -1188,7 +1382,6 @@ function buildPayload() {
 }
 
 async function submitWith() {
-  if (!canSave.value) return;
   return submitWithStatus('awaiting_review');
 }
 
@@ -1197,6 +1390,8 @@ function handleSubmit() {
 }
 
 async function submitWithStatus(status) {
+  showValidationErrors.value = true;
+  if (!canSave.value) return;
   const nextStatus =
     typeof status === 'string' && status.trim() ? status.trim() : 'draft';
   const confirmed = await openConfirm({

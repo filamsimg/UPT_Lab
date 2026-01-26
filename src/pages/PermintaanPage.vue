@@ -662,16 +662,36 @@ function buildPaymentRows(items = []) {
   });
 }
 
+function formatBackendErrors(details) {
+  const errors = details?.errors;
+  if (!errors || typeof errors !== 'object') return '';
+  const messages = Object.values(errors)
+    .flatMap((value) => (Array.isArray(value) ? value : [value]))
+    .filter((msg) => typeof msg === 'string' && msg.trim());
+  return messages.length ? messages.join(' | ') : '';
+}
+
 async function handleFormSubmit(payload) {
   const data = payload?.data || {};
-  let savedData = null;
+  const result = isEdit.value
+    ? await orderStore.updateOrder(data.idOrder, data)
+    : await orderStore.createOrder(data);
 
-  if (isEdit.value) {
-    const { data: updated } = await orderStore.updateOrder(data.idOrder, data);
-    savedData = updated || data;
-  } else {
-    const { data: created } = await orderStore.createOrder(data);
-    savedData = created || data;
+  if (!result?.ok) {
+    const details = formatBackendErrors(result?.details);
+    const fallbackMessage = isEdit.value
+      ? 'Gagal memperbarui permintaan.'
+      : 'Gagal membuat permintaan.';
+    const message = details
+      ? `${result?.error || fallbackMessage} ${details}`
+      : result?.error || fallbackMessage;
+    notify({
+      tone: 'error',
+      title: isEdit.value ? 'Gagal Menyimpan Permintaan' : 'Gagal Membuat Permintaan',
+      message,
+      duration: 5000,
+    });
+    return;
   }
 
   resetFormState();
